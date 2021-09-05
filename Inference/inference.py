@@ -37,6 +37,78 @@ def inference(td, mt, w):
 
     return combineMethods(mt_new)
 
+def raw_types_pass(td, mt, w):
+    mt = {k:v.clone() for k, v in mt.items()}
+    w = [i.clone() for i in w if not i.trivially_true(td, mt)]
+    disjunctions = [i for i in w if isinstance(i, DisjunctiveConstraint)]
+    intermediate_w = []
+    w_new = []
+    substitutions = []
+    supersubtypes = {}
+
+    # Expand each constraint in w to obtain the things that need
+    # to be worked on immediately.
+    for i in [i for i in w if not isinstance(i, DisjunctiveConstraint)]:
+        if isinstance(i, Substitution):
+            substitutions.append(i)
+            continue
+        for j in disjunctions:
+            if j.contains_as_lhs(i.lhs):
+                # don't do anything with it, must be returned.
+                w_new.append(i)
+                continue
+
+        i = i.expand(td, mt)
+        for j in i:
+            if isinstance(j, Substitution):
+                substitutions.append(j)
+            elif isinstance(j, DisjunctiveConstraint):
+                disjunctions.append(j)
+            else:
+                intermediate_w.append(j)
+        # Regardless, must retain it in w.
+        w_new.append(j)
+
+    # Perform substitutions
+    while substitutions:
+            i = substitutions.pop(0)
+            print(f'Performing substitution {i}')
+            if isinstance(i.a, InferenceVariable):
+                to_be_replaced = i.a
+                replaced_by = i.b
+            elif isinstance(i.b, InferenceVariable):
+                to_be_replaced = i.b
+                replaced_by = i.a
+            else:
+                # Substitution cannot happen. Fail.
+                return {}, [], False
+            for d in disjunctions:
+                d.substitute(to_be_replaced, replaced_by)
+            for t in w_new:
+                t.substitute(to_be_replaced, replaced_by)
+            for i in intermediate_w:
+                i.substitute(to_be_replaced, replaced_by)
+            for m in mt.values():
+                m.substitute(to_be_replaced, replaced_by)
+            for j in substitutions:
+                j.substitute(to_be_replaced, replaced_by)
+    
+    # Collect super and sub types
+    for i in intermediate_w:
+        """
+        Here, we have t: ([subs, supers])
+        """
+        if not isinstance(i, SubtypeConstraint):
+            print(i, "what is this?")
+            continue
+        if i.lhs._identifier not in supersubtypes:
+            supersubtypes[i.lhs._identifier] = ([], [])
+        if i.rhs._identifier not in supersubtypes:
+            supersubtypes[i.rhs._identifier] = ([], [])
+        supersubtypes[i.lhs._identifier][1].append(i.rhs._identifier)
+        supersubtypes[i.rhs._identifier][0].append(i.lhs._identifier)
+
+
 def resolve(td, mt, w):
     # clone mt and w.
     mt = {k:v.clone() for k, v in mt.items()}
@@ -184,3 +256,6 @@ def combine_two_subtype_constraints(constraints, td, mt):
 
 def combineMethods(mt):
     return mt, True
+
+
+

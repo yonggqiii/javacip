@@ -72,7 +72,7 @@ class TypeBuilder:
 
         ==================
         '''
-        self.stub_one(self._declared_types, self._missing_types, self._worklist)
+        self.stub_two(self._declared_types, self._missing_types, self._worklist)
         a, b, c = self._declared_types, self._missing_types, self._worklist
         self._declared_types = self._missing_types = self._worklist = self._contexts = None
         return a, b, c
@@ -123,6 +123,26 @@ class TypeBuilder:
         
         # return b;
         worklist.append(SubtypeConstraint(CompileTimeType('B'), CompileTimeType('B')))
+
+    def stub_two(self, dt, mt, worklist):
+        # A<? super Integer> <: B<? super ArrayList<Number>>
+        worklist.append(SubtypeConstraint(CompileTimeType('A', [Capture('super', CompileTimeType('Integer'))]),
+                CompileTimeType('B', [Capture('super', CompileTimeType('ArrayList', [Capture('exact', CompileTimeType('Number'))]))])))
+        # A<String> <: B<? extends Collection<String>>
+        worklist.append(SubtypeConstraint(
+            CompileTimeType('A', [Capture('exact', CompileTimeType('String'))]),
+            CompileTimeType('B', [Capture('super', CompileTimeType('Collection', [Capture('exact', CompileTimeType('String'))]))])
+        ))
+        # A<? super C> <: B<List<? super C>>
+        worklist.append(SubtypeConstraint(
+            CompileTimeType('A', [Capture('super', CompileTimeType('C'))]),
+            CompileTimeType('B', [Capture('exact', CompileTimeType('List', [Capture('super', CompileTimeType('C'))]))])
+        ))
+        # A<String> <: B<?>
+        worklist.append(SubtypeConstraint(
+            CompileTimeType('A', [Capture('exact', CompileTimeType('String'))]),
+            CompileTimeType('B', [Capture('?')])
+        ))
 
 
     def handle_ordinary_compilations(self, 
@@ -519,7 +539,7 @@ class TypeBuilder:
         # Otherwise, find the variable in the enclosing type's superclass
         try:
             superclass_ctt = enclosing_type._superclass
-            if not superclass:
+            if not superclass_ctt:
                 # Check in object
                 if enclosing_type._identifier == 'Object':
                     raise Exception

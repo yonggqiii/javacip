@@ -6,107 +6,219 @@ else:
     from Java9Parser import Java9Parser
     from Constraints import InferenceVariable
 
+from typing import Union, Dict, Optional, List, Tuple
+
+Type = Union['CompileTimeType', 'Capture']
+
 class Attribute:
-    def __init__(self, identifier, type, is_static, is_final):
-        self._identifier = identifier
-        self._type = type
-        self._is_static = is_static
-        self._is_final = is_final
-    def __str__(self):
+    """
+    An attribute of a class or interface.
+    """
+    def __init__(self,
+            identifier: str,
+            type: Type,
+            is_static: bool,
+            is_final: bool):
+        """
+        Creates an attribute of a class or interface.
+
+        Parameters:
+            identifier: the identifier of the attribute
+            type: the type assigned to that attribute; this is usually a declared type
+            is_static: whether this attribute is static
+            is_final: whether this attribute is final
+        """
+        self._identifier: str = identifier
+        self._type: Type = type
+        self._is_static: bool = is_static
+        self._is_final: bool = is_final
+
+    def __str__(self) -> str:
+        """
+        Returns the string representation of the attribute, to build
+        the attribute as Java source code.
+
+        For example, a static final attribute called myAttr with type int will
+        be built as
+        static final int myAttr
+        """
         res = 'static ' if self._is_static else ''
         res += 'final ' if self._is_final else ''
         res += f'{str(self._type)} {self._identifier}'
         return res
 
-    def clone(self):
+    def clone(self) -> 'Attribute':
+        """
+        Returns a deep clone of this attribute.
+        """
         return Attribute(self._identifier, self._type.clone(),
                 self._is_static, self._is_final)
 
-    def substitute_type_params(self, substitutions):
+    def substitute_type_params(self,
+            substitutions: Dict[str, Type]) -> None:
+        """
+        Performs some substitutions of type parameters on this Attribute.
+
+        Parameters:
+            substitutions: the parameters to substitute.
+        """
         if self._type._identifier in substitutions:
             self._type = substitutions[self._type._identifier]
         else:
             self._type.substitute_type_params(substitutions)
-    def __repr__(self):
+        
+    def __repr__(self) -> str:
         return f'Attribute({repr(self._identifier)}, {repr(self._type)}, ' \
             f'{repr(self._is_static)}, {repr(self._is_final)})'
 
-    def __eq__(self, o):
+    def __eq__(self, o) -> bool:
         return isinstance(o, Attribute) and \
             self._identifier == o._identifier and \
             self._type == o._type and \
             self._is_static == o._is_static and \
             self._is_final == o._is_final
 
-    def substitute(self, to_be_replaced, replaced_by):
+    def substitute(self,
+            to_be_replaced: Type,
+            replaced_by: Type):
+        """
+        Performs some substitution of types. Usually happens on inference
+        variables.
+
+        Parameters:
+            to_be_replaced: the type to be replaced
+            replaced_by: the type you want to use instead
+        """
         if self._type == to_be_replaced:
             self._type = replaced_by
         else:
             self._type.substitute(to_be_replaced, replaced_by)
 
 class FormalParameter:
+    """
+    A formal parameter of a Java method
+    """
+    def __init__(self,
+            identifier: str,
+            type: Type,
+            is_var_arg: bool = False):
+        """
+        Creates a formal parameter object.
 
-    def __init__(self, identifier, type, is_var_arg = False):
-        self._identifier = identifier
-        self._type = type
-        self._is_var_arg = is_var_arg
+        Parameters:
+            identifier: the identifier of the parameter
+            type: the declared type of the parameter
+            is_var_arg: whether this parameter is a vararg
+        """
+        self._identifier: str = identifier
+        self._type: Type = type
+        self._is_var_arg: bool = is_var_arg
 
-    def __eq__(self, o):
+    def __eq__(self, o) -> bool:
         return isinstance(o, FormalParameter) and \
                 self._identifier == o._identifier and \
                 self._type == o._type and \
                 self._is_var_arg == o._is_var_arg
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = '...' if self._is_var_arg else ''
         return f'{str(self._type)}{s} {self._identifier}'
 
-    def clone(self):
+    def clone(self) -> 'FormalParameter':
+        """
+        Returns a deep clone of this object
+        """
         return FormalParameter(self._identifier, self._type.clone(), self._is_var_arg)
 
-    def substitute_type_params(self, substitutions):
+    def substitute_type_params(self,
+            substitutions: Dict[str, Type]) -> None:
+        """
+        Performs some substitutions of type parameters on this FormalParameter.
+
+        Parameters:
+            substitutions: the parameters to substitute.
+        """
         if self._type._identifier in substitutions:
             self._type = substitutions[self._type._identifier]
         else:
             self._type.substitute_type_params(substitutions)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'FormalParameter({repr(self._identifier)}, {repr(self._type)}' \
                 f', {repr(self._is_var_arg)})'
 
-    def substitute(self, to_be_replaced, replaced_by):
+    def substitute(self,
+            to_be_replaced: Type,
+            replaced_by: Type):
+        """
+        Performs some substitution of types. Usually happens on inference
+        variables.
+
+        Parameters:
+            to_be_replaced: the type to be replaced
+            replaced_by: the type you want to use instead
+        """
         if self._type == to_be_replaced:
             self._type = replaced_by
         else:
             self._type.substitute(to_be_replaced, replaced_by)
 
 class TypeParameter:
-    def __init__(self, identifier: str, type_bounds = None):
+    """
+    A type parameter of a Java class, interface or method.
+    """
+    def __init__(self,
+            identifier: str,
+            type_bounds: Optional[List[Union['CompileTimeType', 'TypeParameter']]] = None):
+        """
+        Creates a type parameter.
+
+        Parameters:
+            identifier: the identifier of this type parameter
+            type_bounds: the bounds of this type parameter
+        """
         self._identifier = identifier
         self._type_bounds = type_bounds if type_bounds else []
 
-    def __eq__(self, o):
+    def __eq__(self, o) -> bool:
         return isinstance(o, TypeParameter) and \
                 self._identifier == o._identifier and \
                 self._type_bounds == o._type_bounds
 
-    def add_type_bound(self, tp):
+    def add_type_bound(self,
+            tp: Union['CompileTimeType', 'TypeParameter']) -> None:
+        """
+        Adds a type bound to this type parameter.
+
+        Parameters:
+            tp: the type bound to add.
+        """
         self._type_bounds.append(tp)
 
-    def __str__(self):
+    def __str__(self) -> str:
         tb = ' & '.join(map(str, self._type_bounds))
         if tb:
             return f'{self._identifier} extends {tb}'
         return self._identifier
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'TypeParameter({repr(self._identifier)}, ' \
             f'{repr(self._type_bounds)})'
 
-    def clone(self):
+    def clone(self) -> 'TypeParameter':
+        """
+        Returns a deep clone of this type parameter object.
+        """
         return TypeParameter(self._identifier, [i.clone() for i in self._type_bounds])
 
-    def substitute_type_params(self, substitutions):
+    def substitute_type_params(self,
+            substitutions: Dict[str, Type]) -> None:
+        """
+        Performs some substitutions of type parameters on this TypeParameter.
+
+        Parameters:
+            substitutions: the parameters to substitute.
+        """
         for idx in range(len(self._type_bounds)):
             i = self._type_bounds[idx]
             if i._identifier in substitutions:
@@ -114,24 +226,66 @@ class TypeParameter:
             else:
                 i.substitute_type_params(substitutions)
 
-    def substitute(self, to_be_replaced, replaced_by):
+    def substitute(self,
+            to_be_replaced: Type,
+            replaced_by: Type):
+        """
+        Performs some substitution of types. Usually happens on inference
+        variables.
+
+        Parameters:
+            to_be_replaced: the type to be replaced
+            replaced_by: the type you want to use instead
+        """
         for i in self._type_bounds:
             i.substitute(to_be_replaced, replaced_by)
 
 class MethodHeader:
-    def __init__(self, identifier, is_static, is_abstract, is_final,
-            type_parameters = None, throws = None, formal_params = None,
-            result = None):
-        self._identifier = identifier
-        self._result = result
-        self._is_static = is_static
-        self._is_abstract = is_abstract
-        self._is_final = is_final
-        self._type_parameters = [] if not type_parameters else type_parameters
-        self._throws = [] if not throws else throws
-        self._formal_parameters = [] if not formal_params else formal_params
+    """
+    The header of a Java method.
+    """
+    def __init__(self,
+            identifier: str,
+            is_static: bool,
+            is_abstract: bool,
+            is_final: bool,
+            type_parameters: Optional[List[TypeParameter]] = None,
+            throws: Optional[List['CompileTimeType']] = None,
+            formal_params: Optional[List[FormalParameter]] = None,
+            result: Optional[Type] = None):
+        """
+        Create a Java method header.
 
-    def substitute(self, to_be_replaced, replaced_by):
+        Parameters:
+            identifier: the identifier of the method
+            is_static: whether the method is static
+            is_abstract: whether the method is abstract
+            is_final: whether the method is final
+            type_parameters: an optional list of type parameters to the method
+            throws: an optional list of exceptions being thrown from the method
+            formal_params: an optional list of formal parameters to the method
+            result: an optional return type of the method.
+        """
+        self._identifier: str = identifier
+        self._result: Optional[Type] = result
+        self._is_static: bool = is_static
+        self._is_abstract: bool = is_abstract
+        self._is_final: bool = is_final
+        self._type_parameters: List[TypeParameter] = [] if not type_parameters else type_parameters
+        self._throws: List['CompileTimeType'] = [] if not throws else throws
+        self._formal_parameters: List[FormalParameter] = [] if not formal_params else formal_params
+
+    def substitute(self,
+            to_be_replaced: Type,
+            replaced_by: Type):
+        """
+        Performs some substitution of types. Usually happens on inference
+        variables.
+
+        Parameters:
+            to_be_replaced: the type to be replaced
+            replaced_by: the type you want to use instead
+        """
         if self._result == to_be_replaced:
             self._result = replaced_by
         else:
@@ -141,13 +295,25 @@ class MethodHeader:
         for i in self._formal_parameters:
             i.substitute_type_params(to_be_replaced, replaced_by)
 
-    def add_type_parameter(self, tp: TypeParameter):
+    def add_type_parameter(self, tp: TypeParameter) -> None:
+        """
+        Adds a type parameter to this method.
+
+        Parameters:
+            tp: the type parameter you want to add
+        """
         self._type_parameters.append(tp)
 
-    def add_formal_parameter(self, fp):
+    def add_formal_parameter(self, fp: FormalParameter) -> None:
+        """
+        Adds a formal parameter to this method.
+
+        Parameters:
+            fp: the formal parameter you want to add
+        """
         self._formal_parameters.append(fp)
 
-    def __str__(self):
+    def __str__(self) -> str:
         type_params = '<' + ', '.join(map(str, self._type_parameters)) + '> ' \
                 if self._type_parameters \
                 else ''
@@ -158,13 +324,16 @@ class MethodHeader:
         formal_params = '(' + ', '.join(map(str, self._formal_parameters)) + ')'
         return f'{mods}{type_params}{str(self._result)} {self._identifier}{formal_params}'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'MethodHeader({repr(self._identifier)}, {repr(self._is_static)}'\
                 f', {repr(self._is_abstract)}, {repr(self._is_final)}, ' \
                 f'{repr(self._type_parameters)}, {repr(self._throws)}, ' \
                 f'{repr(self._formal_parameters)})'
 
-    def clone(self):
+    def clone(self) -> 'MethodHeader':
+        """
+        Returns a deep clone of this object.
+        """
         res = MethodHeader(self._identifier, self._is_static, self._is_abstract,
                 self._is_final)
         for i in self._type_parameters:
@@ -173,7 +342,14 @@ class MethodHeader:
             res.add_formal_parameter(i.clone())
         return res
 
-    def substitute_type_params(self, substitutions):
+    def substitute_type_params(self,
+            substitutions: Dict[str, Type]) -> None:
+        """
+        Performs some substitutions of type parameters on this MethodHeader.
+
+        Parameters:
+            substitutions: the parameters to substitute.
+        """
         if self._result is not None:
             if self._result._identifier in substitutions:
                 self._result = substitutions[self._result._identifier]
@@ -188,39 +364,94 @@ class MethodHeader:
                 new_subs[k] = v
         for i in self._formal_parameters:
             i.substitute_type_params(new_subs)
-            
-
+        
 
 class Constructor:
-    def __init__(self, type_params = None, throws = None, formal_params = None):
-        self._type_parameters = [] if not type_params else type_params
-        self._throws = [] if not throws else throws
-        self._formal_parameters = [] if not formal_params else formal_params
+    """
+    A Java class constructor
+    """
+    def __init__(self,
+            type_params: Optional[List[TypeParameter]] = None,
+            throws: Optional[List['CompileTimeType']] = None,
+            formal_params: Optional[List[FormalParameter]] = None):
+        """
+        Creates a Java class constructor
 
-    def add_type_parameter(self, tp: TypeParameter):
+        Parameters:
+            type_params: an optional list of type parameters to the constructor
+            throws: an optional list of exceptions being thrown from the constructor
+            formal_params: an optional list of formal parameters to the constructor
+        """
+        self._type_parameters: List[TypeParameter] = [] if not type_params else type_params
+        self._throws: List['CompileTimeType'] = [] if not throws else throws
+        self._formal_parameters: List[FormalParameter] = [] if not formal_params else formal_params
+
+    def substitute_type_params(self,
+            substitutions: Dict[str, Type]) -> None:
+        """
+        Performs some substitutions of type parameters on this MethodHeader.
+
+        Parameters:
+            substitutions: the parameters to substitute.
+        """
+        for i in self._type_parameters:
+            i.substitute_type_params(substitutions)
+        for i in self._throws:
+            i.substitute_type_params(substitutions)
+        for i in self._formal_parameters:
+            i.substitute_type_params(substitutions)
+
+    def add_type_parameter(self, tp: TypeParameter) -> None:
+        """
+        Adds a type parameter to the constructor
+
+        Parameters:
+            tp: the type parameter you want to add
+        """
         self._type_parameters.append(tp)
 
-    def add_formal_parameter(self, fp):
+    def add_formal_parameter(self, fp: FormalParameter) -> None:
+        """
+        Adds a formal parameter to this constructor.
+
+        Parameters:
+            fp: the formal parameter you want to add
+        """
         self._formal_parameters.append(fp)
     
-    def substitute(self, to_be_replaced, replaced_by):
-        for i in self._type_parameters:
-            i.substitute_type_params(to_be_replaced, replaced_by)
-        for i in self._formal_parameters:
-            i.substitute_type_params(to_be_replaced, replaced_by)
+    def substitute(self,
+            to_be_replaced: Type,
+            replaced_by: Type):
+        """
+        Performs some substitution of types. Usually happens on inference
+        variables.
 
-    def __str__(self):
+        Parameters:
+            to_be_replaced: the type to be replaced
+            replaced_by: the type you want to use instead
+        """
+        for i in self._type_parameters:
+            i.substitute(to_be_replaced, replaced_by)
+        for i in self._formal_parameters:
+            i.substitute(to_be_replaced, replaced_by)
+        for i in self._throws:
+            i.substitute(to_be_replaced, replaced_by)
+
+    def __str__(self) -> None:
         type_params = '<' + ', '.join(map(str, self._type_parameters)) + '> ' \
                 if self._type_parameters \
                 else ''
         formal_params = '(' + ', '.join(map(str, self._formal_parameters)) + ')'
         return f'{type_params}{{}}{formal_params}'
 
-    def __repr__(self):
+    def __repr__(self) -> None:
         return f'Constructor({repr(self._type_parameters)}, {repr(self._throws)},' \
                 f' {repr(self._formal_parameters)})'
 
-    def clone(self):
+    def clone(self) -> 'Constructor':
+        """
+        Creates a deep clone of this object.
+        """
         res = Constructor()
         for i in self._type_parameters:
             res.add_type_parameter(i.clone())
@@ -229,53 +460,140 @@ class Constructor:
         return res
 
 class Capture:
-    SUPER = 'super'
-    EXTENDS = 'extends'
-    WILDCARD = '?'
-    EXACT = 'exact'
-    def __init__(self, type = None, base = None):
-        self._type = type
-        self._base = base
-    def set_type(self, type: str, base = None):
-        self._type = type
-        self._base = base
-    def set_base(self, base):
+    """
+    A type argument of a java type.
+    """
+    SUPER: str = 'super'
+    EXTENDS: str = 'extends'
+    WILDCARD: str = '?'
+    EXACT: str = 'exact'
+
+    def __init__(self,
+            type: str = None,
+            base: Type = None):
+        """
+        Creates a type argument.
+
+        Parameters:
+            type: the type of the capture, can either be Capture.SUPER,
+                  Capture.EXTENDS, Capture.WILDCARD or Capture.EXACT; not
+                  to be confused with the base type of the capture
+            base: the base type of this capture
+        """
+        self._type: str = type
+        self._base: Type = base
+
+    def type_erased(self) -> 'Capture':
+        """
+        Returns the equivalent Capture after Type Erasure.
+        """
+        if not self._base:
+            return self.clone()
+        return Capture(self._type, self._base.type_erased())
+
+    def upward_projection(self) -> 'CompileTimeType':
+        """
+        Returns the upward projection of this Capture.
+        upward_projection([t1, t1]) = t1
+        upward_projection([t1, t2]) = upward_projection(t2)
+        """
+        if self._type == Capture.EXACT:
+            return self._base
+        if self._type == Capture.SUPER or self._type == Capture.WILDCARD:
+            return CompileTimeType('Object')
+        if isinstance(self._base, CompileTimeType):
+            return self._base
+        return self._base.upward_projection()
+
+    def downward_projection(self) -> 'CompileTimeType':
+        """
+        Returns the downward projection of this Capture.
+        downward_projection([t1, t1]) = t1
+        downward_projection([t1, t2]) = downward_projection(t1)
+        """
+        if self._type == Capture.EXACT:
+            return self._base
+        if self._type == Capture.EXTENDS or self._type == Capture.WILDCARD:
+            return CompileTimeType('null')
+        if isinstance(self._base, CompileTimeType):
+            return self._base
+        return self._base.downward_projection()
+
+    def set_type(self,
+            type: str,
+            base: Type = None) -> None:
+        """
+        Sets the type and optionally the base of this capture.
+
+        Parameters:
+            type: the type of this capture
+            base: the base type of this capture
+        """
+        self._type: str = type
+        self._base: Type = base
+
+    def set_base(self, base: Type) -> None:
+        """
+        Sets the base type of this capture
+        
+        Parameters:
+            base: the base type of this capture
+        """
         self._base = base
 
-    def substitute(self, to_be_replaced, replaced_by):
+    def substitute(self,
+            to_be_replaced: Type,
+            replaced_by: Type) -> None:
+        """
+        Performs some substitution of types. Usually happens on inference
+        variables.
+
+        Parameters:
+            to_be_replaced: the type to be replaced
+            replaced_by: the type you want to use instead
+        """
         if self._base:
             if self._base == to_be_replaced:
                 self._base = replaced_by
             else:
                 self._base.substitute(to_be_replaced, replaced_by)
 
-    def get_bounds(self):
-        if self._type == Capture.EXACT:
-            lupper = self._base
-            llower = self._base
-        elif self._type == Capture.WILDCARD:
-            lupper = CompileTimeType('Object')
-            llower = None
-        elif self._type == Capture.EXTENDS:
-            lupper = self._base
-            llower = None
-        else:
-            lupper = CompileTimeType('Object')
-            llower = self._base
-        return llower, lupper
+    def get_bounds(self) -> Tuple[Type, Type]:
+        """
+        Gets the lower and upper bounds of this capture.
+        """
+        if self._type == Capture.WILDCARD:
+            return CompileTimeType('null'), CompileTimeType('Object')
+        if self._type == Capture.SUPER:
+            return self._base.clone(), CompileTimeType('Object')
+        if self._type == Capture.EXTENDS:
+            return CompileTimeType('null'), self._base.clone()
+        return self._base.clone(), self._base.clone()
     
-    def __str__(self):
+    def __str__(self) -> str:
         if self._type == Capture.WILDCARD:
             return '?'
         if self._type == Capture.EXACT:
             return str(self._base)
         return f'? {self._type} {str(self._base)}'
-    def __repr__(self):
+
+    def __repr__(self) -> str:
         return f'Capture({repr(self._type)}, {repr(self._base)})'
-    def clone(self):
+
+    def clone(self) -> 'Capture':
+        """
+        Returns a deep clone of this object
+        """
         return Capture(self._type, None if not self._base else self._base.clone())
 
-    def substitute_type_params(self, substitutions):
+    def substitute_type_params(self,
+            substitutions: Dict[str, Type]) -> None:
+        """
+        Performs some substitutions of type parameters on this Capture.
+
+        Parameters:
+            substitutions: the parameters to substitute.
+        """
         for k, v in substitutions.items():
             v = v.clone()
             if isinstance(v, CompileTimeType):
@@ -308,7 +626,7 @@ class Capture:
                     return
         self._base.substitute_type_params(substitutions)
 
-    def __eq__(self, o):
+    def __eq__(self, o) -> bool:
         if isinstance(o, Capture):
             return self._type == o._type and \
                     self._base == o._base
@@ -317,70 +635,136 @@ class Capture:
                     self._base == o
         return False
 
-class TypeVariable:
-    def __init__(self, identifier: str):
-        self._identifier = identifier
-
-    def __str__(self):
-        return self._identifier
-
-    def __repr__(self):
-        return f'TypeVariable({repr(self._identifier)})'
-
-    def substitute_type_params(self, substitutions):
-        pass
-
-    def substitute(self, to_be_replaced, replaced_by):
-        pass
-
-    def clone(self):
-        return TypeVariable(self._identifier)
-
-    
-
 class CompileTimeType:
-    created_types = []
-    PRIMITIVES = {
-            'int': 'Integer',
-            'short': 'Short',
-            'long': 'Long',
-            'double': 'Double',
-            'float': 'Float',
-            'boolean': 'Boolean',
-            'char': 'Character',
-            'byte': 'Byte',
-            'void': 'Void'
-            }
-    def __init__(self, identifier: str, captures = None, nest = None,
-            is_diamond = False, dims = 0):
-        self._identifier = identifier
-        self._captures = captures if captures else []
-        self._nest = nest
-        self._is_diamond = is_diamond
-        self._dims = dims
+    """
+    A compile-time type in a Java program
+    """
+    created_types: List['CompileTimeType'] = []
+    PRIMITIVES: Dict[str, str] = {
+        'int': 'Integer',
+        'short': 'Short',
+        'long': 'Long',
+        'double': 'Double',
+        'float': 'Float',
+        'boolean': 'Boolean',
+        'char': 'Character',
+        'byte': 'Byte',
+        'void': 'Void'
+    }
+    PRIMITIVE_WIDEN_REVERSE: Dict[str, List[str]] = {
+        'double': ['byte', 'short', 'char', 'int', 'long', 'float'],
+        'float': ['byte', 'short', 'char', 'int', 'long'],
+        'long': ['byte', 'short', 'char', 'int'],
+        'int': ['byte', 'short', 'char'],
+        'short': ['byte']
+    }
+
+    def __init__(self,
+            identifier: str,
+            captures: Optional[List[Capture]] = None,
+            nest: Optional['CompileTimeType'] = None,
+            is_diamond: bool = False,
+            dims: int = 0):
+        self._identifier: str = identifier
+        self._captures: List[Capture] = captures if captures else []
+        self._nest: Optional['CompileTimeType'] = nest
+        self._is_diamond: bool = is_diamond
+        self._dims: int = dims
         CompileTimeType.created_types.append(self)
-       
-    def __repr__(self):
+    
+    def type_erased(self) -> 'CompileTimeType':
+        """
+        Returns the equivalent of this type after type erasure.
+        """
+        return CompileTimeType(self._identifier, None, self._nest, False, self._dims)
+
+    def upcast(self, dt, mt, raw_super) -> 'CompileTimeType':
+        """
+        Upcasts this type into another type.
+        """
+        if self.type_erased() == raw_super:
+            return self
+        if self._identifier in dt:
+            decl = dt[self._identifier].clone()
+        elif self._identifier in mt:
+            decl = mt[self._identifier].clone()
+        else:
+            raise Exception(f'{self} does not have a declaration!')
+        if self._captures:
+            decl.substitute_type_params(self._captures)
+        elif self.decl._type_parameters:
+            # raw type, erase supertypes.
+            try:
+                decl._superclass = list(map(
+                    lambda i: i.type_erased(),
+                    decl._superclass))
+            except:
+                pass
+            decl._superinterfaces = list(map(
+                lambda i: i.typed_erased(),
+                decl._superinterfaces
+            ))
+        # Check if superclass is a subtype of rhs
+        try:
+            return decl._superclass.upcast(dt, mt, raw_super)
+        except:
+            pass
+        
+        superinterface = decl._superinterfaces
+        
+        for i in superinterface:
+            try:
+                return i.upcast(dt, mt, raw_super)
+            except:
+                pass
+        raise Exception(f'{self} cannot be upcast to {raw_super}')
+
+    def __repr__(self) -> str:
         return f'CompileTimeType({repr(self._identifier)}, {repr(self._captures)}'\
                 f', {repr(self._nest)}, {repr(self._is_diamond)},' \
                 f' {repr(self._dims)})'
 
-    def substitute(self, to_be_replaced, replaced_by):
+    def substitute(self,
+            to_be_replaced: Type,
+            replaced_by: Type) -> None:
+        """
+        Performs some substitution of types. Usually happens on inference
+        variables.
+
+        Parameters:
+            to_be_replaced: the type to be replaced
+            replaced_by: the type you want to use instead
+        """
         for c in self._captures:
             c.substitute(to_be_replaced, replaced_by)
         if self._nest:
             self._nest.substitute(to_be_replaced, replaced_by)
 
-    def add_capture(self, capture: Capture):
+    def add_capture(self, capture: Capture) -> None:
+        """
+        Adds a capture to this compile time type
+
+        Parameters:
+            capture: the capture to add
+        """
         self._captures.append(capture)
 
-    def nest(self, ctt: 'CompileTimeType'):
+    def nest(self, ctt: 'CompileTimeType') -> None:
+        """
+        Nests a compile time type within this type
+
+        Parameters:
+            ctt: the type to nest
+        """
         if not self._nest:
             self._nest = ctt
         else:
             self._nest.nest(ctt)
 
-    def box(self):
+    def box(self) -> 'CompileTimeType':
+        """
+        Returns the equivalent of this type after boxing conversions
+        """
         dimless = self.clone()
         dimless._dims = 0
         if dimless.is_primitive():
@@ -389,7 +773,10 @@ class CompileTimeType:
             return dimless
         return self
 
-    def unbox(self):
+    def unbox(self) -> 'CompileTimeType':
+        """
+        Returns the equivalent of this type after unboxing conversions
+        """
         res = self.clone()
         res._dims = 0
         for unboxed, boxed in CompileTimeType.PRIMITIVES:
@@ -399,8 +786,7 @@ class CompileTimeType:
                 return res
         return self
 
-
-    def __eq__(self, o):
+    def __eq__(self, o) -> bool:
         if isinstance(o, Capture):
             return o._type == Capture.EXACT and \
                     o._base == self
@@ -415,7 +801,10 @@ class CompileTimeType:
                     self._dims == o._dims
         return False
 
-    def get_attribute_type(self, identifier, dt, mt):
+    def get_attribute_type(self,
+            identifier: str,
+            dt,
+            mt):
         if self._dims > 0:
             if identifier == 'length':
                 return CompileTimeType('int')
@@ -459,8 +848,7 @@ class CompileTimeType:
         else:
             raise Exception(f'{self} not in dt or mt!')
         
-
-    def __str__(self):
+    def __str__(self) -> str:
         cp = ', '.join(map(str, self._captures))
         res = self._identifier
         if cp:
@@ -473,17 +861,30 @@ class CompileTimeType:
             res += '[]' * self._dims
         return res
 
-    def is_primitive(self):
+    def is_primitive(self) -> bool:
         return self._identifier in CompileTimeType.PRIMITIVES and \
                 not self._dims
 
-    def clone(self):
+    def clone(self) -> 'CompileTimeType':
+        """
+        Returns a deep clone of this object
+        """
         return CompileTimeType(self._identifier, [i.clone() for i in self._captures],
                 self._nest.clone() if self._nest else None, self._is_diamond)
 
-    def substitute_type_params(self, substitutions):
+    def substitute_type_params(self,
+            substitutions: Dict[str, Type]) -> None:
+        """
+        Performs some substitutions of type parameters on this CompileTimeType.
+
+        Parameters:
+            substitutions: the parameters to substitute.
+        """
         for i in self._captures:
             i.substitute_type_params(substitutions)
+    
+    def __hash__(self):
+        return hash(str(self))
 
 class JavaClassDeclaration:
     def __init__(self, identifier: str, type_parameters = None,
@@ -774,6 +1175,7 @@ class JavaInterfaceDeclaration:
                 else:
                     res += ';'
         return res + '\n}\n'
+
 class JDKTypeLoader:
     def load(self, path: str = 'jdk_types.json'):
         from json import loads

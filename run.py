@@ -69,6 +69,7 @@ def main():
 
 
     ######## INFERENCE STEP ###########
+    '''
     mt, compilable = inference(td, mt, w)
     
     t_end = time()
@@ -84,6 +85,6 @@ def main():
         t_end = time()
         print(f'Stub generation done in {t_end - t_start}s')
         t_start = t_end
-
+    '''
 if __name__ == '__main__':
     main()
