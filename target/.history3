@@ -94,3 +94,6 @@
 1649607961908:exit
 1649760328418:run -d -o examples/out.java examples/test3.java
 1649763567116:exit
+1649763827789:run examples/test3.java
+1649763837188:run -d -o test.java examples/test3.java
+1649763843998:exit
