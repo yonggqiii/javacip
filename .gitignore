@@ -3,8 +3,8 @@
 *.log
 tmp/
 
-project/
 target/
 .bloop/
 .bsp/
 .metals/
+.gitignore
