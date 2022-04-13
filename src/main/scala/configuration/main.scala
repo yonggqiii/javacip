@@ -57,9 +57,8 @@ def parseConfiguration(
   val c: MutableConfiguration =
     (MutableMap(), (MutableMap(), MutableMap()), MutableSet())
   val decls =
-    s.rightmap(x =>
-      (x, x.findAll(classOf[ClassOrInterfaceDeclaration]).asScala.toVector)
-    )
+    s.rightmap(x => (x, x.findAll(classOf[ClassOrInterfaceDeclaration]).asScala.toVector))
+  // visit each class
   decls
     .flatMap(visitAll(_, _, c))
     .map((l, c) =>
@@ -76,7 +75,7 @@ def parseConfiguration(
       )
     )
 
-def visitAll(
+private def visitAll(
     log: Log,
     cb: (CompilationUnit, Vector[ClassOrInterfaceDeclaration]),
     config: MutableConfiguration
@@ -86,7 +85,7 @@ def visitAll(
     lwo.flatMap((log, config) => visit(decl, config, cu, log))
   )
 
-def visit(
+private def visit(
     c: ClassOrInterfaceDeclaration,
     arg: MutableConfiguration,
     cu: CompilationUnit,
@@ -141,8 +140,8 @@ def visit(
     .filter(_._1 != "")
     .map(x => {
       val bounds =
-        val res = mapWithLog(finalLog, x._2.getTypeBound.asScala.toVector)(
-          (log, t) => resolveASTType(cu, arg, t, log)
+        val res = mapWithLog(finalLog, x._2.getTypeBound.asScala.toVector)((log, t) =>
+          resolveASTType(cu, arg, t, log)
         )
         finalLog = res._1
         res._2
@@ -166,12 +165,10 @@ def visit(
   // make sure that type parameter bounds and supertypes are interfaces/classes
   if isInterface then
     for t <- newDeclaration.extendedTypes do arg._3 += IsInterfaceAssertion(t)
-    for t <- newDeclaration.implementedTypes do
-      arg._3 += IsInterfaceAssertion(t)
+    for t <- newDeclaration.implementedTypes do arg._3 += IsInterfaceAssertion(t)
   else
     for t <- newDeclaration.extendedTypes do arg._3 += IsClassAssertion(t)
-    for t <- newDeclaration.implementedTypes do
-      arg._3 += IsInterfaceAssertion(t)
+    for t <- newDeclaration.implementedTypes do arg._3 += IsInterfaceAssertion(t)
 
   for tp <- actualTypeParameters do
     if tp.isEmpty then ()
@@ -192,23 +189,18 @@ def visit(
 // Get all the FieldAccessExprs in the program
   val expressions = c.findAll(classOf[Expression]).asScala.toVector
   val resolvedExpressions = expressions
-    .foldLeft(LogWithOption(finalLog, Some(NormalType("", 0): Type)))(
-      (lgi, expr) =>
-        lgi.flatMap((lg, i) =>
-          resolveExpression(lg, expr, arg, expressionTypeMemo)
-        )
+    .foldLeft(LogWithOption(finalLog, Some(NormalType("", 0): Type)))((lgi, expr) =>
+      lgi.flatMap((lg, i) => resolveExpression(lg, expr, arg, expressionTypeMemo))
     )
     .rightmap(_ => arg)
   val variableDeclarators =
     c.findAll(classOf[VariableDeclarator]).asScala.toVector
 
   variableDeclarators.foldLeft(resolvedExpressions)((lgc, vd) =>
-    lgc.flatMap((lg, c) =>
-      resolveVariableDeclarator(lg, vd, c, expressionTypeMemo)
-    )
+    lgc.flatMap((lg, c) => resolveVariableDeclarator(lg, vd, c, expressionTypeMemo))
   )
 
-def parseSource(log: Log, filePath: String): LogWithOption[CompilationUnit] =
+private def parseSource(log: Log, filePath: String): LogWithOption[CompilationUnit] =
   scala.util.Try(StaticJavaParser.parse(File(filePath))) match
     case scala.util.Success(x) =>
       LogWithOption(log.addSuccess(s"successfully parsed $filePath"), Some(x))

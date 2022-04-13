@@ -2,8 +2,8 @@ package configuration.resolvers
 
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration
 import com.github.javaparser.ast.expr.*
-import com.github.javaparser.resolution.types.ResolvedType
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
+import com.github.javaparser.resolution.types.*
+import com.github.javaparser.resolution.declarations.*
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
@@ -14,8 +14,9 @@ import configuration.declaration.*
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
+import com.github.javaparser.resolution.types.ResolvedReferenceType
 
-def resolveExpression(
+private[configuration] def resolveExpression(
     log: Log,
     expr: Expression,
     config: MutableConfiguration,
@@ -30,8 +31,7 @@ def resolveExpression(
       //   resolveArrayAccessExpr(log, expr.asFieldAccessExpr, config, memo)
       // else if expr.isArrayInitializerExpr then
       //   resolveArrayInitializerExpr(config, expr.asArrayInitializerExpr, memo)
-      else if expr.isAssignExpr then
-        resolveAssignExpr(log, expr.asAssignExpr, config, memo)
+      else if expr.isAssignExpr then resolveAssignExpr(log, expr.asAssignExpr, config, memo)
       // else if expr.isBinaryExpr then
       //   resolveBinaryExpr(config, expr.asBinaryExpr, memo)
       // else if expr.isCastExpr then
@@ -50,8 +50,7 @@ def resolveExpression(
       //   resolveMethodCallExpr(config, expr.asMethodCallExpr, memo)
       // else if expr.isMethodReferenceExpr then
       //   resolveMethodReferenceExpr(config, expr.asMethodReferenceExpr, memo)
-      else if expr.isNameExpr then
-        resolveNameExpr(log, expr.asNameExpr, config, memo)
+      else if expr.isNameExpr then resolveNameExpr(log, expr.asNameExpr, config, memo)
       // else if expr.isObjectCreationExpr then
       //   resolveObjectCreationExpr(config, expr.asObjectCreationExpr, memo)
       // else if expr.isPatternExpr then
@@ -79,7 +78,7 @@ def resolveExpression(
     memo(expr) = res.opt
     res
 
-def resolveScope(
+private def resolveScope(
     log: Log,
     expr: Expression,
     config: MutableConfiguration,
@@ -142,8 +141,7 @@ def getAttrTypeFromMissingScope(
     // get identifier of attribute
     val attributeIdentifier = expr.getName.getIdentifier
     // get type declaration of scope
-    val declaredType
-        : Either[MissingTypeDeclaration, InferenceVariableMemberTable] =
+    val declaredType: Either[MissingTypeDeclaration, InferenceVariableMemberTable] =
       if config._2._1.contains(scope.identifier) then
         scala.util.Left(config._2._1(scope.identifier))
       else scala.util.Right(config._2._2(scope))
@@ -275,6 +273,7 @@ def resolveMethodCallExpr(
           // there is a scope.
           scala.util.Try(x.calculateResolvedType) match
             case scala.util.Success(resolvedType) =>
+              // scope can be fully resolved
               resolveMethodFromResolvedType(
                 log,
                 expr,
@@ -283,6 +282,7 @@ def resolveMethodCallExpr(
                 resolvedType
               )
             case scala.util.Failure(_) =>
+              // scope cannot be fully resolved, likely an inference variable
               resolveExpression(log, x, config, memo).flatMap(
                 resolveMethodFromInferenceVariable(_, expr, config, memo, _)
               )
@@ -319,6 +319,28 @@ def resolveMethodFromResolvedType(
     config: MutableConfiguration,
     memo: MutableMap[Expression, Option[Type]],
     scope: ResolvedType
+): LogWithOption[Type] =
+  if scope.isPrimitive then LogWithOption(log.addError(s"${scope} cannot have methods!"), None)
+  else if scope.isTypeVariable then
+    resolveMethodFromResolvedTypeParameter(log, expr, config, memo, scope.asTypeParameter)
+  else resolveMethodFromResolvedReferenceType(log, expr, config, memo, scope.asReferenceType)
+
+def resolveMethodFromResolvedTypeParameter(
+    log: Log,
+    expr: MethodCallExpr,
+    config: MutableConfiguration,
+    memo: MutableMap[Expression, Option[Type]],
+    scope: ResolvedTypeParameterDeclaration
+): LogWithOption[Type] =
+  // get erasure of the type parameter
+  val bounds = scope.getBounds.asScala.map(_.getType)
+  ???
+def resolveMethodFromResolvedReferenceType(
+    log: Log,
+    expr: MethodCallExpr,
+    config: MutableConfiguration,
+    memo: MutableMap[Expression, Option[Type]],
+    scope: ResolvedReferenceType
 ): LogWithOption[Type] = ???
 
 def resolveMethodFromResolvedDeclaration(
