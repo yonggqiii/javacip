@@ -4,17 +4,19 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration
 import com.github.javaparser.ast.expr.*
 import com.github.javaparser.resolution.types.*
 import com.github.javaparser.resolution.declarations.*
+import com.github.javaparser.symbolsolver.model.typesystem.ReferenceTypeImpl
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 import scala.collection.mutable.Map as MutableMap
-
+import scala.collection.mutable.Set as MutableSet
+import scala.collection.mutable.{Queue, ArrayBuffer}
 import configuration.MutableConfiguration
 import configuration.declaration.*
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
-import com.github.javaparser.resolution.types.ResolvedReferenceType
 
 private[configuration] def resolveExpression(
     log: Log,
@@ -313,6 +315,7 @@ def resolveMethodCallExpr(
                     ),
                     None
                   )
+
 def resolveMethodFromResolvedType(
     log: Log,
     expr: MethodCallExpr,
@@ -332,9 +335,82 @@ def resolveMethodFromResolvedTypeParameter(
     memo: MutableMap[Expression, Option[Type]],
     scope: ResolvedTypeParameterDeclaration
 ): LogWithOption[Type] =
-  // get erasure of the type parameter
-  val bounds = scope.getBounds.asScala.map(_.getType)
+  // get erasure of the type parameter via BFS
+  val bounds = getAllBoundsOfResolvedTypeParameterDeclaration(scope).flatMap(x =>
+    x.getAllAncestors.asScala.toVector :+ x
+  )
+
+  val allSupertypes = bounds
+    .flatMap(_.getAllAncestors.asScala)
+    .toSet
+
+  val relevantMethods = allSupertypes
+    .flatMap(_.getDeclaredMethods.asScala)
+    .filter(x => x.getName == expr.getNameAsString && expr.getArguments.size == x.getNoParams)
+    .toVector
+
+  val missingSupertypes = allSupertypes
+    .filter(x => config._2._1.contains(x.getId))
+    .toVector
+
+  // case of no methods and no missing supertypes
+  if relevantMethods.size == 0 && missingSupertypes.size == 0 then
+    LogWithOption(
+      log.addError(
+        s"$expr cannot be resolved; method call cannot be found in a fully-declared type"
+      ),
+      None
+    )
+  // case of only one method and no missing supertypes
+  else if relevantMethods.size == 1 && missingSupertypes.size == 0 then
+    val method = relevantMethods(0)
+    val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
+      resolveExpression(_, _, config, memo)
+    )
+    val typeParams = method.getDeclaration.getTypeParameters.asScala.toVector
+
+    val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
+    // size of originalArguments is definitely the same as actualMethodTypes
+    originalArguments.opt match
+      case Some(v) =>
+        for i <- 0 until v.size do config._3 += SubtypeAssertion(v(i), actualMethodTypes(i))
+      case _ => ()
+    method.returnType
+    ???
+  else ???
+
+def matchParamTypesToArgTypes(
+    paramTypes: Vector[Type],
+    argTypes: Vector[Type],
+    methodTypeParameters: Vector[ResolvedTypeParameterDeclaration]
+): Vector[Assertion] =
+  val substitutionList = methodTypeParameters
+    .map(tpd =>
+      val p = TypeParameterName(tpd.getContainerId, tpd.getName)
+      p -> InferenceVariableFactory.createDeclarationInferenceVariable(Left(""))
+    )
+    .toMap
+
   ???
+
+def getAllBoundsOfResolvedTypeParameterDeclaration(
+    tp: ResolvedTypeParameterDeclaration
+): Vector[ResolvedReferenceType] =
+  // get erasure of the type parameter via BFS
+  val frontier = Queue[ResolvedType](tp.getBounds.asScala.map(_.getType).toSeq: _*)
+  val res      = ArrayBuffer[ResolvedReferenceType]()
+  val visited  = MutableSet[ResolvedType]()
+  while !frontier.isEmpty do
+    val typet = frontier.dequeue
+    if !visited.contains(typet) then
+      visited.add(typet)
+      if !typet.isTypeVariable then res.addOne(typet.asReferenceType)
+      else frontier.addAll(typet.asTypeParameter.getBounds.asScala.map(_.getType))
+  if res.isEmpty then
+    val rts = ReflectionTypeSolver()
+    Vector(ReferenceTypeImpl(rts.getSolvedJavaLangObject, rts))
+  else res.toVector
+
 def resolveMethodFromResolvedReferenceType(
     log: Log,
     expr: MethodCallExpr,

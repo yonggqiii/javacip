@@ -4,7 +4,7 @@ import scala.Console.{RED, RESET}
 import configuration.declaration.MissingDeclaration
 
 // Type aliases
-private type SubstitutionList = List[Map[TypeParameterIndex, Type]]
+private type SubstitutionList = List[Map[TTypeParameter, Type]]
 
 /** Represents some type in the program
   */
@@ -48,8 +48,7 @@ sealed trait Type:
         "<" + (0 until numArgs)
           .map(TypeParameterIndex(identifier, _))
           .mkString(", ") + ">"
-    val subsFn: Map[TypeParameterIndex, Type] => String = subs =>
-      subs.mkString(", ")
+    val subsFn: Map[TypeParameterIndex, Type] => String = subs => subs.mkString(", ")
     val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
     s"$start$argumentList$subsstring"
 
@@ -81,11 +80,11 @@ case object Bottom extends Type:
   val numArgs                                               = 0
 
 case object Wildcard extends Type:
-  val upwardProjection                = NormalType("Object", 0, Nil)
-  val downwardProjection              = Bottom
-  val identifier                      = "?"
-  val numArgs                         = 0
-  val substitutions: SubstitutionList = Nil
+  val upwardProjection                                      = NormalType("Object", 0, Nil)
+  val downwardProjection                                    = Bottom
+  val identifier                                            = "?"
+  val numArgs                                               = 0
+  val substitutions: SubstitutionList                       = Nil
   def addSubstitutionLists(substitutions: SubstitutionList) = this
 
 final case class ExtendsWildcardType(
@@ -129,11 +128,13 @@ final case class IntervalType(
   def addSubstitutionLists(substitutions: SubstitutionList) =
     IntervalType(downwardProjection, upwardProjection, substitutions)
 
+sealed trait TTypeParameter extends Type
+
 final case class TypeParameterIndex(
     source: String,
     index: Int,
     substitutions: SubstitutionList = Nil
-) extends Type:
+) extends TTypeParameter:
   val numArgs            = 0
   val identifier         = s"$source#${(84 + index).toChar.toString}"
   val upwardProjection   = this
@@ -145,7 +146,7 @@ final case class TypeParameterName(
     source: String,
     qualifiedName: String,
     substitutions: SubstitutionList = Nil
-) extends Type:
+) extends TTypeParameter:
   val identifier         = s"$source#$qualifiedName"
   val numArgs            = 0
   val upwardProjection   = this

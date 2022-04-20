@@ -1,10 +1,10 @@
 import java.util.List;
 
-class A<T, U, V> extends C {
+class A<T, U, V> extends C<T, U, B> {
   B x;
 
   T main() {
-    C y;
+    C<Integer, String, List<Object>> y;
     x = y;
     // return get(1);
   }
