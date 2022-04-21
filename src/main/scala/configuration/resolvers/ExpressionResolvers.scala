@@ -17,6 +17,10 @@ import configuration.declaration.*
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
+import com.github.javaparser.ast.body.MethodDeclaration
+import com.github.javaparser.utils.Pair
+import scala.annotation.tailrec
+import com.github.javaparser.resolution.MethodUsage
 
 private[configuration] def resolveExpression(
     log: Log,
@@ -48,8 +52,8 @@ private[configuration] def resolveExpression(
       //   resolveInstanceOfExpr(config, expr.asInstanceOfExpr, memo)
       // else if expr.isLambdaExpr then
       //   resolveLambdaExpr(config, expr.asLambdaExpr, memo)
-      // else if expr.isMethodCallExpr then
-      //   resolveMethodCallExpr(config, expr.asMethodCallExpr, memo)
+      else if expr.isMethodCallExpr then
+        resolveMethodCallExpr(log, expr.asMethodCallExpr, config, memo)
       // else if expr.isMethodReferenceExpr then
       //   resolveMethodReferenceExpr(config, expr.asMethodReferenceExpr, memo)
       else if expr.isNameExpr then resolveNameExpr(log, expr.asNameExpr, config, memo)
@@ -325,73 +329,124 @@ def resolveMethodFromResolvedType(
 ): LogWithOption[Type] =
   if scope.isPrimitive then LogWithOption(log.addError(s"${scope} cannot have methods!"), None)
   else if scope.isTypeVariable then
-    resolveMethodFromResolvedTypeParameter(log, expr, config, memo, scope.asTypeParameter)
-  else resolveMethodFromResolvedReferenceType(log, expr, config, memo, scope.asReferenceType)
 
-def resolveMethodFromResolvedTypeParameter(
+    val bounds = getAllBoundsOfResolvedTypeParameterDeclaration(scope.asTypeParameter)
+    resolveMethodFromABunchOfResolvedReferenceTypes(log, expr, config, memo, bounds)
+  else
+    resolveMethodFromABunchOfResolvedReferenceTypes(
+      log,
+      expr,
+      config,
+      memo,
+      Vector(scope.asReferenceType)
+    )
+
+def getMethodsFromResolvedReferenceType(t: ResolvedReferenceType): Set[MethodUsage] =
+  val tpMap   = t.getTypeParametersMap.asScala.toList
+  val methods = t.getDeclaredMethods.asScala.toSet
+  methods.map(substituteTypeParametersInMethodUsage(tpMap, _))
+
+@tailrec
+def substituteTypeParametersInMethodUsage(
+    tpMap: List[Pair[ResolvedTypeParameterDeclaration, ResolvedType]],
+    m: MethodUsage
+): MethodUsage = tpMap match
+  case x :: xs => substituteTypeParametersInMethodUsage(xs, m.replaceTypeParameter(x.a, x.b))
+  case Nil     => m
+
+def resolveMethodFromABunchOfResolvedReferenceTypes(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
     memo: MutableMap[Expression, Option[Type]],
-    scope: ResolvedTypeParameterDeclaration
+    scope: Vector[ResolvedReferenceType]
 ): LogWithOption[Type] =
-  // get erasure of the type parameter via BFS
-  val bounds = getAllBoundsOfResolvedTypeParameterDeclaration(scope).flatMap(x =>
-    x.getAllAncestors.asScala.toVector :+ x
-  )
-
-  val allSupertypes = bounds
-    .flatMap(_.getAllAncestors.asScala)
+  // get all the supertypes where methods may be defined
+  val allSupertypes = scope
+    .flatMap(x => x.getAllAncestors.asScala.toVector :+ x)
     .toSet
 
-  val relevantMethods = allSupertypes
-    .flatMap(_.getDeclaredMethods.asScala)
-    .filter(x => x.getName == expr.getNameAsString && expr.getArguments.size == x.getNoParams)
+  println(allSupertypes)
+
+  // get all the relevant methods, i.e. the methods in the supertypes
+  // that are of the same name and arity
+  val relevantMethods = allSupertypes.toSet
+    .flatMap(getMethodsFromResolvedReferenceType(_))
+    .filter(x =>
+      x.getName == expr.getNameAsString && x.getParamTypes.size == expr.getArguments.size
+    )
     .toVector
 
+  // get all of the missing supertypes
   val missingSupertypes = allSupertypes
     .filter(x => config._2._1.contains(x.getId))
     .toVector
 
   // case of no methods and no missing supertypes
   if relevantMethods.size == 0 && missingSupertypes.size == 0 then
+    println(allSupertypes.flatMap(_.getDeclaredMethods.asScala).map(_.getName))
+    println(expr.getNameAsString)
     LogWithOption(
       log.addError(
-        s"$expr cannot be resolved; method call cannot be found in a fully-declared type"
+        s"$expr cannot be resolved; method declaration cannot be found in a fully-declared type"
       ),
       None
     )
   // case of only one method and no missing supertypes
   else if relevantMethods.size == 1 && missingSupertypes.size == 0 then
+    // get the method in question
     val method = relevantMethods(0)
+    println(method.typeParametersMap)
+    // get the types of the arguments suplied to the method
     val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
       resolveExpression(_, _, config, memo)
     )
+    // get the type parameters of the method
     val typeParams = method.getDeclaration.getTypeParameters.asScala.toVector
-
+    // substitute type parameters with inference variables
+    val substitutionList: List[Map[TTypeParameter, Type]] = (typeParams
+      .map(tpd =>
+        // create the type parameter
+        val p = TypeParameterName(tpd.getContainerId, tpd.getName)
+        // create the inference variable
+        val iv = InferenceVariableFactory.createDeclarationInferenceVariable(
+          // get the source of the inference variable
+          Left(
+            expr
+              .findAncestor(classOf[MethodDeclaration])
+              .toScala
+              .map(_.resolve.getQualifiedSignature)
+              .getOrElse(
+                expr
+                  .findAncestor(classOf[ClassOrInterfaceDeclaration])
+                  // scary
+                  .get
+                  .getNameAsString
+              )
+          )
+        )
+        // add new inference variable to phi
+        config._2._2(iv) = InferenceVariableMemberTable(iv)
+        // return mapping
+        p -> iv
+      )
+      .toMap :: Nil).filter(x => x.size > 0)
+    // get the types of the formal parameters
     val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
+    println(actualMethodTypes)
     // size of originalArguments is definitely the same as actualMethodTypes
     originalArguments.opt match
       case Some(v) =>
-        for i <- 0 until v.size do config._3 += SubtypeAssertion(v(i), actualMethodTypes(i))
+        for i <- 0 until v.size do
+          config._3 += SubtypeAssertion(
+            v(i),
+            actualMethodTypes(i).addSubstitutionLists(substitutionList)
+          )
       case _ => ()
-    method.returnType
-    ???
-  else ???
-
-def matchParamTypesToArgTypes(
-    paramTypes: Vector[Type],
-    argTypes: Vector[Type],
-    methodTypeParameters: Vector[ResolvedTypeParameterDeclaration]
-): Vector[Assertion] =
-  val substitutionList = methodTypeParameters
-    .map(tpd =>
-      val p = TypeParameterName(tpd.getContainerId, tpd.getName)
-      p -> InferenceVariableFactory.createDeclarationInferenceVariable(Left(""))
+    originalArguments.rightmap(_ =>
+      resolveSolvedType(method.returnType).addSubstitutionLists(substitutionList)
     )
-    .toMap
-
-  ???
+  else ???
 
 def getAllBoundsOfResolvedTypeParameterDeclaration(
     tp: ResolvedTypeParameterDeclaration
@@ -410,14 +465,6 @@ def getAllBoundsOfResolvedTypeParameterDeclaration(
     val rts = ReflectionTypeSolver()
     Vector(ReferenceTypeImpl(rts.getSolvedJavaLangObject, rts))
   else res.toVector
-
-def resolveMethodFromResolvedReferenceType(
-    log: Log,
-    expr: MethodCallExpr,
-    config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]],
-    scope: ResolvedReferenceType
-): LogWithOption[Type] = ???
 
 def resolveMethodFromResolvedDeclaration(
     log: Log,

@@ -5,7 +5,7 @@ import configuration.types.*
 sealed trait MissingDeclaration:
   def getAttribute(
       identifier: String,
-      context: List[Map[TypeParameterIndex, Type]]
+      context: List[Map[TTypeParameter, Type]]
   ): Option[Type]
   def addAttribute(identifier: String, attributeType: Type): MissingDeclaration
   def addMethod(
@@ -37,7 +37,7 @@ class MissingTypeDeclaration(
 
   def getAttribute(
       identifier: String,
-      context: List[Map[TypeParameterIndex, Type]]
+      context: List[Map[TTypeParameter, Type]]
   ) =
     if !attributes.contains(identifier) then None
     else Some(attributes(identifier).addSubstitutionLists(context))
@@ -66,9 +66,7 @@ class MissingTypeDeclaration(
       numParams,
       supertypes,
       attributes,
-      methods.map((i, v) =>
-        if i != identifier then (i -> v) else (i -> (v :+ methodSignature))
-      )
+      methods.map((i, v) => if i != identifier then (i -> v) else (i -> (v :+ methodSignature)))
     )
   override def toString =
     val params =
@@ -87,7 +85,7 @@ class InferenceVariableMemberTable(
 ) extends MissingDeclaration:
   def getAttribute(
       identifier: String,
-      context: List[Map[TypeParameterIndex, Type]]
+      context: List[Map[TTypeParameter, Type]]
   ) =
     if !attributes.contains(identifier) then None
     else Some(attributes(identifier).addSubstitutionLists(context))
@@ -112,9 +110,7 @@ class InferenceVariableMemberTable(
     InferenceVariableMemberTable(
       typet,
       attributes,
-      methods.map((i, v) =>
-        if i != identifier then (i -> v) else (i -> (v :+ methodSignature))
-      )
+      methods.map((i, v) => if i != identifier then (i -> v) else (i -> (v :+ methodSignature)))
     )
   override def toString =
     s"type $typet\nattributes:${attributes}\nmethods:$methods"

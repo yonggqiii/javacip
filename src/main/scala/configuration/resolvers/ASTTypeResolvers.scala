@@ -21,18 +21,7 @@ import scala.collection.mutable.Map as MutableMap
 // Package imports
 import configuration.{MutableConfiguration}
 import configuration.declaration.MissingTypeDeclaration
-import configuration.types.{
-  Bottom,
-  ExtendsWildcardType,
-  IntersectionType,
-  NormalType,
-  PrimitiveType,
-  SuperWildcardType,
-  Type,
-  TypeParameterIndex,
-  TypeParameterName,
-  Wildcard
-}
+import configuration.types.*
 import utils.{Log, mapWithLog}
 
 private[configuration] def resolveASTType(
@@ -100,8 +89,8 @@ private def resolveClassOrInterfaceType(
     mapWithLog(log, typeargs)((l, t) => resolveASTType(cu, config, t, l))
 
   // the substitutions of the type to convert
-  val substitutions: Map[TypeParameterIndex, Type] =
-    (0 until arguments.size).foldLeft(Map[TypeParameterIndex, Type]())((m, i) =>
+  val substitutions: Map[TTypeParameter, Type] =
+    (0 until arguments.size).foldLeft(Map[TTypeParameter, Type]())((m, i) =>
       m + (TypeParameterIndex(identifier, i) -> arguments(i))
     )
 
@@ -121,8 +110,7 @@ private def resolveClassOrInterfaceType(
       newInterface.setTypeParameters(newInterfaceTypeParameters)
 
       // Add to Phi
-      config._2._1(identifier) =
-        MissingTypeDeclaration(identifier, arguments.size)
+      config._2._1(identifier) = MissingTypeDeclaration(identifier, arguments.size)
 
       // Add to logs and return type
       (

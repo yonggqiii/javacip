@@ -48,7 +48,7 @@ sealed trait Type:
         "<" + (0 until numArgs)
           .map(TypeParameterIndex(identifier, _))
           .mkString(", ") + ">"
-    val subsFn: Map[TypeParameterIndex, Type] => String = subs => subs.mkString(", ")
+    val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
     val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
     s"$start$argumentList$subsstring"
 

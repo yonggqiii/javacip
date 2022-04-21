@@ -6,17 +6,7 @@ import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclar
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 
-import configuration.types.{
-  Bottom,
-  ExtendsWildcardType,
-  NormalType,
-  PrimitiveType,
-  SuperWildcardType,
-  Type,
-  TypeParameterIndex,
-  TypeParameterName,
-  Wildcard
-}
+import configuration.types.*
 
 private[configuration] def resolveSolvedType(
     typeToConvert: ResolvedType
@@ -25,8 +15,7 @@ private[configuration] def resolveSolvedType(
   else if typeToConvert.isConstraint then ???        // TODO
   else if typeToConvert.isInferenceVariable then ??? // TODO
   else if typeToConvert.isNull then Bottom
-  else if typeToConvert.isPrimitive then
-    PrimitiveType(typeToConvert.asPrimitive.describe)
+  else if typeToConvert.isPrimitive then PrimitiveType(typeToConvert.asPrimitive.describe)
   else if typeToConvert.isReferenceType then
     // get type arguments
     val typet      = typeToConvert.asReferenceType
@@ -34,11 +23,11 @@ private[configuration] def resolveSolvedType(
     // get the identifier
     val identifier = typet.getQualifiedName
     // make type arguments to substitution list
-    val subs: List[Map[TypeParameterIndex, Type]] =
+    val subs: List[Map[TTypeParameter, Type]] =
       if typeParams.size == 0 then Nil
       else
         ((0 until typeParams.size)
-          .foldLeft(Map[TypeParameterIndex, Type]())((m, i) =>
+          .foldLeft(Map[TTypeParameter, Type]())((m, i) =>
             m + (TypeParameterIndex(identifier, i) -> resolveSolvedType(
               typeParams.asScala(i)
             ))
