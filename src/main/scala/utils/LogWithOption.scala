@@ -21,7 +21,7 @@ sealed trait LogWithOption[+A]:
   val log: Log
   def opt: Option[A]
   def foreach[B](f: B => Unit)(using x: A <:< Vector[B]): Unit
-
+  def rightvmap[B, C](f: B => C)(using x: A <:< Vector[B]): LogWithOption[Vector[C]]
 case class LogWithSome[+A](log: Log, some: A) extends LogWithOption[A]:
   def map[B](f: (Log, A) => (Log, B)): LogWithOption[B] =
     val (newLog, newObj) = f(log, some)
@@ -35,6 +35,9 @@ case class LogWithSome[+A](log: Log, some: A) extends LogWithOption[A]:
   def foreach[B](f: B => Unit)(using x: A <:< Vector[B]): Unit =
     val v = x(some)
     v.foreach(f)
+  def rightvmap[B, C](f: B => C)(using x: A <:< Vector[B]): LogWithOption[Vector[C]] =
+    val vector = x(some)
+    LogWithSome(log, vector.map(f))
 
 case class LogWithNone[+A](log: Log) extends LogWithOption[A]:
   def map[B](f: (Log, A) => (Log, B)): LogWithOption[B] = LogWithNone(log)
@@ -45,6 +48,8 @@ case class LogWithNone[+A](log: Log) extends LogWithOption[A]:
   def opt                                                  = None
   def foreach[B](f: B => Unit)(using x: A <:< Vector[B]): Unit =
     ()
+  def rightvmap[B, C](f: B => C)(using x: A <:< Vector[B]): LogWithOption[Vector[C]] =
+    LogWithNone(log)
 object LogWithOption:
   def apply[A](log: Log, option: Option[A]): LogWithOption[A] = option match
     case Some(x) => LogWithSome(log, x)

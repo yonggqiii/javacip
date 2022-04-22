@@ -366,8 +366,6 @@ def resolveMethodFromABunchOfResolvedReferenceTypes(
     .flatMap(x => x.getAllAncestors.asScala.toVector :+ x)
     .toSet
 
-  println(allSupertypes)
-
   // get all the relevant methods, i.e. the methods in the supertypes
   // that are of the same name and arity
   val relevantMethods = allSupertypes.toSet
@@ -382,13 +380,16 @@ def resolveMethodFromABunchOfResolvedReferenceTypes(
     .filter(x => config._2._1.contains(x.getId))
     .toVector
 
+  // get the types of the arguments suplied to the method
+  val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
+    resolveExpression(_, _, config, memo)
+  )
   // case of no methods and no missing supertypes
   if relevantMethods.size == 0 && missingSupertypes.size == 0 then
-    println(allSupertypes.flatMap(_.getDeclaredMethods.asScala).map(_.getName))
-    println(expr.getNameAsString)
     LogWithOption(
       log.addError(
-        s"$expr cannot be resolved; method declaration cannot be found in a fully-declared type"
+        s"$expr cannot be resolved",
+        s"method declaration for ${expr.getNameAsString} cannot be found in fully-declared ${if scope.size == 1 then scope(0) else scope}"
       ),
       None
     )
@@ -396,57 +397,101 @@ def resolveMethodFromABunchOfResolvedReferenceTypes(
   else if relevantMethods.size == 1 && missingSupertypes.size == 0 then
     // get the method in question
     val method = relevantMethods(0)
-    println(method.typeParametersMap)
-    // get the types of the arguments suplied to the method
-    val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
-      resolveExpression(_, _, config, memo)
-    )
-    // get the type parameters of the method
-    val typeParams = method.getDeclaration.getTypeParameters.asScala.toVector
-    // substitute type parameters with inference variables
-    val substitutionList: List[Map[TTypeParameter, Type]] = (typeParams
-      .map(tpd =>
-        // create the type parameter
-        val p = TypeParameterName(tpd.getContainerId, tpd.getName)
-        // create the inference variable
-        val iv = InferenceVariableFactory.createDeclarationInferenceVariable(
-          // get the source of the inference variable
-          Left(
-            expr
-              .findAncestor(classOf[MethodDeclaration])
-              .toScala
-              .map(_.resolve.getQualifiedSignature)
-              .getOrElse(
-                expr
-                  .findAncestor(classOf[ClassOrInterfaceDeclaration])
-                  // scary
-                  .get
-                  .getNameAsString
-              )
-          )
-        )
-        // add new inference variable to phi
-        config._2._2(iv) = InferenceVariableMemberTable(iv)
-        // return mapping
-        p -> iv
+    originalArguments
+      .rightmap(matchMethodCallToMethodUsage(method, _, expr, config))
+      .rightmap(x =>
+        x._1.foreach(y => config._3 += y)
+        x._2
       )
-      .toMap :: Nil).filter(x => x.size > 0)
-    // get the types of the formal parameters
-    val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
-    println(actualMethodTypes)
-    // size of originalArguments is definitely the same as actualMethodTypes
-    originalArguments.opt match
-      case Some(v) =>
-        for i <- 0 until v.size do
-          config._3 += SubtypeAssertion(
-            v(i),
-            actualMethodTypes(i).addSubstitutionLists(substitutionList)
-          )
-      case _ => ()
-    originalArguments.rightmap(_ =>
-      resolveSolvedType(method.returnType).addSubstitutionLists(substitutionList)
-    )
+  // // get the type parameters of the method
+  // val typeParams = method.getDeclaration.getTypeParameters.asScala.toVector
+  // // substitute type parameters with inference variables
+  // val substitutionList: List[Map[TTypeParameter, Type]] = (typeParams
+  //   .map(tpd =>
+  //     // create the type parameter
+  //     val p = TypeParameterName(tpd.getContainerId, tpd.getName)
+  //     // create the inference variable
+  //     val iv = InferenceVariableFactory.createDeclarationInferenceVariable(
+  //       // get the source of the inference variable
+  //       Left(
+  //         expr
+  //           .findAncestor(classOf[MethodDeclaration])
+  //           .toScala
+  //           .map(_.resolve.getQualifiedSignature)
+  //           .getOrElse(
+  //             expr
+  //               .findAncestor(classOf[ClassOrInterfaceDeclaration])
+  //               // scary
+  //               .get
+  //               .getNameAsString
+  //           )
+  //       )
+  //     )
+  //     // add new inference variable to phi
+  //     config._2._2(iv) = InferenceVariableMemberTable(iv)
+  //     // return mapping
+  //     p -> iv
+  //   )
+  //   .toMap :: Nil).filter(x => x.size > 0)
+  // // get the types of the formal parameters
+  // val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
+  // // size of originalArguments is definitely the same as actualMethodTypes
+  // originalArguments.opt match
+  //   case Some(v) =>
+  //     for i <- 0 until v.size do
+  //       config._3 += SubtypeAssertion(
+  //         v(i),
+  //         actualMethodTypes(i).addSubstitutionLists(substitutionList)
+  //       )
+  //   case _ => ()
+  // originalArguments.rightmap(_ =>
+  //   resolveSolvedType(method.returnType).addSubstitutionLists(substitutionList)
+  // )
   else ???
+
+def matchMethodCallToMethodUsage(
+    method: MethodUsage,
+    arguments: Vector[Type],
+    expr: MethodCallExpr,
+    config: MutableConfiguration
+) =
+  // get the type parameters of the method
+  val typeParams = method.getDeclaration.getTypeParameters.asScala.toVector
+  // substitute type parameters with inference variables
+  val substitutionList: List[Map[TTypeParameter, Type]] = (typeParams
+    .map(tpd =>
+      // create the type parameter
+      val p = TypeParameterName(tpd.getContainerId, tpd.getName)
+      // create the inference variable
+      val iv = InferenceVariableFactory.createDeclarationInferenceVariable(
+        // get the source of the inference variable
+        Left(
+          expr
+            .findAncestor(classOf[MethodDeclaration])
+            .toScala
+            .map(_.resolve.getQualifiedSignature)
+            .getOrElse(
+              expr
+                .findAncestor(classOf[ClassOrInterfaceDeclaration])
+                // scary
+                .get
+                .getNameAsString
+            )
+        )
+      )
+      // add new inference variable to phi
+      config._2._2(iv) = InferenceVariableMemberTable(iv)
+      // return mapping
+      p -> iv
+    )
+    .toMap :: Nil).filter(x => x.size > 0)
+  // get the types of the formal parameters
+  val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
+  // size of originalArguments is definitely the same as actualMethodTypes
+  val x = arguments
+    .zip(actualMethodTypes)
+    .map(x => SubtypeAssertion(x._1, x._2))
+  (x, resolveSolvedType(method.returnType).addSubstitutionLists(substitutionList))
 
 def getAllBoundsOfResolvedTypeParameterDeclaration(
     tp: ResolvedTypeParameterDeclaration
