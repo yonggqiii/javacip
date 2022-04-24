@@ -24,5 +24,10 @@ case class IsClassAssertion(identifier: Type) extends Assertion:
 case class IsInterfaceAssertion(identifier: Type) extends Assertion:
   override def toString = s"isInterface($identifier)"
 
-case class HasMethodAssertion(source: Type, method: MethodSignature) extends Assertion:
-  override def toString = s"$source has $method"
+case class HasMethodAssertion(
+    source: Type,
+    methodName: String,
+    args: Vector[Type],
+    returnType: Type
+) extends Assertion:
+  override def toString = s"$source has $returnType $methodName($args)"

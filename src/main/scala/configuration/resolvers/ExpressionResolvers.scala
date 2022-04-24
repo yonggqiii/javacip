@@ -1,7 +1,9 @@
 package configuration.resolvers
 
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration
+import com.github.javaparser.ast.body.{ClassOrInterfaceDeclaration, MethodDeclaration}
 import com.github.javaparser.ast.expr.*
+import com.github.javaparser.utils.Pair
+import com.github.javaparser.resolution.MethodUsage
 import com.github.javaparser.resolution.types.*
 import com.github.javaparser.resolution.declarations.*
 import com.github.javaparser.symbolsolver.model.typesystem.ReferenceTypeImpl
@@ -17,10 +19,7 @@ import configuration.declaration.*
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
-import com.github.javaparser.ast.body.MethodDeclaration
-import com.github.javaparser.utils.Pair
 import scala.annotation.tailrec
-import com.github.javaparser.resolution.MethodUsage
 
 private[configuration] def resolveExpression(
     log: Log,
@@ -100,7 +99,7 @@ private def resolveScope(
       case x @ _ => x
   )
 
-def resolveFieldAccessExpr(
+private def resolveFieldAccessExpr(
     log: Log,
     expr: FieldAccessExpr,
     config: MutableConfiguration,
@@ -133,7 +132,7 @@ def resolveFieldAccessExpr(
           )
       getAttrTypeFromMissingScope(logWithScope, expr, config, memo)
 
-def getAttrTypeFromMissingScope(
+private def getAttrTypeFromMissingScope(
     logWithScope: LogWithOption[Type],
     expr: com.github.javaparser.ast.nodeTypes.NodeWithSimpleName[?],
     config: MutableConfiguration,
@@ -188,18 +187,20 @@ def getAttrTypeFromMissingScope(
       })
   )
 
-def resolveArrayAccessExpr(
+private def resolveArrayAccessExpr(
     config: MutableConfiguration,
     expr: ArrayAccessExpr,
     memo: MutableMap[Expression, Type]
 ): Type =
   ???
-def resolveArrayInitializerExpr(
+
+private def resolveArrayInitializerExpr(
     config: MutableConfiguration,
     expr: ArrayInitializerExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveAssignExpr(
+
+private def resolveAssignExpr(
     log: Log,
     expr: AssignExpr,
     config: MutableConfiguration,
@@ -214,45 +215,53 @@ def resolveAssignExpr(
       t
     )
   )
-def resolveBinaryExpr(
+
+private def resolveBinaryExpr(
     config: MutableConfiguration,
     expr: BinaryExpr,
     memo: MutableMap[Expression, Type]
 ): Type =
   ???
-def resolveCastExpr(
+
+private def resolveCastExpr(
     config: MutableConfiguration,
     expr: CastExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveClassExpr(
+
+private def resolveClassExpr(
     config: MutableConfiguration,
     expr: ClassExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveConditionalExpr(
+
+private def resolveConditionalExpr(
     config: MutableConfiguration,
     expr: ConditionalExpr,
     memo: MutableMap[Expression, Type]
 ): Type =
   ???
-def resolveEnclosedExpr(
+
+private def resolveEnclosedExpr(
     config: MutableConfiguration,
     expr: EnclosedExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveInstanceOfExpr(
+
+private def resolveInstanceOfExpr(
     config: MutableConfiguration,
     expr: InstanceOfExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveLambdaExpr(
+
+private def resolveLambdaExpr(
     config: MutableConfiguration,
     expr: LambdaExpr,
     memo: MutableMap[Expression, Type]
 ): Type =
   ???
-def resolveMethodCallExpr(
+
+private def resolveMethodCallExpr(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
@@ -261,19 +270,6 @@ def resolveMethodCallExpr(
   try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
   catch
     case e: Throwable =>
-      /*
-       * cases:
-       * 1) scope can be found, is an inference variable
-       * 2) scope can be found, is not an inference variable (can be resolved)
-       * 3) scope cannot be found, enclosing class/interface is scope
-       *
-       * then,
-       *
-       * 3a) t is not fully declared
-       * 3b) t is fully declared, method cannot be found
-       * 3c) t is fully declared, one method is found but arguments are unsolved
-       * 3d) t is fully declared, more than one method is found and arguments are unsolved
-       */
       expr.getScope.toScala match
         case Some(x) =>
           // there is a scope.
@@ -313,23 +309,29 @@ def resolveMethodCallExpr(
                     resolvedDecl
                   )
                 case scala.util.Failure(_) =>
-                  LogWithOption(
-                    log.addError(
-                      s"${decl.getFullyQualifiedName} cannot be resolved?"
-                    ),
-                    None
-                  )
+                  LogWithNone(log.addError(s"${decl.getFullyQualifiedName} cannot be resolved?"))
 
-def resolveMethodFromResolvedType(
+private def resolveMethodFromResolvedType(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
     memo: MutableMap[Expression, Option[Type]],
     scope: ResolvedType
 ): LogWithOption[Type] =
-  if scope.isPrimitive then LogWithOption(log.addError(s"${scope} cannot have methods!"), None)
+  if scope.isPrimitive then
+    // LogWithOption(log.addError(s"${scope} cannot have methods!"), None)
+    resolveMethodFromABunchOfResolvedReferenceTypes(
+      log,
+      expr,
+      config,
+      memo,
+      Vector(
+        com.github.javaparser.symbolsolver.resolution.typeinference.TypeHelper
+          .toBoxedType(scope.asPrimitive)
+          .asReferenceType
+      )
+    )
   else if scope.isTypeVariable then
-
     val bounds = getAllBoundsOfResolvedTypeParameterDeclaration(scope.asTypeParameter)
     resolveMethodFromABunchOfResolvedReferenceTypes(log, expr, config, memo, bounds)
   else
@@ -341,20 +343,20 @@ def resolveMethodFromResolvedType(
       Vector(scope.asReferenceType)
     )
 
-def getMethodsFromResolvedReferenceType(t: ResolvedReferenceType): Set[MethodUsage] =
+private def getMethodsFromResolvedReferenceType(t: ResolvedReferenceType): Set[MethodUsage] =
   val tpMap   = t.getTypeParametersMap.asScala.toList
   val methods = t.getDeclaredMethods.asScala.toSet
   methods.map(substituteTypeParametersInMethodUsage(tpMap, _))
 
 @tailrec
-def substituteTypeParametersInMethodUsage(
+private def substituteTypeParametersInMethodUsage(
     tpMap: List[Pair[ResolvedTypeParameterDeclaration, ResolvedType]],
     m: MethodUsage
 ): MethodUsage = tpMap match
   case x :: xs => substituteTypeParametersInMethodUsage(xs, m.replaceTypeParameter(x.a, x.b))
   case Nil     => m
 
-def resolveMethodFromABunchOfResolvedReferenceTypes(
+private def resolveMethodFromABunchOfResolvedReferenceTypes(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
@@ -365,14 +367,13 @@ def resolveMethodFromABunchOfResolvedReferenceTypes(
   val allSupertypes = scope
     .flatMap(x => x.getAllAncestors.asScala.toVector :+ x)
     .toSet
-
+  val nameOfMethod   = expr.getNameAsString
+  val numOfArguments = expr.getArguments.size
   // get all the relevant methods, i.e. the methods in the supertypes
   // that are of the same name and arity
   val relevantMethods = allSupertypes.toSet
     .flatMap(getMethodsFromResolvedReferenceType(_))
-    .filter(x =>
-      x.getName == expr.getNameAsString && x.getParamTypes.size == expr.getArguments.size
-    )
+    .filter(x => x.getName == nameOfMethod && x.getParamTypes.size == numOfArguments)
     .toVector
 
   // get all of the missing supertypes
@@ -389,13 +390,15 @@ def resolveMethodFromABunchOfResolvedReferenceTypes(
     LogWithOption(
       log.addError(
         s"$expr cannot be resolved",
-        s"method declaration for ${expr.getNameAsString} cannot be found in fully-declared ${if scope.size == 1 then scope(0) else scope}"
+        s"method declaration for ${nameOfMethod} cannot be" +
+          s" found in fully-declared ${if scope.size == 1 then scope(0) else scope}"
       ),
       None
     )
   // case of only one method and no missing supertypes
   else if relevantMethods.size == 1 && missingSupertypes.size == 0 then
-    // get the method in question
+    // get the method in question since we unambiguously must be referring
+    // to this method
     val method = relevantMethods(0)
     originalArguments
       .rightmap(matchMethodCallToMethodUsage(method, _, expr, config))
@@ -403,12 +406,59 @@ def resolveMethodFromABunchOfResolvedReferenceTypes(
         x._1.foreach(y => config._3 += y)
         x._2
       )
+  // case of no methods and only one missing supertype
+  else if relevantMethods.size == 0 && missingSupertypes.size == 1 then
+    // get and/or add the method to the declaration since we must be
+    // umambiguously referring to this method
+    // the type itself
+    val missingTType = resolveSolvedType(missingSupertypes(0))
+    // the declaration of the type
+    val missingDeclaration = config._2._1(missingSupertypes(0).getId)
+    // the context (type arguments) of this type
+    val context = missingTType.substitutions
+    val z = originalArguments.rightflatMap(argTypes =>
+      missingDeclaration.getMethodReturnType(nameOfMethod, argTypes, context)
+    )
+    z match
+      case LogWithSome(_, _) => z
+      case LogWithNone(_)    =>
+        // either the original arguments were None, or the method doesn't exist
+        // in the declaration yet
+        originalArguments.rightmap(args =>
+          val returnType = createInferenceVariableForMethodCalls(expr, config)
+          // create the new declaration by adding the method
+          config._2._1 += (missingDeclaration.identifier -> missingDeclaration
+            .addMethod(nameOfMethod, args, returnType, context))
+          returnType
+        )
   else
+    // we're not sure what the return type should be, so we have a placeholder
+    // and encode the choices using a dijunctive assertion of conjuctive assertions
     val returnType = createInferenceVariableForMethodCalls(expr, config)
+    // assertions from the bunch of declared methods (might be empty)
+    val ambiguousDeclaredMethods = originalArguments
+      .rightmap(args =>
+        relevantMethods.map(method => matchMethodCallToMethodUsage(method, args, expr, config))
+      )
+      .rightvmap[(Vector[SubtypeAssertion], Type), ConjunctiveAssertion](tp =>
+        val (assts, rt) = tp
+        ConjunctiveAssertion(assts :+ EquivalenceAssertion(returnType, rt))
+      )
+    val ambiguousMissingTypes = originalArguments.rightmap(args =>
+      // create conjunctive assertions
+      missingSupertypes.map(rrt =>
+        val missingTType = resolveSolvedType(rrt)
+        HasMethodAssertion(missingTType, nameOfMethod, args, returnType)
+      )
+    )
+    (ambiguousDeclaredMethods, ambiguousMissingTypes) match
+      case (LogWithSome(log1, conjassts), LogWithSome(log2, hmassts)) =>
+        config._3 += DisjunctiveAssertion(conjassts ++ hmassts)
+        LogWithSome(log1, returnType)
+      case (LogWithNone(log), _) => LogWithNone(log)
+      case (_, LogWithNone(log)) => LogWithNone(log)
 
-    ???
-
-def createInferenceVariableForMethodCalls(
+private def createInferenceVariableForMethodCalls(
     expr: MethodCallExpr,
     config: MutableConfiguration
 ): NonBoundedInferenceVariable =
@@ -432,7 +482,7 @@ def createInferenceVariableForMethodCalls(
   config._2._2(iv) = InferenceVariableMemberTable(iv)
   iv
 
-def matchMethodCallToMethodUsage(
+private def matchMethodCallToMethodUsage(
     method: MethodUsage,
     arguments: Vector[Type],
     expr: MethodCallExpr,
@@ -461,7 +511,7 @@ def matchMethodCallToMethodUsage(
     .map(x => SubtypeAssertion(x._1, x._2))
   (x, resolveSolvedType(method.returnType).addSubstitutionLists(substitutionList))
 
-def getAllBoundsOfResolvedTypeParameterDeclaration(
+private def getAllBoundsOfResolvedTypeParameterDeclaration(
     tp: ResolvedTypeParameterDeclaration
 ): Vector[ResolvedReferenceType] =
   // get erasure of the type parameter via BFS
@@ -479,7 +529,7 @@ def getAllBoundsOfResolvedTypeParameterDeclaration(
     Vector(ReferenceTypeImpl(rts.getSolvedJavaLangObject, rts))
   else res.toVector
 
-def resolveMethodFromResolvedDeclaration(
+private def resolveMethodFromResolvedDeclaration(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
@@ -487,7 +537,7 @@ def resolveMethodFromResolvedDeclaration(
     scope: ResolvedReferenceTypeDeclaration
 ): LogWithOption[Type] = ???
 
-def resolveMethodFromInferenceVariable(
+private def resolveMethodFromInferenceVariable(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
@@ -495,12 +545,13 @@ def resolveMethodFromInferenceVariable(
     scope: Type
 ): LogWithOption[Type] = ???
 
-def resolveMethodReferenceExpr(
+private def resolveMethodReferenceExpr(
     config: MutableConfiguration,
     expr: MethodReferenceExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveNameExpr(
+
+private def resolveNameExpr(
     log: Log,
     expr: NameExpr,
     config: MutableConfiguration,
@@ -556,39 +607,45 @@ def resolveNameExpr(
         memo
       )
 
-def resolveObjectCreationExpr(
+private def resolveObjectCreationExpr(
     config: MutableConfiguration,
     expr: ObjectCreationExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolvePatternExpr(
+
+private def resolvePatternExpr(
     config: MutableConfiguration,
     expr: PatternExpr,
     memo: MutableMap[Expression, Type]
 ): Type =
   ???
-def resolveSuperExpr(
+
+private def resolveSuperExpr(
     config: MutableConfiguration,
     expr: SuperExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveSwitchExpr(
+
+private def resolveSwitchExpr(
     config: MutableConfiguration,
     expr: SwitchExpr,
     memo: MutableMap[Expression, Type]
 ): Type =
   ???
-def resolveThisExpr(
+
+private def resolveThisExpr(
     config: MutableConfiguration,
     expr: ThisExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveUnaryExpr(
+
+private def resolveUnaryExpr(
     config: MutableConfiguration,
     expr: UnaryExpr,
     memo: MutableMap[Expression, Type]
 ): Type = ???
-def resolveVariableDeclarationExpr(
+
+private def resolveVariableDeclarationExpr(
     log: Log,
     expr: VariableDeclarationExpr,
     config: MutableConfiguration,
