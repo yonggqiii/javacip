@@ -159,11 +159,16 @@ private def getAttrTypeFromMissingScope(
       .map((log, _))
       .getOrElse({
         // create the new declared type of the attribute
-        val newIV = InferenceVariableFactory.createAttributeInferenceVariable(
-          declaredType match
-            case scala.util.Left(x)  => scala.util.Left(x.identifier)
-            case scala.util.Right(x) => scala.util.Right(x.typet)
-        )
+        val source = declaredType match
+          case scala.util.Left(x)  => scala.util.Left(x.identifier)
+          case scala.util.Right(x) => scala.util.Right(x.typet)
+        val parameterChoices: Set[TTypeParameter] = declaredType match
+          case scala.util.Left(x) =>
+            val numParams = x.numParams
+            (0 until numParams).map(TypeParameterIndex(x.identifier, _)).toSet
+          case scala.util.Right(_) => Set()
+        val newIV = InferenceVariableFactory
+          .createInferenceVariable(source, Nil, true, parameterChoices, false)
         // get the actual type of the attribute
         val attrType: Type = newIV.addSubstitutionLists(context)
         // add attribute to the type declaration and add to phi
@@ -461,26 +466,49 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
 private def createInferenceVariableForMethodCalls(
     expr: MethodCallExpr,
     config: MutableConfiguration
-): NonBoundedInferenceVariable =
-  val iv = InferenceVariableFactory.createDeclarationInferenceVariable(
-    // get the source of the inference variable
-    Left(
-      expr
-        .findAncestor(classOf[MethodDeclaration])
-        .toScala
-        .map(_.resolve.getQualifiedSignature)
-        .getOrElse(
-          expr
-            .findAncestor(classOf[ClassOrInterfaceDeclaration])
-            // scary
-            .get
-            .getNameAsString
-        )
-    )
+): InferenceVariable =
+  // get the parameter choices
+  val parameterChoices = getParamChoicesFromExpression(expr)
+  val source = Left(
+    expr
+      .findAncestor(classOf[MethodDeclaration])
+      .toScala
+      .map(_.resolve.getQualifiedSignature)
+      .getOrElse(
+        expr
+          .findAncestor(classOf[ClassOrInterfaceDeclaration])
+          // scary
+          .get
+          .getNameAsString
+      )
   )
-  // add new inference variable to phi
+
+  val iv = InferenceVariableFactory
+    .createInferenceVariable(source, Nil, true, parameterChoices, false)
   config._2._2(iv) = InferenceVariableMemberTable(iv)
   iv
+
+def getParamChoicesFromExpression(expr: Expression) =
+  // get the parameter choices
+  val methodTypeParams = expr
+    .findAncestor(classOf[MethodDeclaration])
+    .toScala
+    .map(_.getTypeParameters.asScala.toVector.map(x => x.resolve))
+    .getOrElse(Vector())
+  val classTypeParams =
+    val decl = expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala
+    decl match
+      case None => Vector()
+      case Some(x) =>
+        val declParams = x.getTypeParameters.asScala.toVector
+        (0 until declParams.length)
+          .filter(i =>
+            !methodTypeParams
+              .map(_.asTypeParameter.getName)
+              .contains(declParams(i).getNameAsString)
+          )
+          .map(i => TypeParameterIndex(x.getName.getIdentifier, i))
+  methodTypeParams.map(resolveSolvedTypeVariable(_)).toSet ++ classTypeParams
 
 private def matchMethodCallToMethodUsage(
     method: MethodUsage,

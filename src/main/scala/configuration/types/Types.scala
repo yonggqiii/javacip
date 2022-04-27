@@ -169,50 +169,74 @@ final case class IntersectionType(
   def addSubstitutionLists(substitutions: SubstitutionList) =
     IntersectionType(types.map(_.addSubstitutionLists(substitutions)))
 
-final case class NonBoundedInferenceVariable(
-    source: scala.util.Either[String, Type],
+final case class InferenceVariable(
     id: Int,
+    source: Either[String, Type],
     substitutions: SubstitutionList = Nil,
-    canBeSubsequentlyBounded: Boolean = false
+    canBeSubsequentlyBounded: Boolean = false,
+    parameterChoices: Set[TTypeParameter] = Set(),
+    _choices: Set[Type] = Set()
 ) extends Type:
-  val numArgs                  = 0
-  val identifier               = s"τ$id"
-  val exclusions: Vector[Type] = Vector()
-  val upwardProjection         = this
-  val downwardProjection       = this
+  val numArgs            = 0
+  val identifier         = s"τ$id($_choices)"
+  val upwardProjection   = this
+  val downwardProjection = this
   def addSubstitutionLists(substitutions: SubstitutionList) =
-    NonBoundedInferenceVariable(
-      source,
+    InferenceVariable(
       id,
-      this.substitutions ::: substitutions
+      source,
+      this.substitutions ::: substitutions,
+      canBeSubsequentlyBounded,
+      parameterChoices,
+      _choices
     )
+  def choices = _choices.map(_.addSubstitutionLists(substitutions))
 
-final case class BoundedInferenceVariable(
-    source: scala.util.Either[String, Type],
+final case class Alpha(
     id: Int,
-    substitutions: SubstitutionList = Nil
+    source: Either[String, Type],
+    substitutions: SubstitutionList = Nil,
+    canBeBounded: Boolean = false,
+    parameterChoices: Set[TTypeParameter] = Set()
 ) extends Type:
-  val numArgs                  = 0
-  val identifier               = s"τ$id"
-  val exclusions: Vector[Type] = Vector()
-  val upwardProjection         = this
-  val downwardProjection       = this
+  val numArgs            = 0
+  val identifier         = s"α$id"
+  val upwardProjection   = this
+  val downwardProjection = this
   def addSubstitutionLists(substitutions: SubstitutionList) =
-    NonBoundedInferenceVariable(
-      source,
+    Alpha(
       id,
-      this.substitutions ::: substitutions
+      source,
+      this.substitutions ::: substitutions,
+      canBeBounded,
+      parameterChoices
     )
 
 object InferenceVariableFactory:
   var id = 0
-  def createDeclarationInferenceVariable(
-      source: scala.util.Either[String, Type]
+  def createInferenceVariable(source: scala.util.Either[String, Type],
+    substitutions: SubstitutionList = Nil,
+    canBeSubsequentlyBounded: Boolean = false,
+    parameterChoices: Set[TTypeParameter] = Set(),
+    canBeBounded: Boolean = false,
   ) =
     id += 1
-    NonBoundedInferenceVariable(source, id)
-  def createAttributeInferenceVariable(
-      source: scala.util.Either[String, Type]
+    val choices =
+      if !canBeBounded then
+        parameterChoices ++ Set[Type](createAlpha(source, Nil, canBeSubsequentlyBounded || canBeBounded, parameterChoices))
+      else
+        val boundedParams = parameterChoices.flatMap(x => Set(x, SuperWildcardType(x), ExtendsWildcardType(x)))
+        boundedParams ++ Set(Wildcard,
+          createAlpha(source, Nil, true, parameterChoices),
+          SuperWildcardType(createAlpha(source, Nil, true, parameterChoices)),
+          ExtendsWildcardType(createAlpha(source, Nil, true, parameterChoices))
+        )
+    InferenceVariable(id, source, substitutions, canBeSubsequentlyBounded, parameterChoices, choices)
+
+  def createAlpha(source: scala.util.Either[String, Type],
+    substitutions: SubstitutionList = Nil,
+    canBeBounded: Boolean = false,
+    parameterChoices: Set[TTypeParameter] = Set()
   ) =
     id += 1
-    NonBoundedInferenceVariable(source, id, canBeSubsequentlyBounded = true)
+    Alpha(id, source, substitutions, canBeBounded, parameterChoices)

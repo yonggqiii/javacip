@@ -28,10 +28,12 @@ import configuration.resolvers.{
   resolveASTType,
   resolveExpression,
   resolveSolvedType,
+  resolveStatement,
   resolveVariableDeclarator
 }
 import configuration.types.*
 import utils.*
+import com.github.javaparser.ast.stmt.Statement
 // Type aliases
 private type MutableDelta = MutableMap[String, FixedDeclaration]
 private type MutablePhi = (
@@ -44,7 +46,7 @@ private type MutableConfiguration = (MutableDelta, MutablePhi, MutableOmega)
 def parseConfiguration(
     log: Log,
     filePath: String
-): LogWithOption[MutableConfiguration] =
+): LogWithOption[Configuration] =
   // Use the reflection type solver to solve types in the jdk
   val typeSolver = ReflectionTypeSolver()
   // Create JavaSymbolSolver using the type solver
@@ -74,6 +76,7 @@ def parseConfiguration(
         c
       )
     )
+    .rightmap(x => Configuration(x._1.toMap, x._2._1.toMap, x._2._2.toMap, x._3.toList))
 
 private def visitAll(
     log: Log,
@@ -91,63 +94,26 @@ private def visit(
     cu: CompilationUnit,
     log: Log
 ): LogWithOption[MutableConfiguration] =
-  /* The goal is to add the class/interface declaration to Delta.
-   * To do so, first, we obtain some basic information about the class/interface.*/
-  val isInterface = c.isInterface
-  val isAbstract  = c.isAbstract || isInterface
-  val isFinal     = c.isFinal
-  val identifier  = c.getName.getIdentifier
-  var finalLog    = log
-  /* Next, we need to obtain the type parameters of the class/interface.
-   * The type parameters may have bounds, so we need to obtain the them
-   * as types and/or add them to the AST for the symbol solver to work.
-   * To do so, we use the resolveASTType method. */
+  val isInterface    = c.isInterface
+  val isAbstract     = c.isAbstract || isInterface
+  val isFinal        = c.isFinal
+  val identifier     = c.getName.getIdentifier
+  var finalLog       = log
   val typeParameters = c.getTypeParameters.asScala.toVector
   val actualTypeParameters =
-    val res = mapWithLog(
-      log,
-      typeParameters.map(x => x.getTypeBound.asScala.toVector)
-    )((lg, bds) => mapWithLog(lg, bds)((l, t) => resolveASTType(cu, arg, t, l)))
+    val res = getActualTypeParameters(finalLog, typeParameters, cu, arg)
     finalLog = res._1
     res._2
 
-  /* We also obtain the supertypes of the class/interface. Again, we may
-   * need to add them to the AST for the symbol solver to work. */
-  val extendedTypes =
-    val res =
-      mapWithLog(finalLog, c.getExtendedTypes.asScala.toVector)((log, t) =>
-        resolveASTType(cu, arg, t, log)
-      )
+  val (extendedTypes, implementedTypes) =
+    val res = getSupertypes(finalLog, c, cu, arg)
     finalLog = res._1
-    res._2
-  val implementedTypes =
-    val res =
-      mapWithLog(finalLog, c.getImplementedTypes.asScala.toVector)((log, t) =>
-        resolveASTType(cu, arg, t, log)
-      )
-    finalLog = res._1
-    res._2
+    (res._2, res._3)
 
-  val methodTypeParameters = c
-    .findAll(classOf[TypeParameter])
-    .asScala
-    .map(x => {
-      x.findAncestor(classOf[MethodDeclaration]).toScala match
-        case Some(y) =>
-          (y.resolve.getQualifiedSignature + "#" + x.getNameAsString, x)
-        case None => ("", x)
-    })
-    .filter(_._1 != "")
-    .map(x => {
-      val bounds =
-        val res = mapWithLog(finalLog, x._2.getTypeBound.asScala.toVector)((log, t) =>
-          resolveASTType(cu, arg, t, log)
-        )
-        finalLog = res._1
-        res._2
-      (x._1, bounds)
-    })
-    .foldLeft(Map[String, Vector[Type]]())(_ + _)
+  val methodTypeParameters =
+    val res = getMethodTypeParameters(finalLog, c, cu, arg)
+    finalLog = res._1
+    res._2
 
   val newDeclaration = FixedDeclaration(
     identifier,
@@ -159,25 +125,10 @@ private def visit(
     implementedTypes,
     methodTypeParameters
   )
-  // add the declaration to delta
+
   arg._1 += (identifier -> newDeclaration)
 
-  // make sure that type parameter bounds and supertypes are interfaces/classes
-  if isInterface then
-    for t <- newDeclaration.extendedTypes do arg._3 += IsInterfaceAssertion(t)
-    for t <- newDeclaration.implementedTypes do arg._3 += IsInterfaceAssertion(t)
-  else
-    for t <- newDeclaration.extendedTypes do arg._3 += IsClassAssertion(t)
-    for t <- newDeclaration.implementedTypes do arg._3 += IsInterfaceAssertion(t)
-
-  for tp <- actualTypeParameters do
-    if tp.isEmpty then ()
-    else
-      for bound <- tp.tail do
-        bound match
-          case x @ NormalType(_, _, _) =>
-            arg._3 += IsInterfaceAssertion(x)
-          case _ => ()
+  addAssertionsOnBoundsAndSupertypes(newDeclaration, actualTypeParameters, arg)
 
   // Get all the types being referenced in the program
   finalLog = mapWithLog(
@@ -185,20 +136,26 @@ private def visit(
     c.findAll(classOf[ClassOrInterfaceType]).asScala.toVector
   )((l, t) => resolveASTType(cu, arg, t, l))._1
 
+  // resolve expressions, bodies and statements
   val expressionTypeMemo: MutableMap[Expression, Option[Type]] = MutableMap()
-// Get all the FieldAccessExprs in the program
-  val expressions = c.findAll(classOf[Expression]).asScala.toVector
-  val resolvedExpressions = expressions
+  val expressions         = c.findAll(classOf[Expression]).asScala.toVector
+  val statements          = c.findAll(classOf[Statement]).asScala.toVector
+  val variableDeclarators = c.findAll(classOf[VariableDeclarator]).asScala.toVector
+  expressions
     .foldLeft(LogWithOption(finalLog, Some(NormalType("", 0): Type)))((lgi, expr) =>
       lgi.flatMap((lg, i) => resolveExpression(lg, expr, arg, expressionTypeMemo))
     )
     .rightmap(_ => arg)
-  val variableDeclarators =
-    c.findAll(classOf[VariableDeclarator]).asScala.toVector
-
-  variableDeclarators.foldLeft(resolvedExpressions)((lgc, vd) =>
-    lgc.flatMap((lg, c) => resolveVariableDeclarator(lg, vd, c, expressionTypeMemo))
-  )
+    .flatMap((log, config) =>
+      statements.foldLeft(LogWithOption(log, Some(config)))((lwo, stmt) =>
+        lwo.flatMap((x, y) => resolveStatement(x, stmt, y, expressionTypeMemo))
+      )
+    )
+    .flatMap((log, config) =>
+      variableDeclarators.foldLeft(LogWithOption(log, Some(config)))((lwo, decl) =>
+        lwo.flatMap((x, y) => resolveVariableDeclarator(x, decl, y, expressionTypeMemo))
+      )
+    )
 
 private def parseSource(log: Log, filePath: String): LogWithOption[CompilationUnit] =
   scala.util.Try(StaticJavaParser.parse(File(filePath))) match
@@ -222,3 +179,75 @@ private def parseSource(log: Log, filePath: String): LogWithOption[CompilationUn
         ),
         None
       )
+
+private def getActualTypeParameters(
+    log: Log,
+    typeParams: Vector[TypeParameter],
+    cu: CompilationUnit,
+    config: MutableConfiguration
+) =
+  mapWithLog(
+    log,
+    typeParams.map(x => x.getTypeBound.asScala.toVector)
+  )((lg, bds) => mapWithLog(lg, bds)((l, t) => resolveASTType(cu, config, t, l)))
+
+private def getSupertypes(
+    log: Log,
+    decl: ClassOrInterfaceDeclaration,
+    cu: CompilationUnit,
+    config: MutableConfiguration
+) =
+  val e = mapWithLog(log, decl.getExtendedTypes.asScala.toVector)((log, t) =>
+    resolveASTType(cu, config, t, log)
+  )
+  val i = mapWithLog(e._1, decl.getImplementedTypes.asScala.toVector)((log, t) =>
+    resolveASTType(cu, config, t, log)
+  )
+  (i._1, e._2, i._2)
+
+def getMethodTypeParameters(
+    log: Log,
+    decl: ClassOrInterfaceDeclaration,
+    cu: CompilationUnit,
+    config: MutableConfiguration
+) =
+  val res1 = decl
+    .findAll(classOf[TypeParameter])
+    .asScala
+    .map(x => {
+      x.findAncestor(classOf[MethodDeclaration]).toScala match
+        case Some(y) =>
+          (y.resolve.getQualifiedSignature + "#" + x.getNameAsString, x)
+        case None => ("", x)
+    })
+    .filter(_._1 != "")
+    .toVector
+  val a = mapWithLog(log, res1)((log, st) =>
+    val res = mapWithLog(log, st._2.getTypeBound.asScala.toVector)((log, t) =>
+      resolveASTType(cu, config, t, log)
+    )
+    (res._1, (st._1 -> res._2))
+  )
+  (a._1, a._2.toMap)
+
+private def addAssertionsOnBoundsAndSupertypes(
+    decl: FixedDeclaration,
+    typeParameters: Vector[Vector[Type]],
+    config: MutableConfiguration
+) =
+  // make sure that type parameter bounds and supertypes are interfaces/classes
+  if decl.isInterface then
+    for t <- decl.extendedTypes do config._3 += IsInterfaceAssertion(t)
+    for t <- decl.implementedTypes do config._3 += IsInterfaceAssertion(t)
+  else
+    for t <- decl.extendedTypes do config._3 += IsClassAssertion(t)
+    for t <- decl.implementedTypes do config._3 += IsInterfaceAssertion(t)
+
+  for tp <- typeParameters do
+    if tp.isEmpty then ()
+    else
+      for bound <- tp.tail do
+        bound match
+          case x @ NormalType(_, _, _) =>
+            config._3 += IsInterfaceAssertion(x)
+          case _ => ()

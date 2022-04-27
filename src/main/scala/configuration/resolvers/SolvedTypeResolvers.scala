@@ -1,6 +1,7 @@
 package configuration.resolvers
 
 import com.github.javaparser.resolution.types.ResolvedType
+import com.github.javaparser.resolution.types.ResolvedTypeVariable
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 // Java/Scala imports
 import scala.jdk.CollectionConverters.*
@@ -38,18 +39,7 @@ private[configuration] def resolveSolvedType(
       typeParams.size,
       subs
     )
-  else if typeToConvert.isTypeVariable then
-    val typeVar   = typeToConvert.asTypeVariable
-    val typeParam = typeVar.asTypeParameter
-    if typeParam.declaredOnType then
-      val container =
-        typeParam.getContainer.asInstanceOf[ResolvedReferenceTypeDeclaration]
-      val containerID         = container.getQualifiedName
-      val containerTypeParams = container.getTypeParameters.asScala
-      TypeParameterIndex(containerID, containerTypeParams.indexOf(typeParam))
-    else if typeParam.declaredOnMethod then
-      TypeParameterName(typeParam.getContainerId, typeParam.getName)
-    else ???                                 // TODO
+  else if typeToConvert.isTypeVariable then resolveSolvedTypeVariable(typeToConvert.asTypeVariable)
   else if typeToConvert.isUnionType then ??? // TODO
   else if typeToConvert.isVoid then NormalType("void", 0)
   else if typeToConvert.isWildcard then
@@ -68,3 +58,15 @@ private[configuration] def resolveSolvedType(
         )
       )
   else ??? // TODO make this safe.
+
+def resolveSolvedTypeVariable(t: ResolvedTypeVariable): TTypeParameter =
+  val typeParam = t.asTypeParameter
+  if typeParam.declaredOnType then
+    val container =
+      typeParam.getContainer.asInstanceOf[ResolvedReferenceTypeDeclaration]
+    val containerID         = container.getQualifiedName
+    val containerTypeParams = container.getTypeParameters.asScala
+    TypeParameterIndex(containerID, containerTypeParams.indexOf(typeParam))
+  else if typeParam.declaredOnMethod then
+    TypeParameterName(typeParam.getContainerId, typeParam.getName)
+  else ??? // TODO

@@ -10,20 +10,39 @@ import scala.collection.mutable.Map as MutableMap
 import configuration.MutableConfiguration
 import configuration.assertions.*
 import configuration.types.*
-import utils.{Log, LogWithOption}
+import utils.*
+import com.github.javaparser.ast.stmt.*
 
-def resolveVariableDeclarator(
+def resolveStatement(
     log: Log,
-    declarator: VariableDeclarator,
+    stmt: Statement,
     config: MutableConfiguration,
     memo: MutableMap[Expression, Option[Type]]
 ): LogWithOption[MutableConfiguration] =
-  declarator.getInitializer.toScala match
-    case None => LogWithOption(log, Some(config))
-    case Some(expr) =>
-      val typeOfInitializer = resolveExpression(log, expr, config, memo)
-      val typeOfVariable    = resolveSolvedType(declarator.getType.resolve)
-      typeOfInitializer.rightmap(t =>
-        config._3 += SubtypeAssertion(t, typeOfVariable)
-        config
-      )
+  if stmt.isReturnStmt then resolveReturnStmt(log, stmt.asReturnStmt, config, memo)
+  else LogWithSome(log, config)
+
+private def resolveReturnStmt(
+    log: Log,
+    stmt: ReturnStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[Expression, Option[Type]]
+): LogWithOption[MutableConfiguration] =
+  stmt.findAncestor(classOf[MethodDeclaration]).toScala.map(x => x.resolve.getReturnType) match
+    case None => LogWithNone(log.addError(s"$stmt not enclosed by method declaration"))
+    case Some(returnType) =>
+      stmt.getExpression.toScala match
+        case None =>
+          if returnType.isVoid then LogWithSome(log, config)
+          else
+            LogWithNone(
+              log.addError(s"$stmt must return some value of type ${resolveSolvedType(returnType)}")
+            )
+        case Some(expr) =>
+          val exprType = resolveExpression(log, expr, config, memo)
+          exprType.rightmap(ttype =>
+            if returnType.isVoid then
+              config._3 += EquivalenceAssertion(ttype, NormalType("void", 0))
+            else config._3 += SubtypeAssertion(ttype, resolveSolvedType(returnType))
+            config
+          )
