@@ -17,7 +17,10 @@ def resolveStatement(
     log: Log,
     stmt: Statement,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[MutableConfiguration] =
   if stmt.isReturnStmt then resolveReturnStmt(log, stmt.asReturnStmt, config, memo)
   else LogWithSome(log, config)
@@ -26,7 +29,10 @@ private def resolveReturnStmt(
     log: Log,
     stmt: ReturnStmt,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[MutableConfiguration] =
   stmt.findAncestor(classOf[MethodDeclaration]).toScala.map(x => x.resolve.getReturnType) match
     case None => LogWithNone(log.addError(s"$stmt not enclosed by method declaration"))

@@ -1,9 +1,19 @@
 import java.util.List;
 
-class A<T, U, V> extends C<T, U, B<String>> {
-  B<Integer> x;
-
-  int main() {
-    return x.y;
+class A {
+  void main() {
+    B<Integer> x;
+    C<String> y;
+    x = y;
+    return;
   }
+
+  // <T> T get(List<T> x) {
+  // return x.get(0);
+  // }
+
+  <T extends List<U>, U> U get(T y) {
+    return y.get(0);
+  }
+
 }

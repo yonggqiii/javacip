@@ -18,6 +18,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeS
 // Java/Scala imports
 import java.io.{File, FileNotFoundException}
 import scala.collection.mutable.{Map as MutableMap, Set as MutableSet}
+import scala.collection.immutable.Queue
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 
@@ -34,6 +35,7 @@ import configuration.resolvers.{
 import configuration.types.*
 import utils.*
 import com.github.javaparser.ast.stmt.Statement
+import com.github.javaparser.ast.body.FieldDeclaration
 // Type aliases
 private type MutableDelta = MutableMap[String, FixedDeclaration]
 private type MutablePhi = (
@@ -63,20 +65,8 @@ def parseConfiguration(
   // visit each class
   decls
     .flatMap(visitAll(_, _, c))
-    .map((l, c) =>
-      (
-        l.addSuccess(
-          "successfully created configuration", {
-            val (d, p, o) = c
-            "Delta:\n" + d.values.mkString("\n") + "\n\nPhi:\n" + p._1.values
-              .mkString("\n") + "\n" + p._2.values
-              .mkString("\n") + "\n\nOmega:\n" + o.mkString("\n")
-          }
-        ),
-        c
-      )
-    )
-    .rightmap(x => Configuration(x._1.toMap, x._2._1.toMap, x._2._2.toMap, x._3.toList))
+    .rightmap(x => Configuration(x._1.toMap, x._2._1.toMap, x._2._2.toMap, Queue(x._3.toList: _*)))
+    .map((l, c) => (l.addSuccess("Successfully built configuration", c.toString), c))
 
 private def visitAll(
     log: Log,
@@ -110,6 +100,18 @@ private def visit(
     finalLog = res._1
     (res._2, res._3)
 
+  // lol
+  val x = getAttributes(finalLog, cu, c, arg)
+  finalLog = x.log
+  if x.opt.isEmpty then return LogWithNone(finalLog)
+
+  val attributes = x.opt.get
+
+  val y = getMethods(finalLog, cu, c, arg)
+  finalLog = y.log
+  if y.opt.isEmpty then return LogWithNone(finalLog)
+  val methods = y.opt.get
+
   val methodTypeParameters =
     val res = getMethodTypeParameters(finalLog, c, cu, arg)
     finalLog = res._1
@@ -123,8 +125,20 @@ private def visit(
     isInterface,
     extendedTypes,
     implementedTypes,
-    methodTypeParameters
+    methodTypeParameters,
+    attributes,
+    methods
   )
+
+  val conflictingMethods = newDeclaration.conflictingMethods
+
+  if conflictingMethods.size > 0 then
+    return LogWithNone(
+      finalLog.addError(
+        "The following methods have multiple declarations whose erasures conflict:",
+        conflictingMethods.keys.mkString(", ")
+      )
+    )
 
   arg._1 += (identifier -> newDeclaration)
 
@@ -137,7 +151,14 @@ private def visit(
   )((l, t) => resolveASTType(cu, arg, t, l))._1
 
   // resolve expressions, bodies and statements
-  val expressionTypeMemo: MutableMap[Expression, Option[Type]] = MutableMap()
+  val expressionTypeMemo: MutableMap[
+    (
+        Option[ClassOrInterfaceDeclaration],
+        Option[MethodDeclaration],
+        Expression
+    ),
+    Option[Type]
+  ] = MutableMap()
   val expressions         = c.findAll(classOf[Expression]).asScala.toVector
   val statements          = c.findAll(classOf[Statement]).asScala.toVector
   val variableDeclarators = c.findAll(classOf[VariableDeclarator]).asScala.toVector
@@ -251,3 +272,67 @@ private def addAssertionsOnBoundsAndSupertypes(
           case x @ NormalType(_, _, _) =>
             config._3 += IsInterfaceAssertion(x)
           case _ => ()
+
+private def getAttributes(
+    log: Log,
+    cu: CompilationUnit,
+    decl: ClassOrInterfaceDeclaration,
+    config: MutableConfiguration
+): LogWithOption[Map[String, Type]] =
+  decl
+    .findAll(classOf[FieldDeclaration])
+    .asScala
+    .flatMap(
+      _.getVariables.asScala.toVector.map(z =>
+        (z.getNameAsString -> resolveASTType(cu, config, z.getType, log)._2)
+      )
+    )
+    .foldLeft(LogWithOption[Map[String, Type]](log, Some(Map()))) { case (lwm, (s, t)) =>
+      lwm.flatMap((log, m) =>
+        if m.contains(s) then
+          if m(s) == t then LogWithSome(log.addWarn(s"repeated attribute declaration: $s"), m)
+          else LogWithNone(log.addError(s"repeated attribute declaration with different types: $s"))
+        else LogWithSome(log, m + (s -> t))
+      )
+    }
+
+private def getMethods(
+    log: Log,
+    cu: CompilationUnit,
+    decl: ClassOrInterfaceDeclaration,
+    config: MutableConfiguration
+): LogWithOption[Map[String, Map[(Vector[TypeParameterName], Vector[Type]), Type]]] =
+  val methodDeclarations = decl.findAll(classOf[MethodDeclaration]).asScala.toVector
+  methodDeclarations
+    .map(x =>
+      val name = x.getNameAsString
+      val parameters = x.getParameters.asScala.toVector
+        .map(_.getType)
+        .map(resolveASTType(cu, config, _, log)._2)
+      val typeParameters = x.getTypeParameters.asScala.toVector.map(y =>
+        TypeParameterName(x.resolve.getQualifiedSignature, y.getNameAsString)
+      )
+      val returnType = resolveASTType(cu, config, x.getType, log)._2
+      (name, typeParameters, parameters, returnType)
+    )
+    .foldLeft(
+      LogWithOption[Map[String, Map[(Vector[TypeParameterName], Vector[Type]), Type]]](
+        log,
+        Some(Map())
+      )
+    ) { case (lwo, (name, tp, p, rt)) =>
+      lwo.flatMap((log, mp) =>
+        if !mp.contains(name) then LogWithSome(log, mp + (name -> Map((tp, p) -> rt)))
+        else
+          val mt = mp(name)
+          if !mt.contains((tp, p)) then
+            val newMt = mt + ((tp, p) -> rt)
+            LogWithSome(log, mp + (name -> newMt))
+          else if mt((tp, p)) == rt then
+            LogWithSome(log.addWarn(s"repeated method definition with same signature $name"), mp)
+          else
+            LogWithNone(
+              log.addError(s"repeated method definition with different return type $name")
+            )
+      )
+    }

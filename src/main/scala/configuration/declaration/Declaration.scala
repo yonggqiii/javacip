@@ -2,6 +2,8 @@ package configuration.declaration
 
 import configuration.types.*
 
+private type MethodTable = Map[(Vector[TypeParameterName], Vector[Type]), Type]
+
 class FixedDeclaration(
     val identifier: String,
     val typeParameters: Vector[Vector[Type]],
@@ -10,7 +12,9 @@ class FixedDeclaration(
     val isInterface: Boolean,
     val extendedTypes: Vector[Type],
     val implementedTypes: Vector[Type],
-    val methodTypeParameterBounds: Map[String, Vector[Type]]
+    val methodTypeParameterBounds: Map[String, Vector[Type]],
+    val attributes: Map[String, Type],
+    val methods: Map[String, MethodTable]
 ):
   override def toString =
     val numArgs = typeParameters.size
@@ -26,16 +30,16 @@ class FixedDeclaration(
           .map(i =>
             TypeParameterIndex(identifier, i).toString +
               (if typeParameters(i).size == 0 then ""
-               else " extends " + typeParameters(i).mkString(" & "))
+               else " extends " + typeParameters(i).map(_.substituted).mkString(" & "))
           )
           .mkString(", ") + ">"
     val extendsClause =
       if extendedTypes.size == 0 then ""
-      else " extends " + extendedTypes.mkString(", ")
+      else " extends " + extendedTypes.map(_.substituted).mkString(", ")
     val implementsClause =
       if implementedTypes.size == 0 then ""
-      else " implements " + implementedTypes.mkString(", ")
-    s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds"
+      else " implements " + implementedTypes.map(_.substituted).mkString(", ")
+    s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nAttributes:\n$attributes\nMethods:\n$methods"
 
   def getBounds(typet: Type): Vector[Type] =
     typet match
@@ -56,3 +60,27 @@ class FixedDeclaration(
         if bounds.isEmpty then NormalType("Object", 0)
         else getErasure(bounds(0), exclusions + typet)
       case _ => typet
+
+  def conflictingMethods =
+    methods
+      .map((name, table) =>
+        val erasedTable = table.toVector
+          .map(x => (x._1._2, x._2))
+          .map(x => (x._1.map(param => getErasure(param).identifier), x._2))
+        val conflictingSignatures = erasedTable
+          .foldLeft(Map[Vector[String], Type](), Vector[Vector[String]]()) {
+            case ((m, v), (p, t)) =>
+              if !m.contains(p) then (m + (p -> t), v)
+              else (m, v :+ p)
+          }
+          ._2
+          .toSet
+        (
+          name,
+          table.filter((x, y) =>
+            val paramTypes = x._2.map(param => getErasure(param).identifier)
+            conflictingSignatures.contains(paramTypes)
+          )
+        )
+      )
+      .filter((x, y) => y.size > 0)

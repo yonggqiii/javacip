@@ -6,6 +6,7 @@ import com.github.javaparser.ast.`type`.{
   ArrayType,
   ClassOrInterfaceType,
   IntersectionType as ASTIntersectionType,
+  PrimitiveType as ASTPrimitiveType,
   ReferenceType,
   Type as ASTType,
   TypeParameter,
@@ -60,7 +61,18 @@ private[configuration] def resolveASTType(
       typeToConvert.asWildcardType,
       log
     )
+  else if typeToConvert.isPrimitiveType then
+    resolvePrimitiveType(cu, config, typeToConvert.asPrimitiveType, log)
+  else if typeToConvert.isVoidType then (log, NormalType("void", 0, Nil))
   else ??? //TODO make this safe.
+
+private def resolvePrimitiveType(
+    cu: CompilationUnit,
+    config: MutableConfiguration,
+    t: ASTPrimitiveType,
+    log: Log
+): (Log, Type) =
+  (log, NormalType(t.asString, 0, Nil))
 
 private def resolveArrayType(
     cu: CompilationUnit,

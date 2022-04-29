@@ -16,7 +16,10 @@ def resolveVariableDeclarator(
     log: Log,
     declarator: VariableDeclarator,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[MutableConfiguration] =
   declarator.getInitializer.toScala match
     case None => LogWithOption(log, Some(config))

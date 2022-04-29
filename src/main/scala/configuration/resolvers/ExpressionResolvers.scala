@@ -25,9 +25,15 @@ private[configuration] def resolveExpression(
     log: Log,
     expr: Expression,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[Type] =
-  if memo.contains(expr) then LogWithOption(log, memo(expr))
+  val containingMethod = expr.findAncestor(classOf[MethodDeclaration]).toScala
+  val containingClass  = expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala
+  if memo.contains((containingClass, containingMethod, expr)) then
+    LogWithOption(log, memo((containingClass, containingMethod, expr)))
   else
     val res =
       if expr.isFieldAccessExpr then
@@ -80,14 +86,17 @@ private[configuration] def resolveExpression(
       else
         println(expr.getClass)
         ???
-    memo(expr) = res.opt
+    memo((containingClass, containingMethod, expr)) = res.opt
     res
 
 private def resolveScope(
     log: Log,
     expr: Expression,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[Type] =
   resolveExpression(log, expr, config, memo).rightmap(t =>
     t match
@@ -103,7 +112,10 @@ private def resolveFieldAccessExpr(
     log: Log,
     expr: FieldAccessExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[Type] =
   try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
   catch
@@ -136,7 +148,10 @@ private def getAttrTypeFromMissingScope(
     logWithScope: LogWithOption[Type],
     expr: com.github.javaparser.ast.nodeTypes.NodeWithSimpleName[?],
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ) =
   logWithScope.map((log, scope) =>
     // add assertion to omega
@@ -209,7 +224,10 @@ private def resolveAssignExpr(
     log: Log,
     expr: AssignExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[Type] =
   // TODO handle operators
   val t = expr.getTarget
@@ -270,7 +288,10 @@ private def resolveMethodCallExpr(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[Type] =
   try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
   catch
@@ -320,7 +341,10 @@ private def resolveMethodFromResolvedType(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]],
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ],
     scope: ResolvedType
 ): LogWithOption[Type] =
   if scope.isPrimitive then
@@ -365,7 +389,10 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]],
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ],
     scope: Vector[ResolvedReferenceType]
 ): LogWithOption[Type] =
   // get all the supertypes where methods may be defined
@@ -561,7 +588,10 @@ private def resolveMethodFromResolvedDeclaration(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]],
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ],
     scope: ResolvedReferenceTypeDeclaration
 ): LogWithOption[Type] = ???
 
@@ -569,7 +599,10 @@ private def resolveMethodFromInferenceVariable(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]],
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ],
     scope: Type
 ): LogWithOption[Type] = ???
 
@@ -583,7 +616,10 @@ private def resolveNameExpr(
     log: Log,
     expr: NameExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[Type] =
   try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
   catch
@@ -677,6 +713,9 @@ private def resolveVariableDeclarationExpr(
     log: Log,
     expr: VariableDeclarationExpr,
     config: MutableConfiguration,
-    memo: MutableMap[Expression, Option[Type]]
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
 ): LogWithOption[Type] =
   LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
