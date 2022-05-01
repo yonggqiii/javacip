@@ -39,7 +39,8 @@ class FixedDeclaration(
     val implementsClause =
       if implementedTypes.size == 0 then ""
       else " implements " + implementedTypes.map(_.substituted).mkString(", ")
-    s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nAttributes:\n$attributes\nMethods:\n$methods"
+    val attrString = attributes.map(x => s"${x._2} ${x._1}").mkString("\n")
+    s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nAttributes:\n$attrString\nMethods:\n$methods"
 
   def getBounds(typet: Type): Vector[Type] =
     typet match

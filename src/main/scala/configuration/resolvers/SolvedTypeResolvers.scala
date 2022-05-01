@@ -12,7 +12,8 @@ import configuration.types.*
 private[configuration] def resolveSolvedType(
     typeToConvert: ResolvedType
 ): Type =
-  if typeToConvert.isArray then ???                  // TODO
+  if typeToConvert.isArray then
+    ArrayType(resolveSolvedType(typeToConvert.asArrayType.getComponentType))
   else if typeToConvert.isConstraint then ???        // TODO
   else if typeToConvert.isInferenceVariable then ??? // TODO
   else if typeToConvert.isNull then Bottom
@@ -57,7 +58,9 @@ private[configuration] def resolveSolvedType(
           typet.getBoundedType()
         )
       )
-  else ??? // TODO make this safe.
+  else
+    println(typeToConvert)
+    ??? // TODO make this safe.
 
 def resolveSolvedTypeVariable(t: ResolvedTypeVariable): TTypeParameter =
   val typeParam = t.asTypeParameter

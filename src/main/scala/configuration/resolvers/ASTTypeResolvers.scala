@@ -3,7 +3,7 @@ package configuration.resolvers
 // JavaParser imports
 import com.github.javaparser.ast.{CompilationUnit, NodeList}
 import com.github.javaparser.ast.`type`.{
-  ArrayType,
+  ArrayType as ASTArrayType,
   ClassOrInterfaceType,
   IntersectionType as ASTIntersectionType,
   PrimitiveType as ASTPrimitiveType,
@@ -77,11 +77,12 @@ private def resolvePrimitiveType(
 private def resolveArrayType(
     cu: CompilationUnit,
     config: MutableConfiguration,
-    typeToConvert: ArrayType,
+    typeToConvert: ASTArrayType,
     log: Log
 ): (Log, Type) =
-  // TODO
-  ???
+  val (newLog, t) = resolveASTType(cu, config, typeToConvert.getComponentType, log)
+  (newLog, ArrayType(t))
+
 private def resolveClassOrInterfaceType(
     cu: CompilationUnit,
     config: MutableConfiguration,

@@ -1,7 +1,6 @@
 package configuration.types
 
 import scala.Console.{RED, RESET}
-import configuration.declaration.MissingDeclaration
 
 // Type aliases
 private type SubstitutionList = List[Map[TTypeParameter, Type]]
@@ -61,6 +60,23 @@ sealed trait Type:
     val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
     val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
     s"$start$argumentList$subsstring"
+
+final case class ArrayType(
+  base: Type,
+) extends Type:
+  override def toString =
+      base.toString + "[]"
+  val identifier = base.identifier + "[]"
+  val numArgs = 0
+  val elementType = base
+  val upwardProjection: ArrayType = this
+  val downwardProjection: ArrayType = this
+  val substitutions = Nil
+  def addSubstitutionLists(substitutions: SubstitutionList): ArrayType =
+    copy(base = base.addSubstitutionLists(substitutions))
+  def replace(oldType: ReplaceableType, newType: Type): ArrayType =
+    copy(base = base.replace(oldType, newType))
+  def substituted = copy(base = base.substituted)
 
 final case class NormalType(
     identifier: String,
@@ -274,14 +290,14 @@ final case class SubstitutedReferenceType(
   args: Vector[Type]
 ) extends Type:
   val numArgs = args.size
-  val substitutions: SubstitutionList = Nil
+  val substitutions: SubstitutionList = (0 until numArgs).map(i => (TypeParameterIndex(identifier, i) -> args(i))).toMap :: Nil
   val upwardProjection = this
   val downwardProjection = this
   def addSubstitutionLists(substitutions: SubstitutionList) =
     NormalType(
       identifier,
       numArgs,
-      (0 until numArgs).map(i => (TypeParameterIndex(identifier, i) -> args(i))).toMap :: Nil
+      substitutions
     ).addSubstitutionLists(substitutions)
   def replace(oldType: ReplaceableType, newType: Type) =
     copy(args = args.map(_.replace(oldType, newType)))

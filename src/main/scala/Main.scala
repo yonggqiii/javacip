@@ -8,6 +8,6 @@ object Main:
       case Some(config) =>
         LogWithSome(Log(config), config.in)
           .flatMap(parseConfiguration)
-//          .flatMap(infer)
+          .flatMap(infer)
           .log
           .flush()

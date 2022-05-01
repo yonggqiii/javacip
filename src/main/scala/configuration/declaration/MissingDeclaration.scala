@@ -4,46 +4,17 @@ import configuration.assertions.*
 import configuration.types.*
 import utils.*
 
-private type MethodTable = Map[(Vector[Type], List[Map[TTypeParameter, Type]]), Type]
-
-/** A data structure that stores information of missing/unknown types
-  */
-sealed trait MissingDeclaration:
-  /** Gets the type of some attribute in the type
-    * @param identifier
-    *   the name of the attribute
-    * @param context
-    *   the type arguments supplied to this type
-    * @return
-    *   Some(x) where x is the type of the attribute after substituting with the context of this
-    *   type, None if the attribute doesn't exist
-    */
-  def getAttribute(
-      identifier: String,
-      context: List[Map[TTypeParameter, Type]]
-  ): Option[Type]
-  def addAttribute(identifier: String, attributeType: Type): MissingDeclaration
-  def addMethod(
-      identifier: String,
-      paramTypes: Vector[Type],
-      returnType: Type,
-      context: List[Map[TTypeParameter, Type]]
-  ): MissingDeclaration
-  def getMethodReturnType(
-      identifier: String,
-      argTypes: Vector[Type],
-      context: List[Map[TTypeParameter, Type]]
-  ): Option[Type]
+private type MissingMethodTable = Map[(Vector[Type], List[Map[TTypeParameter, Type]]), Type]
 
 class MissingTypeDeclaration(
     val identifier: String,
     val numParams: Int = 0,
     val supertypes: Vector[Type] = Vector(),
     val attributes: Map[String, Type] = Map(),
-    val methods: Map[String, MethodTable] = Map().withDefaultValue(Map()),
+    val methods: Map[String, MissingMethodTable] = Map().withDefaultValue(Map()),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false
-) extends MissingDeclaration:
+):
 
   def merge(other: InferenceVariableMemberTable): (MissingTypeDeclaration, List[Assertion]) =
     ???
@@ -53,9 +24,9 @@ class MissingTypeDeclaration(
       newType: Type
   ): (MissingTypeDeclaration, List[Assertion]) =
     val (newMethods, assertions) =
-      methods.foldLeft(Map(): Map[String, MethodTable], List(): List[Assertion]) {
+      methods.foldLeft(Map(): Map[String, MissingMethodTable], List(): List[Assertion]) {
         case ((newMethods, newAssts), (str, mt)) =>
-          val (newMt, assts) = replaceMethodTable(mt, oldType, newType)
+          val (newMt, assts) = replaceMissingMethodTable(mt, oldType, newType)
           (newMethods + (str -> newMt), assts ::: newAssts)
       }
     (
@@ -69,12 +40,12 @@ class MissingTypeDeclaration(
       assertions
     )
 
-  def replaceMethodTable(
-      mt: MethodTable,
+  def replaceMissingMethodTable(
+      mt: MissingMethodTable,
       oldType: ReplaceableType,
       newType: Type
-  ): (MethodTable, List[Assertion]) =
-    mt.foldLeft((Map(): MethodTable, List[Assertion]())) {
+  ): (MissingMethodTable, List[Assertion]) =
+    mt.foldLeft((Map(): MissingMethodTable, List[Assertion]())) {
       case ((newMT, assts), ((args, ctx), rt)) =>
         val newArgs       = args.map(_.replace(oldType, newType))
         val newCtx        = ctx.map(_.map((x, y) => x -> y.replace(oldType, newType)))
@@ -155,10 +126,10 @@ class MissingTypeDeclaration(
 class InferenceVariableMemberTable(
     val typet: Type,
     val attributes: Map[String, Type] = Map(),
-    val methods: Map[String, MethodTable] = Map().withDefaultValue(Map()),
+    val methods: Map[String, MissingMethodTable] = Map().withDefaultValue(Map()),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false
-) extends MissingDeclaration:
+):
   def merge(other: InferenceVariableMemberTable): (InferenceVariableMemberTable, List[Assertion]) =
     val (newAttributes, assertions) = other.attributes.foldLeft(attributes, List[Assertion]()) {
       case ((a, ls), (otherName, otherType)) =>
@@ -229,9 +200,9 @@ class InferenceVariableMemberTable(
       newType: Type
   ): (InferenceVariableMemberTable, List[Assertion]) =
     val (newMethods, assertions) =
-      methods.foldLeft(Map(): Map[String, MethodTable], List(): List[Assertion]) {
+      methods.foldLeft(Map(): Map[String, MissingMethodTable], List(): List[Assertion]) {
         case ((newMethods, newAssts), (str, mt)) =>
-          val (newMt, assts) = replaceMethodTable(mt, oldType, newType)
+          val (newMt, assts) = replaceMissingMethodTable(mt, oldType, newType)
           (newMethods + (str -> newMt), assts ::: newAssts)
       }
     (
@@ -243,12 +214,12 @@ class InferenceVariableMemberTable(
       assertions
     )
 
-  def replaceMethodTable(
-      mt: MethodTable,
+  def replaceMissingMethodTable(
+      mt: MissingMethodTable,
       oldType: ReplaceableType,
       newType: Type
-  ): (MethodTable, List[Assertion]) =
-    mt.foldLeft((Map(): MethodTable, List[Assertion]())) {
+  ): (MissingMethodTable, List[Assertion]) =
+    mt.foldLeft((Map(): MissingMethodTable, List[Assertion]())) {
       case ((newMT, assts), ((args, ctx), rt)) =>
         val newArgs       = args.map(_.replace(oldType, newType))
         val newCtx        = ctx.map(_.map((x, y) => x -> y.replace(oldType, newType)))
