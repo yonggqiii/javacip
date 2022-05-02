@@ -102,9 +102,8 @@ private def resolveScope(
     t match
       case x @ TypeParameterIndex(source, id, subs) =>
         config._1(source).getErasure(x)
-      case x @ TypeParameterName(source, name, subs) =>
-        val typeName = source.split("\\.").dropRight(1).mkString(".")
-        config._1(typeName).getErasure(x)
+      case x @ TypeParameterName(sourceType, source, name, subs) =>
+        config._1(sourceType).getErasure(x)
       case x @ _ => x
   )
 
@@ -544,12 +543,18 @@ private def matchMethodCallToMethodUsage(
     config: MutableConfiguration
 ) =
   // get the type parameters of the method
-  val typeParams = method.getDeclaration.getTypeParameters.asScala.toVector
+  val methodDeclaration = method.getDeclaration
+  val containingType    = methodDeclaration.declaringType
+  val typeParams        = methodDeclaration.getTypeParameters.asScala.toVector
   // substitute type parameters with inference variables
   val substitutionList: List[Map[TTypeParameter, Type]] = (typeParams
     .map(tpd =>
       // create the type parameter
-      val p = TypeParameterName(tpd.getContainerId, tpd.getName)
+      val p = TypeParameterName(
+        containingType.getQualifiedName,
+        tpd.getContainerId,
+        tpd.getName
+      )
       // create the inference variable
       val iv = createInferenceVariableForMethodCalls(expr, config)
       // add new inference variable to phi

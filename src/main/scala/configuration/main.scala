@@ -87,7 +87,7 @@ private def visit(
   val isInterface    = c.isInterface
   val isAbstract     = c.isAbstract || isInterface
   val isFinal        = c.isFinal
-  val identifier     = c.getName.getIdentifier
+  val identifier     = c.getFullyQualifiedName.toScala.getOrElse(c.getNameAsString)
   var finalLog       = log
   val typeParameters = c.getTypeParameters.asScala.toVector
   val actualTypeParameters =
@@ -305,12 +305,13 @@ private def getMethods(
   val methodDeclarations = decl.findAll(classOf[MethodDeclaration]).asScala.toVector
   methodDeclarations
     .map(x =>
-      val name = x.getNameAsString
+      val sourceType = decl.getFullyQualifiedName.toScala.getOrElse(decl.getNameAsString)
+      val name       = x.getNameAsString
       val parameters = x.getParameters.asScala.toVector
         .map(_.getType)
         .map(resolveASTType(cu, config, _, log)._2)
       val typeParameters = x.getTypeParameters.asScala.toVector.map(y =>
-        TypeParameterName(x.resolve.getQualifiedSignature, y.getNameAsString)
+        TypeParameterName(sourceType, x.resolve.getQualifiedSignature, y.getNameAsString)
       )
       val returnType = resolveASTType(cu, config, x.getType, log)._2
       (name, typeParameters, parameters, returnType)

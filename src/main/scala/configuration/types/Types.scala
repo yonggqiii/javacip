@@ -61,6 +61,8 @@ sealed trait Type:
     val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
     s"$start$argumentList$subsstring"
 
+  val args: Vector[Type]
+
 final case class ArrayType(
   base: Type,
 ) extends Type:
@@ -77,6 +79,7 @@ final case class ArrayType(
   def replace(oldType: ReplaceableType, newType: Type): ArrayType =
     copy(base = base.replace(oldType, newType))
   def substituted = copy(base = base.substituted)
+  val args = Vector()
 
 final case class NormalType(
     identifier: String,
@@ -91,11 +94,11 @@ final case class NormalType(
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
   def substituted = SubstitutedReferenceType(
     identifier,
-    (0 until numArgs)
-      .map(TypeParameterIndex(identifier, _))
-      .map(_.addSubstitutionLists(substitutions))
-      .map(_.substituted)
-      .toVector)
+    args.map(_.substituted))
+  val args = (0 until numArgs)
+    .map(TypeParameterIndex(identifier, _))
+    .map(_.addSubstitutionLists(substitutions))
+    .toVector
 
 final case class PrimitiveType(
     identifier: String
@@ -107,6 +110,7 @@ final case class PrimitiveType(
   val downwardProjection: PrimitiveType = this
   def replace(oldType: ReplaceableType, newType: Type): PrimitiveType = this
   def substituted = this
+  val args = Vector()
 
 case object Bottom extends Type:
   val upwardProjection: Bottom.type = this
@@ -117,6 +121,7 @@ case object Bottom extends Type:
   val numArgs = 0
   def replace(oldType: ReplaceableType, newType: Type): Bottom.type = this
   def substituted = this
+  val args = Vector()
 
 case object Wildcard extends Type:
   val upwardProjection: NormalType = NormalType("java.lang.Object", 0, Nil)
@@ -127,6 +132,7 @@ case object Wildcard extends Type:
   def addSubstitutionLists(substitutions: SubstitutionList): Wildcard.type = this
   def replace(oldType: ReplaceableType, newType: Type): Wildcard.type = this
   def substituted = this
+  val args = Vector()
 
 final case class ExtendsWildcardType(
     upper: Type,
@@ -146,6 +152,7 @@ final case class ExtendsWildcardType(
       _substitutions = _substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     )
   def substituted = copy(upper = upper.addSubstitutionLists(_substitutions).substituted, _substitutions = Nil)
+  val args = Vector()
 
 final case class SuperWildcardType(
     lower: Type,
@@ -165,6 +172,7 @@ final case class SuperWildcardType(
       _substitutions = _substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     )
   def substituted = copy(lower = lower.addSubstitutionLists(_substitutions).substituted, _substitutions = Nil)
+  val args = Vector()
 
 sealed trait TTypeParameter extends Type
 
@@ -188,8 +196,10 @@ final case class TypeParameterIndex(
         x(copy(substitutions = Nil)).addSubstitutionLists(xs).substituted
       else
         copy(substitutions = xs).substituted
+  val args = Vector()
 
 final case class TypeParameterName(
+    sourceType: String,
     source: String,
     qualifiedName: String,
     substitutions: SubstitutionList = Nil
@@ -200,6 +210,7 @@ final case class TypeParameterName(
   val downwardProjection = this
   def addSubstitutionLists(substitutions: SubstitutionList) =
     TypeParameterName(
+      sourceType,
       source,
       qualifiedName,
       this.substitutions ::: substitutions
@@ -213,20 +224,7 @@ final case class TypeParameterName(
         x(copy(substitutions = Nil)).addSubstitutionLists(xs).substituted
       else
         copy(substitutions = xs).substituted
-
-final case class IntersectionType(
-    types: Vector[Type]
-) extends Type:
-  val numArgs            = 0
-  val identifier         = ""
-  val upwardProjection   = this
-  val downwardProjection = this
-  val substitutions      = Nil
-  def addSubstitutionLists(substitutions: SubstitutionList): IntersectionType =
-    IntersectionType(types.map(_.addSubstitutionLists(substitutions)))
-  def replace(oldType: ReplaceableType, newType: Type): IntersectionType =
-    copy(types = types.map(_.replace(oldType, newType)))
-  def substituted = copy(types = types.map(_.substituted))
+  val args = Vector()
 
 sealed trait ReplaceableType extends Type:
     val id: Int
@@ -254,8 +252,8 @@ final case class InferenceVariable(
       copy(source = newSource, substitutions = newSubstitutions, _choices = newChoices)
     else
       newType.addSubstitutionLists(substitutions)
-  def substituted = copy(_choices = choices.map(_.substituted), substitutions = Nil)
-
+  def substituted = this
+  val args = Vector()
 
 final case class Alpha(
     id: Int,
@@ -284,6 +282,7 @@ final case class Alpha(
     else
       newType.addSubstitutionLists(substitutions)
   def substituted = this
+  val args = Vector()
 
 final case class SubstitutedReferenceType(
   identifier: String,

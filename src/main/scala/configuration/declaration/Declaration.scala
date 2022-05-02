@@ -47,10 +47,12 @@ class FixedDeclaration(
       case TypeParameterIndex(source, index, subs) =>
         if source != identifier then ??? // TODO
         else typeParameters(index).map(_.addSubstitutionLists(subs))
-      case TypeParameterName(source, qualifiedName, subs) =>
-        val index = source + "#" + qualifiedName
-        if !methodTypeParameterBounds.contains(index) then ??? // TODO
-        else methodTypeParameterBounds(index).map(_.addSubstitutionLists(subs))
+      case TypeParameterName(sourceType, source, qualifiedName, subs) =>
+        if sourceType != identifier then ??? // TODO
+        else
+          val index = source + "#" + qualifiedName
+          if !methodTypeParameterBounds.contains(index) then ??? // TODO
+          else methodTypeParameterBounds(index).map(_.addSubstitutionLists(subs))
       case _ => ??? // TODO
 
   def getErasure(typet: Type, exclusions: Set[Type] = Set()): Type =

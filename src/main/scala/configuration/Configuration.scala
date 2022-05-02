@@ -93,8 +93,9 @@ case class Configuration(
       ) { case ((mtds, mtpbds), mtd) =>
         val name           = mtd.getName
         val typeParamDecls = mtd.getTypeParameters.asScala.toVector
-        val typeParams     = typeParamDecls.map(x => TypeParameterName(x.getContainerId, x.getName))
-        val returnType     = resolveSolvedType(mtd.getReturnType)
+        val typeParams =
+          typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
+        val returnType = resolveSolvedType(mtd.getReturnType)
         val typeParamBounds = typeParams
           .zip(
             typeParamDecls.map(tp =>

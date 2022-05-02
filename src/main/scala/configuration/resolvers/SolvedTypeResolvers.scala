@@ -2,7 +2,7 @@ package configuration.resolvers
 
 import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.ResolvedTypeVariable
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
+import com.github.javaparser.resolution.declarations.*
 // Java/Scala imports
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
@@ -71,5 +71,7 @@ def resolveSolvedTypeVariable(t: ResolvedTypeVariable): TTypeParameter =
     val containerTypeParams = container.getTypeParameters.asScala
     TypeParameterIndex(containerID, containerTypeParams.indexOf(typeParam))
   else if typeParam.declaredOnMethod then
-    TypeParameterName(typeParam.getContainerId, typeParam.getName)
+    val m = typeParam.getContainer.asInstanceOf[ResolvedMethodDeclaration]
+    val t = m.declaringType
+    TypeParameterName(t.getQualifiedName, typeParam.getContainerId, typeParam.getName)
   else ??? // TODO
