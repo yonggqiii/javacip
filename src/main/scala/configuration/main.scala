@@ -272,7 +272,14 @@ private def addAssertionsOnBoundsAndSupertypes(
           case x @ NormalType(_, _, _) =>
             config._3 += IsInterfaceAssertion(x)
           case _ => ()
-
+  for (_, tp) <- decl.methodTypeParameterBounds do
+    if tp.isEmpty then ()
+    else
+      for bound <- tp.tail do
+        bound match
+          case x: NormalType =>
+            config._3 += IsInterfaceAssertion(x)
+          case _ => ()
 private def getAttributes(
     log: Log,
     cu: CompilationUnit,

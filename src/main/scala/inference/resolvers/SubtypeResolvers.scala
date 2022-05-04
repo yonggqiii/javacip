@@ -71,9 +71,9 @@ private[inference] def resolveSubtypeAssertion(
         (log, config.copy(omega = config.omega.enqueue(SubtypeAssertion(i, j))) :: Nil)
       // array type cannot be sub/super types of other types except the trivial ones
       case (ArrayType(_), _) =>
-        (log.addError(s"$x can only be a subtype of other array types or Object"), Nil)
+        (log.addWarn(s"$x can only be a subtype of other array types or Object"), Nil)
       case (_, ArrayType(_)) =>
-        (log.addError(s"$y can only be a supertype of other array types or Bottom"), Nil)
+        (log.addWarn(s"$y can only be a supertype of other array types or Bottom"), Nil)
       // left type parameter can be reduces to assertions on its bounds
       case (m: TTypeParameter, _) =>
         val source = m match
@@ -95,10 +95,10 @@ private[inference] def resolveSubtypeAssertion(
                 .enqueue(SubtypeAssertion(NormalType("java.lang.Object", 0, Nil), y))
             ) :: Nil
           )
-        else (log.addError(s"unable to find the declaration where $sub is declared"), Nil)
+        else (log.addWarn(s"unable to find the declaration where $sub is declared"), Nil)
       case (_, _: TTypeParameter) =>
         (
-          log.addError(
+          log.addWarn(
             s"it is not possible for $x <: $y as $y is a type parameter, unless $x itself is a type parameter"
           ),
           Nil
@@ -109,7 +109,7 @@ private[inference] def resolveSubtypeAssertion(
         if sup.args.size == 0 || sub.args.size == 0 then (log, config :: Nil)
         else if sup.args.size != sup.args.size then
           (
-            log.addError(s"$sub and $sup have same raw type but different number of arguments?"),
+            log.addWarn(s"$sub and $sup have same raw type but different number of arguments?"),
             Nil
           )
         else
@@ -120,6 +120,62 @@ private[inference] def resolveSubtypeAssertion(
       // case of subtype being a normal reference type and is declared
       case (m: SubstitutedReferenceType, _) if !config.getFixedDeclaration(m).isEmpty =>
         resolveLeftFixedSubtypeAssertion(log, config, x, y)
+      // case of subtype being a missing type and supertype is a known type
+      case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
+        config.phi1(m.identifier).supertypes.find(_.identifier == n.identifier) match
+          case Some(x) =>
+            (log, config.copy(omega = config.omega.enqueue(SubtypeAssertion(x, n))) :: Nil)
+          case None =>
+            // case of left interface and right class
+            val supertypeIsClass =
+              val fixedDecl = config.getFixedDeclaration(n)
+              if !fixedDecl.isEmpty then
+                val decl = fixedDecl.get
+                !decl.isInterface
+              else config.phi1(m.identifier).mustBeClass
+            val subtypeIsInterface = config.phi1(m.identifier).mustBeInterface
+            if supertypeIsClass && subtypeIsInterface then
+              (log.addWarn(s"interface $m cannot be a subtype of class $n"), Nil)
+            else
+              val newSupertype = NormalType(
+                n.identifier,
+                n.numArgs,
+                ((0 until n.numArgs)
+                  .map(i =>
+                    (TypeParameterIndex(n.identifier, i) -> InferenceVariableFactory
+                      .createInferenceVariable(
+                        Left(m.identifier),
+                        Nil,
+                        false,
+                        (0 until m.numArgs).map(TypeParameterIndex(m.identifier, _)).toSet,
+                        false
+                      ))
+                  )
+                  .toMap :: Nil).filter(!_.isEmpty)
+              )
+              val newPhi1 =
+                if supertypeIsClass then
+                  config.phi1 + (m.identifier -> config
+                    .phi1(m.identifier)
+                    .greedilyExtends(n)
+                    .asClass)
+                else config.phi1 + (m.identifier -> config.phi1(m.identifier).greedilyExtends(n))
+              if subtypeIsInterface then
+                (
+                  log.addInfo(s"interface $m.identifier greedily extends interface $newSupertype"),
+                  config.copy(
+                    phi1 = newPhi1,
+                    omega = config.omega.enqueueAll(Vector(a, IsInterfaceAssertion(n)))
+                  ) :: Nil
+                )
+              else
+                (
+                  log.addInfo(s"${m.identifier} greedily extends $newSupertype"),
+                  config.copy(
+                    phi1 = newPhi1,
+                    omega = config.omega.enqueue(a)
+                  ) :: Nil
+                )
 
 private def resolveLeftFixedSubtypeAssertion(
     log: Log,

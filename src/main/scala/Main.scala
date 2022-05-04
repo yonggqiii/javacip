@@ -9,5 +9,9 @@ object Main:
         LogWithSome(Log(config), config.in)
           .flatMap(parseConfiguration)
           .flatMap(infer)
+          .rightmap(x =>
+            println(x)
+            x
+          )
           .log
           .flush()

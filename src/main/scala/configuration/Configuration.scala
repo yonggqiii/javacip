@@ -20,6 +20,16 @@ case class Configuration(
     omega: Queue[Assertion]
 ):
   def replace(oldType: ReplaceableType, newType: Type): Configuration =
+    /* There are two things that can happen during a replacement:
+     * 1) an inference variable is replaced by one of its choices, and/or
+     * 2) some alpha is concretized
+     * the result of which is a type whose upward projection is
+     * a) a substituted reference type of some arguments
+     * b) some other inference variable or alpha
+     *
+     *
+     *
+     */
     // do replacements in Phi1
     val (tempPhi1, assts) =
       phi1.foldLeft((Map[String, MissingTypeDeclaration](), List[Assertion]())) {

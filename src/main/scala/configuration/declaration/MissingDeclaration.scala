@@ -16,6 +16,23 @@ class MissingTypeDeclaration(
     val mustBeInterface: Boolean = false
 ):
 
+  def greedilyExtends(t: Type) =
+    MissingTypeDeclaration(
+      identifier,
+      numParams,
+      supertypes :+ t,
+      attributes,
+      methods,
+      mustBeClass,
+      mustBeInterface
+    )
+
+  def asClass =
+    MissingTypeDeclaration(identifier, numParams, supertypes, attributes, methods, true, false)
+
+  def asInterface =
+    MissingTypeDeclaration(identifier, numParams, supertypes, attributes, methods, false, true)
+
   def merge(other: InferenceVariableMemberTable): (MissingTypeDeclaration, List[Assertion]) =
     ???
 
@@ -121,7 +138,8 @@ class MissingTypeDeclaration(
           .map((x: Int) => (84 + x).toChar.toString)
           .mkString(", ")) + ">"
       else ""
-    s"type $identifier$params:\nsupertypes:${supertypes.map(_.substituted)}\nattributes:${attributes}\nmethods:$methods"
+    val typeName = if mustBeClass then "class" else if mustBeInterface then "interface" else "type"
+    s"$typeName $identifier$params:\nsupertypes:${supertypes.map(_.substituted)}\nattributes:${attributes}\nmethods:$methods"
 
 class InferenceVariableMemberTable(
     val typet: Type,
