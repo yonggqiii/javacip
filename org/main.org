@@ -1,0 +1,18 @@
+#+title: Progress Tracker
+
+* The progress tracker
+
+This org file is used to track the progress and see upcoming updates of this repository.
+
+* Paper to-dos:
+** TODO Type Elimination rewrite
+** TODO 2nd order symbolic function investigation for alpha concretization
+** TODO a new algorithm for concretizing alpha?
+
+* Implementation to-do:
+** TODO replacement of \tau into one of its choices
+** TODO conflict checking and resolution in type hierarchy
+** TODO combining methods
+
+* Benchmark to-do:
+** TODO find out how to create a benchmark lol
