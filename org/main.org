@@ -13,6 +13,8 @@ This org file is used to track the progress and see upcoming updates of this rep
 ** TODO replacement of \tau into one of its choices
 ** TODO conflict checking and resolution in type hierarchy
 ** TODO combining methods
+** TODO method call site type argument choices
+** TODO subtype/equivalence assertions
 
 * Benchmark to-do:
 ** TODO find out how to create a benchmark lol
