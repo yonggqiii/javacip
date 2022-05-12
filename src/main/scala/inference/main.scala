@@ -22,19 +22,20 @@ private def resolve(log: Log, configs: List[Configuration]): LogWithOption[Confi
 
 private def resolveOne(log: Log, config: Configuration): (Log, List[Configuration]) =
   val (asst, newOmega) = config.omega.dequeue
+  val newLog           = log.addInfo(s"resolving $asst")
   asst match
-    case x: SubtypeAssertion => resolveSubtypeAssertion(log, config.copy(omega = newOmega), x)
-    case x: IsClassAssertion => resolveIsClassAssertion(log, config.copy(omega = newOmega), x)
+    case x: SubtypeAssertion => resolveSubtypeAssertion(newLog, config.copy(omega = newOmega), x)
+    case x: IsClassAssertion => resolveIsClassAssertion(newLog, config.copy(omega = newOmega), x)
     case x: IsInterfaceAssertion =>
-      resolveIsInterfaceAssertion(log, config.copy(omega = newOmega), x)
+      resolveIsInterfaceAssertion(newLog, config.copy(omega = newOmega), x)
     case x @ DisjunctiveAssertion(assts) =>
       (
-        log.addInfo(s"expanding $x"),
+        newLog.addInfo(s"expanding $x"),
         assts.map(a => config.copy(omega = newOmega.enqueue(a))).toList
       )
     case x @ ConjunctiveAssertion(assts) =>
       (
-        log.addInfo(s"expanding $x"),
+        newLog.addInfo(s"expanding $x"),
         config.copy(omega = newOmega.enqueueAll(assts)) :: Nil
       )
     case x: EquivalenceAssertion =>
@@ -44,7 +45,7 @@ private def resolveOne(log: Log, config: Configuration): (Log, List[Configuratio
       if zs.upwardProjection == zs.downwardProjection then
         val newAsst = EquivalenceAssertion(y, z)
         (
-          log.addInfo(s"$x reduces to $newAsst"),
+          newLog.addInfo(s"$x reduces to $newAsst"),
           config.copy(omega = newOmega.enqueue(newAsst)) :: Nil
         )
       else
@@ -53,11 +54,10 @@ private def resolveOne(log: Log, config: Configuration): (Log, List[Configuratio
           SubtypeAssertion(zs.downwardProjection, ys.upwardProjection)
         )
         (
-          log.addInfo(s"expanding $x"),
+          newLog.addInfo(s"expanding $x"),
           config.copy(omega = newOmega.enqueueAll(newAssts)) :: Nil
         )
     case _ =>
-      println(asst)
       ???
 
 private def resolveIsClassAssertion(

@@ -124,7 +124,12 @@ private[inference] def resolveSubtypeAssertion(
       case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
         config.phi1(m.identifier).supertypes.find(_.identifier == n.identifier) match
           case Some(x) =>
-            (log, config.copy(omega = config.omega.enqueue(SubtypeAssertion(x, n))) :: Nil)
+            (
+              log.addInfo(s"$x <: $n"),
+              config.copy(omega =
+                config.omega.enqueue(SubtypeAssertion(x.addSubstitutionLists(m.substitutions), n))
+              ) :: Nil
+            )
           case None =>
             // case of left interface and right class
             val supertypeIsClass =
@@ -157,9 +162,12 @@ private[inference] def resolveSubtypeAssertion(
                 if supertypeIsClass then
                   config.phi1 + (m.identifier -> config
                     .phi1(m.identifier)
-                    .greedilyExtends(n)
+                    .greedilyExtends(newSupertype)
                     .asClass)
-                else config.phi1 + (m.identifier -> config.phi1(m.identifier).greedilyExtends(n))
+                else
+                  config.phi1 + (m.identifier -> config
+                    .phi1(m.identifier)
+                    .greedilyExtends(newSupertype))
               if subtypeIsInterface then
                 (
                   log.addInfo(s"interface $m.identifier greedily extends interface $newSupertype"),

@@ -11,6 +11,7 @@ import configuration.resolvers.*
 import java.lang.reflect.Modifier
 import utils.*
 import scala.collection.immutable.Queue
+import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 case class Configuration(
@@ -31,12 +32,69 @@ case class Configuration(
      *
      */
     // do replacements in Phi1
-    val (tempPhi1, assts) =
-      phi1.foldLeft((Map[String, MissingTypeDeclaration](), List[Assertion]())) {
-        case ((newPhi1, newAssts), (str, oldMtd)) =>
-          val (newMtd, a) = oldMtd.replace(oldType, newType)
-          (newPhi1 + (str -> newMtd), a ::: newAssts)
-      }
+    // val (tempPhi1, assts) =
+    //   phi1.foldLeft((Map[String, MissingTypeDeclaration](), List[Assertion]())) {
+    //     case ((newPhi1, newAssts), (str, oldMtd)) =>
+    //       val (newMtd, a) = oldMtd.replace(oldType, newType)
+    //       (newPhi1 + (str -> newMtd), a ::: newAssts)
+    //   }
+
+    val newPhi1       = MutableMap[String, MissingTypeDeclaration]()
+    val newAssertions = ArrayBuffer[Assertion]()
+
+    for (s, mtd) <- phi1 do
+      val (newMtd, a) = mtd.replace(oldType, newType)
+      newPhi1 += (s -> newMtd)
+      newAssertions ++= a
+
+    val newPhi2 = MutableMap[Type, InferenceVariableMemberTable]()
+
+    for (t, ivmt) <- phi2 do
+      val newSource            = t.replace(oldType, newType).upwardProjection
+      val (newTable, newAssts) = ivmt.replace(oldType, newType)
+      newAssertions ++= newAssts
+      newSource.substituted match
+        case x: SubstitutedReferenceType =>
+          getFixedDeclaration(x) match
+            case None =>
+              var mttable = newPhi1(x.identifier)
+              // handle the class/interface stuff
+              if newTable.mustBeClass then newAssertions += IsClassAssertion(x)
+              if newTable.mustBeInterface then newAssertions += IsInterfaceAssertion(x)
+              // handle the attributes
+              for (attrName, attrType) <- newTable.attributes do
+                if mttable.attributes.contains(attrName) then
+                  newAssertions += EquivalenceAssertion(
+                    attrType,
+                    mttable.attributes(attrName).addSubstitutionLists(x.substitutions)
+                  )
+                else
+                  val createdAttrType = InferenceVariableFactory
+                    .createInferenceVariable(
+                      Left(x.identifier),
+                      Nil,
+                      true,
+                      (0 until x.numArgs).map(i => TypeParameterIndex(x.identifier, i)).toSet,
+                      false
+                    )
+                  mttable = mttable.addAttribute(
+                    attrName,
+                    createdAttrType
+                  )
+
+                  newAssertions += EquivalenceAssertion(
+                    attrType,
+                    createdAttrType.addSubstitutionLists(x.substitutions)
+                  )
+              // handle the methods
+              for (methodName, mmt) <- newTable.methods do ???
+        case x: InferenceVariable =>
+          if !newPhi2.contains(x) then newPhi2(newSource) = newTable
+          else
+            val (nt, na) = newPhi2(x).merge(newTable)
+            newPhi2(x) = nt
+            newAssertions ++= na
+        case _ => ???
 
     // do replacements in Phi2
     val (tempPhi2, moreassts) =
