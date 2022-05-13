@@ -20,25 +20,15 @@ case class Configuration(
     phi2: Map[Type, InferenceVariableMemberTable],
     omega: Queue[Assertion]
 ):
-  def replace(oldType: ReplaceableType, newType: Type): Configuration =
+  def replace(oldType: ReplaceableType, newType: Type): Option[Configuration] =
     /* There are two things that can happen during a replacement:
      * 1) an inference variable is replaced by one of its choices, and/or
      * 2) some alpha is concretized
      * the result of which is a type whose upward projection is
      * a) a substituted reference type of some arguments
      * b) some other inference variable or alpha
-     *
-     *
-     *
      */
-    // do replacements in Phi1
-    // val (tempPhi1, assts) =
-    //   phi1.foldLeft((Map[String, MissingTypeDeclaration](), List[Assertion]())) {
-    //     case ((newPhi1, newAssts), (str, oldMtd)) =>
-    //       val (newMtd, a) = oldMtd.replace(oldType, newType)
-    //       (newPhi1 + (str -> newMtd), a ::: newAssts)
-    //   }
-
+    var failed        = false
     val newPhi1       = MutableMap[String, MissingTypeDeclaration]()
     val newAssertions = ArrayBuffer[Assertion]()
 
@@ -57,37 +47,64 @@ case class Configuration(
         case x: SubstitutedReferenceType =>
           getFixedDeclaration(x) match
             case None =>
-              var mttable = newPhi1(x.identifier)
-              // handle the class/interface stuff
-              if newTable.mustBeClass then newAssertions += IsClassAssertion(x)
-              if newTable.mustBeInterface then newAssertions += IsInterfaceAssertion(x)
-              // handle the attributes
-              for (attrName, attrType) <- newTable.attributes do
-                if mttable.attributes.contains(attrName) then
-                  newAssertions += EquivalenceAssertion(
-                    attrType,
-                    mttable.attributes(attrName).addSubstitutionLists(x.substitutions)
-                  )
-                else
-                  val createdAttrType = InferenceVariableFactory
-                    .createInferenceVariable(
-                      Left(x.identifier),
-                      Nil,
-                      true,
-                      (0 until x.numArgs).map(i => TypeParameterIndex(x.identifier, i)).toSet,
-                      false
+              val (newT, newA) = newPhi1(x.identifier).merge(newTable, x)
+              newAssertions ++= newA
+              newPhi1(x.identifier) = newT
+            case Some(decl) =>
+              // TODO case when new source is declared
+              ???
+        case x: TTypeParameter =>
+          val sourceType = x match
+            case y: TypeParameterIndex => y.source
+            case y: TypeParameterName  => y.sourceType
+          val erasure = getFixedDeclaration(NormalType(sourceType, 0, Nil)) match
+            case None => NormalType("java.lang.Object", 0, Nil)
+            case Some(d) =>
+              d.getErasure(x)
+          if newTable.mustBeClass || !newTable.attributes.isEmpty then
+            newAssertions += IsClassAssertion(erasure)
+          if newTable.mustBeInterface then newAssertions += IsInterfaceAssertion(erasure)
+          for (attrName, attrType) <- newTable.attributes do
+            val attrContainer = upcastToAttributeContainer(erasure, attrName)
+            attrContainer match
+              // there is no way the attribute can exist
+              case None => failed = true
+              // attribute belongs to some known type
+              case Some(ac) =>
+                getFixedDeclaration(ac) match
+                  // attribute belongs to some declared type
+                  case Some(table) =>
+                    newAssertions += EquivalenceAssertion(
+                      attrType,
+                      table.attributes(attrName).addSubstitutionLists(ac.substitutions)
                     )
-                  mttable = mttable.addAttribute(
-                    attrName,
-                    createdAttrType
-                  )
-
-                  newAssertions += EquivalenceAssertion(
-                    attrType,
-                    createdAttrType.addSubstitutionLists(x.substitutions)
-                  )
-              // handle the methods
-              for (methodName, mmt) <- newTable.methods do ???
+                  // attribute can be added to a missing type
+                  case None =>
+                    val mttable = newPhi1(ac.identifier)
+                    if mttable.attributes.contains(attrName) then
+                      newAssertions += EquivalenceAssertion(
+                        attrType,
+                        mttable.attributes(attrName).addSubstitutionLists(ac.substitutions)
+                      )
+                    else
+                      val createdAttrType = InferenceVariableFactory.createInferenceVariable(
+                        Left(ac.identifier),
+                        Nil,
+                        true,
+                        (0 until mttable.numParams)
+                          .map(i => TypeParameterIndex(ac.identifier, i))
+                          .toSet,
+                        false
+                      )
+                      newPhi1(ac.identifier) = mttable.addAttribute(attrName, createdAttrType)
+                      newAssertions += EquivalenceAssertion(
+                        attrType,
+                        createdAttrType.addSubstitutionLists(newType.substitutions)
+                      )
+          for (methodName, methodTable) <- newTable.methods do
+            // TODO handle methods
+            this
+            ???
         case x: InferenceVariable =>
           if !newPhi2.contains(x) then newPhi2(newSource) = newTable
           else
@@ -109,12 +126,6 @@ case class Configuration(
             (newPhi2 + (newSource -> mergedTable), assts ::: newassts ::: moreAssts)
       }
 
-    val (newPhi2, toCombineWithPhi1) = tempPhi2.partition((x, _) =>
-      x match
-        case _: InferenceVariable | _: Alpha => true
-        case _                               => false
-    )
-
     ???
 
   def isComplete: Boolean = omega.isEmpty
@@ -125,6 +136,23 @@ case class Configuration(
       phi1.values.mkString("\n") + phi2.values.mkString("\n") +
       "\n\nOmega:\n" +
       omega.mkString("\n")
+
+  def upcastToAttributeContainer(typet: Type, attributeName: String): Option[Type] =
+    getFixedDeclaration(typet) match
+      case Some(x) =>
+        if x.attributes.contains(attributeName) then Some(typet)
+        else if typet.identifier == "java.lang.Object" then None
+        else if x.isInterface || x.extendedTypes.isEmpty then
+          upcastToAttributeContainer(NormalType("java.lang.Object", 0, Nil), attributeName)
+        else
+          upcastToAttributeContainer(
+            x.extendedTypes(0).addSubstitutionLists(typet.substitutions),
+            attributeName
+          )
+      // missing
+      case None =>
+        Some(typet)
+
   def getFixedDeclaration(t: Type): Option[FixedDeclaration] =
     val boxMap = Map(
       "int"     -> NormalType("java.lang.Integer", 0, Nil),

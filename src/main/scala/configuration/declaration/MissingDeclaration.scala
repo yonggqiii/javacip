@@ -3,6 +3,7 @@ package configuration.declaration
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
+import scala.collection.mutable.ArrayBuffer
 
 private type MissingMethodTable = Map[(Vector[Type], List[Map[TTypeParameter, Type]]), Type]
 
@@ -33,9 +34,54 @@ class MissingTypeDeclaration(
   def asInterface =
     MissingTypeDeclaration(identifier, numParams, supertypes, attributes, methods, false, true)
 
-  def merge(other: InferenceVariableMemberTable): (MissingTypeDeclaration, List[Assertion]) =
-    ???
+  def merge(
+      other: InferenceVariableMemberTable,
+      newType: SubstitutedReferenceType
+  ): (MissingTypeDeclaration, List[Assertion]) =
+    var mttable       = this
+    val newAssertions = ArrayBuffer[Assertion]()
+    if other.mustBeClass then newAssertions += IsClassAssertion(newType)
+    if other.mustBeInterface then newAssertions += IsInterfaceAssertion(newType)
+    // handle the attributes
+    for (attrName, attrType) <- other.attributes do
+      if mttable.attributes.contains(attrName) then
+        // List<t>.x = List<T>.x[T -> t]
+        newAssertions += EquivalenceAssertion(
+          attrType,
+          mttable.attributes(attrName).addSubstitutionLists(newType.substitutions)
+        )
+      else
+        val createdAttrType = InferenceVariableFactory
+          .createInferenceVariable(
+            Left(this.identifier),
+            Nil,
+            true,
+            (0 until this.numParams).map(i => TypeParameterIndex(this.identifier, i)).toSet,
+            false
+          )
+        mttable = mttable.addAttribute(
+          attrName,
+          createdAttrType
+        )
 
+        newAssertions += EquivalenceAssertion(
+          attrType,
+          createdAttrType.addSubstitutionLists(newType.substitutions)
+        )
+    // handle the methods
+    for (methodName, mmt) <- other.methods do
+      for ((params, context), rt) <- mmt do
+        val realContext = newType.substitutions ::: context
+        if !mttable.methods(methodName).contains((params, realContext)) then
+          // don't need the call site method param choices since
+          // the return type should encode for that already
+          mttable = mttable.addMethod(methodName, params, rt, realContext)
+        else
+          newAssertions += EquivalenceAssertion(
+            rt,
+            mttable.methods(methodName)((params, realContext))
+          )
+    (mttable, newAssertions.toList)
   def replace(
       oldType: ReplaceableType,
       newType: Type
