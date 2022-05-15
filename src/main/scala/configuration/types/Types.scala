@@ -229,6 +229,19 @@ final case class TypeParameterName(
 sealed trait ReplaceableType extends Type:
     val id: Int
 
+final case class AnyReplaceable(id: Int, substitutions: SubstitutionList = Nil) extends ReplaceableType:
+  val numArgs = 0
+  val identifier         = s"τ$id"
+  val upwardProjection: AnyReplaceable = this
+  val downwardProjection: AnyReplaceable = this
+  def addSubstitutionLists(substitutions: SubstitutionList): AnyReplaceable =
+    copy(substitutions = this.substitutions ::: substitutions)
+  def replace(oldType: ReplaceableType, newType: Type): Type =
+      newType.addSubstitutionLists(substitutions)
+  def substituted = this
+  val args = Vector()
+
+
 final case class InferenceVariable(
     id: Int,
     source: Either[String, Type],
@@ -333,3 +346,6 @@ object InferenceVariableFactory:
   ) =
     id += 1
     Alpha(id, source, substitutions, canBeBounded, parameterChoices)
+  def createAnyReplaceable(): AnyReplaceable =
+    id += 1
+    AnyReplaceable(id)

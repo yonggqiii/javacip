@@ -198,7 +198,7 @@ class InferenceVariableMemberTable(
     val (newAttributes, assertions) = other.attributes.foldLeft(attributes, List[Assertion]()) {
       case ((a, ls), (otherName, otherType)) =>
         if !a.contains(otherName) then (a + (otherName -> otherType), ls)
-        else (a, EquivalenceAssertion(a(otherName), otherType) :: ls)
+        else (a, EquivalenceAssertion(otherType, a(otherName)) :: ls)
     }
     val (newMethods, moreAssertions) = other.methods.foldLeft(methods, List[Assertion]()) {
       case ((m, ls), (otherName, otherTable)) =>

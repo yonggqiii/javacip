@@ -11,6 +11,7 @@ This org file is used to track the progress and see upcoming updates of this rep
 
 * Implementation to-do:
 ** TODO replacement of \tau into one of its choices
+** TODO Distinguish between InferenceVariable, AnyReplaceable (just some attribute that is to be replaced with something else) and Alpha
 ** TODO conflict checking and resolution in type hierarchy
 ** TODO combining methods
 ** TODO method call site type argument choices

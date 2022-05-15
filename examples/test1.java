@@ -8,12 +8,12 @@ class A<T extends U, U extends Comparable<? super U> & Comparable<T>> extends Ar
   U u;
   int i = b.d = 2;
   Object o = b;
-  // public static void main(String[] args) {
-  // A<? extends ArrayList<Integer>, Integer> a = new A<>();
-  // System.out.println(a.run());
-  // b.e = 1;
-  // c.e = 1;
-  // }
+
+  public static void main(String[] args) {
+    A<? extends ArrayList<Integer>, Integer> a;
+    System.out.println(a.run());
+    b.e = 1;
+  }
 
   B run() {
     b.c = "Hello";

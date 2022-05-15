@@ -35,4 +35,45 @@ private[inference] def resolveEquivalenceAssertion(
             log.addInfo(s"expanding $asst as assertions on its arguments"),
             config.copy(omega = config.omega.enqueueAll(newAssts)) :: Nil
           )
+      case (x: InferenceVariable, y: Type) =>
+        val originalConfig = config.copy(omega = config.omega.enqueue(asst))
+        x.source match
+          case Right(_) =>
+            if x.substitutions.isEmpty then
+              (
+                log.addInfo(s"replacing $x with $y"),
+                List(originalConfig.replace(x, y)).filter(!_.isEmpty).map(_.get)
+              )
+            else ???
+          case Left(_) =>
+            val choices = x._choices
+            (
+              log.addInfo(s"expanding ${x.identifier} into its choices"),
+              choices
+                .map(originalConfig.replace(x.copy(substitutions = Nil), _))
+                .filter(!_.isEmpty)
+                .map(_.get)
+                .toList
+            )
+      case (y: Type, x: InferenceVariable) =>
+        val originalConfig = config.copy(omega = config.omega.enqueue(asst))
+        x.source match
+          case Right(_) =>
+            if x.substitutions.isEmpty then
+              val originalConfig = config.copy(omega = config.omega.enqueue(asst))
+              (
+                log.addInfo(s"replacing $x with $y"),
+                List(originalConfig.replace(x, y)).filter(!_.isEmpty).map(_.get)
+              )
+            else ???
+          case Left(_) =>
+            val choices = x._choices
+            (
+              log.addInfo(s"expanding ${x.identifier} into its choices"),
+              choices
+                .map(originalConfig.replace(x.copy(substitutions = Nil), _))
+                .filter(!_.isEmpty)
+                .map(_.get)
+                .toList
+            )
       case _ => ???

@@ -42,6 +42,16 @@ class FixedDeclaration(
     val attrString = attributes.map(x => s"${x._2} ${x._1}").mkString("\n")
     s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nAttributes:\n$attrString\nMethods:\n$methods"
 
+  def getAllBounds(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
+    if exclusions.contains(t) then Set(NormalType("java.lang.Object", 0))
+    else
+      t match
+        case _: TTypeParameter =>
+          val bounds = getBounds(t)
+          if bounds.isEmpty then Set(NormalType("java.lang.Object", 0))
+          else bounds.flatMap(getAllBounds(_, exclusions + t)).toSet
+        case _ => Set(t)
+
   def getBounds(typet: Type): Vector[Type] =
     typet match
       case TypeParameterIndex(source, index, subs) =>
@@ -56,13 +66,14 @@ class FixedDeclaration(
       case _ => ??? // TODO
 
   def getErasure(typet: Type, exclusions: Set[Type] = Set()): Type =
-    if exclusions.contains(typet) then NormalType("Object", 0)
-    typet match
-      case _: TypeParameterIndex | _: TypeParameterName =>
-        val bounds = getBounds(typet)
-        if bounds.isEmpty then NormalType("Object", 0)
-        else getErasure(bounds(0), exclusions + typet)
-      case _ => typet
+    if exclusions.contains(typet) then NormalType("java.lang.Object", 0)
+    else
+      typet match
+        case _: TypeParameterIndex | _: TypeParameterName =>
+          val bounds = getBounds(typet)
+          if bounds.isEmpty then NormalType("java.lang.Object", 0)
+          else getErasure(bounds(0), exclusions + typet)
+        case _ => typet
 
   def conflictingMethods =
     methods

@@ -40,7 +40,11 @@ private[inference] def resolveSubtypeAssertion(
             val choices = i._choices
             (
               log.addInfo(s"expanding ${i.identifier} into its choices"),
-              choices.map(originalConfig.replace(i.copy(substitutions = Nil), _)).toList
+              choices
+                .map(originalConfig.replace(i.copy(substitutions = Nil), _))
+                .filter(!_.isEmpty)
+                .map(_.get)
+                .toList
             )
           case Right(_) =>
             (
@@ -57,7 +61,11 @@ private[inference] def resolveSubtypeAssertion(
             val choices = i._choices
             (
               log.addInfo(s"expanding ${i.identifier} into its choices"),
-              choices.map(originalConfig.replace(i.copy(substitutions = Nil), _)).toList
+              choices
+                .map(originalConfig.replace(i.copy(substitutions = Nil), _))
+                .filter(!_.isEmpty)
+                .map(_.get)
+                .toList
             )
           case Right(_) =>
             (
