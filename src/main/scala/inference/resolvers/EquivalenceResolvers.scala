@@ -26,13 +26,13 @@ private[inference] def resolveEquivalenceAssertion(
   else if a == b then (log, config :: Nil)
   else
     (a, b) match
-      case (x: SubstitutedReferenceType, y: SubstitutedReferenceType) =>
-        if x.identifier != y.identifier || x.numArgs != y.numArgs then
-          (log.addWarn(s"$x != $y"), Nil)
+      case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
+        if m.identifier != n.identifier || m.numArgs != n.numArgs then
+          (log.addWarn(s"$m != $n"), Nil)
         else
-          val newAssts = x.args.zip(y.args).map(EquivalenceAssertion(_, _))
+          val newAssts = m.args.zip(n.args).map(EquivalenceAssertion(_, _))
           (
-            log.addInfo(s"expanding $asst as assertions on its arguments"),
+            log.addInfo(s"lol, expanding $asst as assertions on its arguments"),
             config.copy(omega = config.omega.enqueueAll(newAssts)) :: Nil
           )
       case (x: InferenceVariable, y: Type) =>
@@ -76,4 +76,28 @@ private[inference] def resolveEquivalenceAssertion(
                 .map(_.get)
                 .toList
             )
+      case (x: Alpha, y: SubstitutedReferenceType) =>
+        val originalConfig = config.copy(omega = config.omega.enqueue(asst))
+        val newType = NormalType(
+          y.identifier,
+          y.numArgs,
+          ((0 until y.numArgs)
+            .map(i =>
+              TypeParameterIndex(y.identifier, i) ->
+                InferenceVariableFactory.createInferenceVariable(
+                  x.source,
+                  Nil,
+                  x.canBeBounded,
+                  x.parameterChoices,
+                  x.canBeBounded
+                )
+            )
+            .toMap :: Nil).filter(!_.isEmpty)
+        )
+        (
+          log.addInfo(s"concretizing $x to $newType"),
+          List(originalConfig.replace(x.copy(substitutions = Nil), newType))
+            .filter(!_.isEmpty)
+            .map(_.get)
+        )
       case _ => ???

@@ -3,14 +3,13 @@ import java.util.ArrayList;
 
 class A {
 
-  <T extends U & D, U> U main(List<T> x, int y) {
-    B a;
-    D d;
-    a = d;
-    List<? extends Number> i;
-    ArrayList<Integer> j;
-    i = j;
-    return x.get(y);
+  void main() {
+    B<Integer> b;
+    C<Integer> c;
+    b = c;
+    B<List<String>> d;
+    C<List<String>> e;
+    d = e;
   }
 
   // void main() {

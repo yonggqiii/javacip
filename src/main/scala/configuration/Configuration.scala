@@ -223,7 +223,14 @@ case class Configuration(
             newAssertions ++= na
         case _ => ???
 
-    Some(Configuration(delta, newPhi1.toMap, newPhi2.toMap, omega.enqueueAll(newAssertions)))
+    Some(
+      Configuration(
+        delta,
+        newPhi1.toMap,
+        newPhi2.toMap,
+        omega.enqueueAll(newAssertions).map(_.replace(oldType, newType))
+      )
+    )
 
   def upcastAllToMethodContainer(bounds: Set[Type], methodName: String, arity: Int): Set[Type] =
     bounds.flatMap(upcastOneToMethodContainer(_, methodName, arity))

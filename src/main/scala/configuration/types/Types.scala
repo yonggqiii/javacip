@@ -309,7 +309,7 @@ final case class SubstitutedReferenceType(
     NormalType(
       identifier,
       numArgs,
-      substitutions
+      this.substitutions
     ).addSubstitutionLists(substitutions)
   def replace(oldType: ReplaceableType, newType: Type) =
     copy(args = args.map(_.replace(oldType, newType)))
