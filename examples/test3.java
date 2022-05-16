@@ -3,6 +3,9 @@ import java.util.ArrayList;
 
 class A {
 
+  int x;
+  double y;
+
   void main() {
     B<Integer> b;
     C<Integer> c;
@@ -10,6 +13,9 @@ class A {
     B<List<String>> d;
     C<List<String>> e;
     d = e;
+    List<? extends Number> l;
+    ArrayList<Integer> al;
+    l = al;
   }
 
   // void main() {

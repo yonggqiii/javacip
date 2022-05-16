@@ -10,12 +10,14 @@ This org file is used to track the progress and see upcoming updates of this rep
 ** TODO a new algorithm for concretizing alpha?
 
 * Implementation to-do:
-** TODO replacement of \tau into one of its choices
+** TODO API rewrite
+** TODO replacement of \tau into one of its choices (kind of done)
 ** TODO Distinguish between InferenceVariable, AnyReplaceable (just some attribute that is to be replaced with something else) and Alpha
 ** TODO conflict checking and resolution in type hierarchy
 ** TODO combining methods
-** TODO method call site type argument choices
+** TODO method call site type argument choices (might not be needed)
 ** TODO subtype/equivalence assertions
+** TODO has method assertion
 
 * Benchmark to-do:
 ** TODO find out how to create a benchmark lol

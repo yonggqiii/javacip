@@ -257,7 +257,9 @@ case class Configuration(
               arity
             )
           else current ++ upcastAllToMethodContainer(supertypes.toSet, methodName, arity)
-  def isComplete: Boolean = omega.isEmpty
+
+  def isComplete: Boolean = omega.isEmpty // !omega.isEmpty && !phi1.isEmpty && !phi2.isEmpty
+
   override def toString =
     "Delta:\n" +
       delta.values.mkString("\n") +
@@ -301,68 +303,12 @@ case class Configuration(
     val declAttempt = rts.tryToSolveType(t.identifier)
     if !declAttempt.isSolved then None
     else
-      val rtd         = declAttempt.getCorrespondingDeclaration.asReferenceType
-      val identifier  = rtd.getQualifiedName
-      val isInterface = rtd.isInterface
-      val tp = rtd.getTypeParameters.asScala.toVector
-        .map(
-          _.getBounds.asScala.toVector
-            .map(x => resolveSolvedType(x.getType))
-        )
-      val attributes =
-        rtd.getVisibleFields.asScala.map(x => (x.getName -> resolveSolvedType(x.getType))).toMap
-      val methodDeclarations = rtd.getDeclaredMethods.asScala
-      val (methods, methodTypeParameterBounds) = methodDeclarations.foldLeft(
-        Map[String, Map[(Vector[TypeParameterName], Vector[Type]), Type]]().withDefaultValue(Map()),
-        Map[String, Vector[Type]]()
-      ) { case ((mtds, mtpbds), mtd) =>
-        val name           = mtd.getName
-        val typeParamDecls = mtd.getTypeParameters.asScala.toVector
-        val typeParams =
-          typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
-        val returnType = resolveSolvedType(mtd.getReturnType)
-        val typeParamBounds = typeParams
-          .zip(
-            typeParamDecls.map(tp =>
-              tp.getBounds.asScala.toVector.map(x => resolveSolvedType(x.getType))
-            )
-          )
-          .map(x => (x._1.identifier -> x._2))
-        val numParams = mtd.getNumberOfParams
-        val args = (0 until numParams).map(x => resolveSolvedType(mtd.getParam(x).getType)).toVector
-        (
-          mtds.+[Map[(Vector[TypeParameterName], Vector[Type]), Type]](
-            name -> (mtds(name) + ((typeParams, args) -> returnType))
-          ),
-          mtpbds ++ typeParamBounds
-        )
-      }
+      val rtd                   = declAttempt.getCorrespondingDeclaration.asReferenceType
+      val identifier            = rtd.getQualifiedName
       val c: java.lang.Class[?] = java.lang.Class.forName(identifier)
       val modifiers             = c.getModifiers
       val isAbstract            = Modifier.isAbstract(modifiers)
       val isFinal               = Modifier.isFinal(modifiers)
-      val (extendedTypes, implementedTypes) =
-        if isInterface then
-          val ifaced = rtd.asInstanceOf[ResolvedInterfaceDeclaration]
-          (ifaced.getInterfacesExtended.asScala.map(x => resolveSolvedType(x)).toVector, Vector())
-        else
-          val clsd = rtd.asInstanceOf[ResolvedClassDeclaration]
-          (
-            clsd.getSuperClass.toScala.map(x => Vector(resolveSolvedType(x))).getOrElse(Vector()),
-            clsd.getInterfaces.asScala.map(x => resolveSolvedType(x)).toVector
-          )
-
       Some(
-        FixedDeclaration(
-          identifier,
-          tp,
-          isFinal,
-          isAbstract,
-          isInterface,
-          extendedTypes,
-          implementedTypes,
-          methodTypeParameterBounds,
-          attributes,
-          methods
-        )
+        convertResolvedReferenceTypeDeclarationToFixedDeclaration(rtd, isAbstract, isFinal).get
       )
