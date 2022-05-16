@@ -7,14 +7,8 @@ class A {
   double y;
 
   void main() {
-    B<Integer> b;
-    C<Integer> c;
-    b = c;
-    B<List<String>> d;
-    C<List<String>> e;
-    d = e;
-    List<? extends Number> l;
-    ArrayList<Integer> al;
+    List<Integer> l;
+    ArrayList al;
     l = al;
   }
 

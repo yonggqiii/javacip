@@ -63,7 +63,7 @@ private[configuration] def resolveASTType(
     )
   else if typeToConvert.isPrimitiveType then
     resolvePrimitiveType(cu, config, typeToConvert.asPrimitiveType, log)
-  else if typeToConvert.isVoidType then (log, NormalType("void", 0, Nil))
+  else if typeToConvert.isVoidType then (log, PRIMITIVE_VOID)
   else ??? //TODO make this safe.
 
 private def resolvePrimitiveType(
@@ -72,7 +72,7 @@ private def resolvePrimitiveType(
     t: ASTPrimitiveType,
     log: Log
 ): (Log, Type) =
-  (log, NormalType(t.asString, 0, Nil))
+  (log, PrimitiveType(t.asString))
 
 private def resolveArrayType(
     cu: CompilationUnit,

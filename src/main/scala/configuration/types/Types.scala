@@ -2,6 +2,26 @@ package configuration.types
 
 import scala.Console.{RED, RESET}
 
+val OBJECT = NormalType("java.lang.Object", 0)
+val BOXED_INT = NormalType("java.lang.Integer", 0)
+val BOXED_SHORT = NormalType("java.lang.Short", 0)
+val BOXED_LONG = NormalType("java.lang.Long", 0)
+val BOXED_BYTE = NormalType("java.lang.Byte", 0)
+val BOXED_CHAR = NormalType("java.lang.Character", 0)
+val BOXED_FLOAT = NormalType("java.lang.Float", 0)
+val BOXED_DOUBLE = NormalType("java.lang.Double", 0)
+val BOXED_BOOLEAN = NormalType("java.lang.Boolean", 0)
+val BOXED_VOID = NormalType("java.lang.Void", 0)
+val PRIMITIVE_INT = PrimitiveType("int", BOXED_INT)
+val PRIMITIVE_BYTE = PrimitiveType("byte", BOXED_BYTE)
+val PRIMITIVE_SHORT = PrimitiveType("short", BOXED_SHORT)
+val PRIMITIVE_CHAR = PrimitiveType("char", BOXED_CHAR)
+val PRIMITIVE_LONG = PrimitiveType("long", BOXED_LONG)
+val PRIMITIVE_FLOAT = PrimitiveType("float", BOXED_FLOAT)
+val PRIMITIVE_DOUBLE = PrimitiveType("double", BOXED_DOUBLE)
+val PRIMITIVE_BOOLEAN = PrimitiveType("boolean", BOXED_BOOLEAN)
+val PRIMITIVE_VOID = PrimitiveType("void", BOXED_VOID)
+
 // Type aliases
 private type SubstitutionList = List[Map[TTypeParameter, Type]]
 
@@ -44,6 +64,11 @@ sealed trait Type:
    */
   def replace(oldType: ReplaceableType, newType: Type): Type
 
+  /**
+   * Returns the equivalent type after substituting as much as possible;
+   * for example, List<T>[T -> Integer] will become List<Integer>.
+   * Replaceable types will not be substituted
+   */
   def substituted: Type
 
   override def toString: String =
@@ -89,7 +114,9 @@ final case class NormalType(
   val upwardProjection: NormalType   = this
   val downwardProjection: NormalType = this
   def addSubstitutionLists(substitutions: SubstitutionList): NormalType =
-    copy(substitutions = this.substitutions ::: substitutions)
+    if numArgs > 0 then
+      copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
+    else this
   def replace(oldType: ReplaceableType, newType: Type): NormalType =
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
   def substituted = SubstitutedReferenceType(
@@ -100,8 +127,22 @@ final case class NormalType(
     .map(_.addSubstitutionLists(substitutions))
     .toVector
 
+object PrimitiveType:
+    def apply(identifier: String): PrimitiveType = identifier match
+      case "byte" => PRIMITIVE_BYTE
+      case "short" => PRIMITIVE_SHORT
+      case "char" => PRIMITIVE_CHAR
+      case "int" => PRIMITIVE_INT
+      case "long" => PRIMITIVE_LONG
+      case "float" => PRIMITIVE_FLOAT
+      case "double" => PRIMITIVE_DOUBLE
+      case "boolean" => PRIMITIVE_BOOLEAN
+      case "void" => PRIMITIVE_VOID
+      case _ => ???
+
 final case class PrimitiveType(
-    identifier: String
+    identifier: String,
+    boxed: NormalType
 ) extends Type:
   val numArgs = 0
   val substitutions = Nil
@@ -124,7 +165,7 @@ case object Bottom extends Type:
   val args = Vector()
 
 case object Wildcard extends Type:
-  val upwardProjection: NormalType = NormalType("java.lang.Object", 0, Nil)
+  val upwardProjection: NormalType = OBJECT
   val downwardProjection: Bottom.type = Bottom
   val identifier = "?"
   val numArgs = 0
@@ -161,7 +202,7 @@ final case class SuperWildcardType(
   val identifier                      = ""
   val numArgs                         = 0
   val substitutions: SubstitutionList = Nil
-  val upwardProjection: NormalType = NormalType("java.lang.Object", 0, Nil)
+  val upwardProjection: NormalType = OBJECT
   val downwardProjection =
     lower.addSubstitutionLists(_substitutions).downwardProjection
   def addSubstitutionLists(substitutions: SubstitutionList) =

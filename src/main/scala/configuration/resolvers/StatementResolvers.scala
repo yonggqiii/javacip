@@ -47,8 +47,7 @@ private def resolveReturnStmt(
         case Some(expr) =>
           val exprType = resolveExpression(log, expr, config, memo)
           exprType.rightmap(ttype =>
-            if returnType.isVoid then
-              config._3 += EquivalenceAssertion(ttype, NormalType("void", 0))
+            if returnType.isVoid then config._3 += EquivalenceAssertion(ttype, PRIMITIVE_VOID)
             else config._3 += SubtypeAssertion(ttype, resolveSolvedType(returnType))
             config
           )

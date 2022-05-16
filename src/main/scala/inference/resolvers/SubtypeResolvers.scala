@@ -13,12 +13,11 @@ private[inference] def resolveSubtypeAssertion(
   val SubtypeAssertion(x, y) = a
   val (sub, sup)             = (x.upwardProjection.substituted, y.downwardProjection.substituted)
   // trivial cases
-  if sub == sup || sup == NormalType("java.lang.Object", 0, Nil).substituted || sub == Bottom then
-    (log, config :: Nil)
+  if sub == sup || sup == OBJECT.substituted || sub == Bottom then (log, config :: Nil)
   // subtype is Object
-  else if sub == NormalType("java.lang.Object", 0, Nil).substituted then
+  else if sub == OBJECT.substituted then
     val newAssertion =
-      EquivalenceAssertion(y.downwardProjection, NormalType("java.lang.Object", 0, Nil))
+      EquivalenceAssertion(y.downwardProjection, OBJECT)
     (
       log.addInfo(s"replaced $a with $newAssertion"),
       config.copy(omega = config.omega.enqueue(newAssertion)) :: Nil
@@ -100,7 +99,7 @@ private[inference] def resolveSubtypeAssertion(
             log.addWarn(s"bounds of $x is always Object because it is found in a missing type"),
             config.copy(omega =
               config.omega
-                .enqueue(SubtypeAssertion(NormalType("java.lang.Object", 0, Nil), y))
+                .enqueue(SubtypeAssertion(OBJECT, y))
             ) :: Nil
           )
         else (log.addWarn(s"unable to find the declaration where $sub is declared"), Nil)
@@ -114,7 +113,8 @@ private[inference] def resolveSubtypeAssertion(
       // case of two substituted reference types where raw is the same
       case (m, n): (SubstitutedReferenceType, SubstitutedReferenceType)
           if m.identifier == n.identifier =>
-        if sup.args.size == 0 || sub.args.size == 0 then (log, config :: Nil)
+        if sup.args.size == 0 || sub.args.size == 0 then
+          (log.addInfo(s"$m <: $n is trivially true as at least one is raw"), config :: Nil)
         else if sup.args.size != sup.args.size then
           (
             log.addWarn(s"$sub and $sup have same raw type but different number of arguments?"),
@@ -132,12 +132,14 @@ private[inference] def resolveSubtypeAssertion(
       case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
         config.phi1(m.identifier).supertypes.find(_.identifier == n.identifier) match
           case Some(x) =>
-            (
-              log.addInfo(s"$x <: $n"),
-              config.copy(omega =
-                config.omega.enqueue(SubtypeAssertion(x.addSubstitutionLists(m.substitutions), n))
-              ) :: Nil
-            )
+            if m.numArgs == 0 then (log.addInfo(s"$m <: $n trivially is $m is raw"), config :: Nil)
+            else
+              (
+                log.addInfo(s"$x <: $n"),
+                config.copy(omega =
+                  config.omega.enqueue(SubtypeAssertion(x.addSubstitutionLists(m.substitutions), n))
+                ) :: Nil
+              )
           case None =>
             // case of left interface and right class
             val supertypeIsClass =
@@ -204,11 +206,15 @@ private def resolveLeftFixedSubtypeAssertion(
     .map(decl =>
       val supertypes =
         val tmp = (decl.extendedTypes ++ decl.implementedTypes).map(x =>
-          x.addSubstitutionLists(
-            subtype.upwardProjection.substituted.substitutions.filter(x => !x.isEmpty)
-          )
+          if subtype.numArgs == 0 then
+            // subtype is raw
+            NormalType(x.identifier, 0, Nil)
+          else
+            x.addSubstitutionLists(
+              subtype.upwardProjection.substituted.substitutions.filter(x => !x.isEmpty)
+            )
         )
-        if tmp.isEmpty then Vector(NormalType("java.lang.Object", 0, Nil)) else tmp
+        if tmp.isEmpty then Vector(OBJECT) else tmp
       supertypes.map(x => SubtypeAssertion(x, supertype.downwardProjection))
     )
     .map(DisjunctiveAssertion(_))

@@ -43,12 +43,12 @@ class FixedDeclaration(
     s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nAttributes:\n$attrString\nMethods:\n$methods"
 
   def getAllBounds(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
-    if exclusions.contains(t) then Set(NormalType("java.lang.Object", 0))
+    if exclusions.contains(t) then Set(OBJECT)
     else
       t match
         case _: TTypeParameter =>
           val bounds = getBounds(t)
-          if bounds.isEmpty then Set(NormalType("java.lang.Object", 0))
+          if bounds.isEmpty then Set(OBJECT)
           else bounds.flatMap(getAllBounds(_, exclusions + t)).toSet
         case _ => Set(t)
 
@@ -66,12 +66,12 @@ class FixedDeclaration(
       case _ => ??? // TODO
 
   def getErasure(typet: Type, exclusions: Set[Type] = Set()): Type =
-    if exclusions.contains(typet) then NormalType("java.lang.Object", 0)
+    if exclusions.contains(typet) then OBJECT
     else
       typet match
         case _: TypeParameterIndex | _: TypeParameterName =>
           val bounds = getBounds(typet)
-          if bounds.isEmpty then NormalType("java.lang.Object", 0)
+          if bounds.isEmpty then OBJECT
           else getErasure(bounds(0), exclusions + typet)
         case _ => typet
 

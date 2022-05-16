@@ -86,7 +86,7 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
         clsd.getSuperClass.toScala
           .map(x =>
             Vector(resolveSolvedType(x))
-              .filter(x => x.identifier != "java.lang.Object")
+              .filter(x => x == OBJECT)
           )
           .getOrElse(Vector()),
         clsd.getInterfaces.asScala.map(x => resolveSolvedType(x)).toVector

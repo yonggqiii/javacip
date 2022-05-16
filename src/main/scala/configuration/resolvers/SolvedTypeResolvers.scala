@@ -42,7 +42,7 @@ private[configuration] def resolveSolvedType(
     )
   else if typeToConvert.isTypeVariable then resolveSolvedTypeVariable(typeToConvert.asTypeVariable)
   else if typeToConvert.isUnionType then ??? // TODO
-  else if typeToConvert.isVoid then NormalType("void", 0)
+  else if typeToConvert.isVoid then PRIMITIVE_VOID
   else if typeToConvert.isWildcard then
     val typet = typeToConvert.asWildcard
     if !typet.isBounded then Wildcard
