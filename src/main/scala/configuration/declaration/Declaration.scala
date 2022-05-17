@@ -43,6 +43,13 @@ class FixedDeclaration(
     val attrString = attributes.map(x => s"${x._2} ${x._1}").mkString("\n")
     s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nAttributes:\n$attrString\nMethods:\n$methods"
 
+  def getDirectAncestors =
+    if identifier == "java.lang.Object" || identifier == "Object" then Vector()
+    else
+      val a = extendedTypes ++ implementedTypes
+      if a.isEmpty then Vector(OBJECT)
+      else a
+
   def getAllBounds(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
     if exclusions.contains(t) then Set(OBJECT)
     else

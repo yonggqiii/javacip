@@ -18,13 +18,13 @@ private def resolve(log: Log, configs: List[Configuration]): LogWithOption[Confi
       if config.isComplete then LogWithSome(log.addSuccess(s"Inference complete"), config)
       else
         val (newLog, newConfigs) = resolveOne(log, config)
-        resolve(newLog, remainingConfigs ::: newConfigs)
+        resolve(newLog, newConfigs ::: remainingConfigs)
 
 private def resolveOne(log: Log, config: Configuration): (Log, List[Configuration]) =
   val (asst, newConfig) = config.pop()
-  if newConfig |- asst then (log, newConfig :: Nil)
+  val newLog            = log.addInfo(s"resolving $asst")
+  if newConfig |- asst then (newLog, newConfig :: Nil)
   else
-    val newLog = log.addInfo(s"resolving $asst")
     asst match
       case x: SubtypeAssertion => resolveSubtypeAssertion(newLog, newConfig, x)
       case x: IsClassAssertion => resolveIsClassAssertion(newLog, newConfig, x)

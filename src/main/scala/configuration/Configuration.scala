@@ -20,15 +20,43 @@ case class Configuration(
     phi2: Map[Type, InferenceVariableMemberTable],
     omega: Queue[Assertion]
 ):
+  /** Add an assertion to the configuration
+    * @param a
+    *   the assertion to add
+    * @return
+    *   the resulting config
+    */
   def asserts(a: Assertion): Configuration = copy(omega = omega.enqueue(a))
+
+  /** Adds a bunch of assertions to the configuration
+    * @param a
+    *   the assertions to add
+    * @return
+    *   the resulting config
+    */
   def assertsAllOf(a: Iterable[Assertion]) = copy(omega = omega.enqueueAll(a))
+
+  /** Pops an assertion from the configuration
+    * @return
+    *   the assertion and the new config excluding the assertion
+    */
   def pop() =
     val (a, newOmega) = omega.dequeue
     (a, copy(omega = newOmega))
-  def missingAncestorsOf(t: Type): Vector[Type] = t match
-    case _: NormalType | _: SubstitutedReferenceType =>
-      getFixedDeclaration(t) match
-        case Some(decl) => ???
+
+  /** Upcasts some type to all of its missing supertypes. If the type itself is missing, then it is
+    * returned
+    * @param t
+    *   the type to upcast
+    * @return
+    *   all the missing supertypes
+    */
+  def upcastToMissingAncestors(t: Type): Vector[Type] =
+    if this |- t.substituted.isMissing || t.isSomehowUnknown then Vector(t)
+    else
+      getFixedDeclaration(t.substituted).get.getDirectAncestors
+        .map(x => x.addSubstitutionLists(t.substitutions))
+        .flatMap(x => upcastToMissingAncestors(x))
 
   def |-(a: Assertion): Boolean = a match
     case SubtypeAssertion(sub, sup) =>
@@ -41,17 +69,23 @@ case class Configuration(
         (this |- (sub.upwardProjection <:~ sup.upwardProjection)) &&
         (this |- (sub.downwardProjection ~:> sup.downwardProjection))
     case IsClassAssertion(a) =>
-      val id = a.substituted.upwardProjection.identifier
-      if delta.contains(id) then !delta(id).isInterface
-      else if phi1.contains(id) then phi1(id).mustBeClass
-      else if phi2.contains(a.substituted) then phi2(a.substituted).mustBeClass
-      else false
+      val t  = a.substituted.upwardProjection
+      val id = t.identifier
+      getFixedDeclaration(t) match
+        case Some(decl) => !decl.isInterface
+        case None =>
+          if phi1.contains(id) then phi1(id).mustBeClass
+          else if phi2.contains(t) then phi2(t).mustBeClass
+          else false
     case IsInterfaceAssertion(a) =>
-      val id = a.substituted.upwardProjection.identifier
-      if delta.contains(id) then delta(id).isInterface
-      else if phi1.contains(id) then phi1(id).mustBeInterface
-      else if phi2.contains(a.substituted) then phi2(a.substituted).mustBeInterface
-      else false
+      val t  = a.substituted.upwardProjection
+      val id = t.identifier
+      getFixedDeclaration(t) match
+        case Some(decl) => decl.isInterface
+        case None =>
+          if phi1.contains(id) then phi1(id).mustBeInterface
+          else if phi2.contains(t) then phi2(t).mustBeInterface
+          else false
     case IsDeclaredAssertion(a) =>
       delta.contains(a.substituted.upwardProjection.identifier) || getFixedDeclaration(
         a.substituted.upwardProjection

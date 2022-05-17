@@ -98,7 +98,9 @@ class MissingTypeDeclaration(
         numParams,
         supertypes.map(_.replace(oldType, newType)),
         attributes.map(_ -> _.replace(oldType, newType)),
-        newMethods
+        newMethods,
+        mustBeClass,
+        mustBeInterface
       ),
       assertions
     )
@@ -122,7 +124,15 @@ class MissingTypeDeclaration(
   def ofParameters(i: Int) =
     // TODO make sure you can go from raw to generic type of a particular
     // arity, cannot change positive arity.
-    MissingTypeDeclaration(identifier, i, supertypes, attributes, methods)
+    MissingTypeDeclaration(
+      identifier,
+      i,
+      supertypes,
+      attributes,
+      methods,
+      mustBeClass,
+      mustBeInterface
+    )
 
   def addSupertype(supertype: Type) =
     MissingTypeDeclaration(
@@ -130,7 +140,9 @@ class MissingTypeDeclaration(
       numParams,
       supertypes :+ supertype,
       attributes,
-      methods
+      methods,
+      mustBeClass,
+      mustBeInterface
     )
 
   def getAttribute(
@@ -152,7 +164,9 @@ class MissingTypeDeclaration(
         numParams,
         supertypes,
         attributes + (identifier -> attributeType),
-        methods
+        methods,
+        mustBeClass,
+        mustBeInterface
       )
   def getMethodReturnType(
       identifier: String,
@@ -174,7 +188,9 @@ class MissingTypeDeclaration(
       numParams,
       supertypes,
       attributes,
-      methods + (identifier -> (methods(identifier) + ((paramTypes, context) -> returnType)))
+      methods + (identifier -> (methods(identifier) + ((paramTypes, context) -> returnType))),
+      mustBeClass,
+      mustBeInterface
     )
 
   override def toString =
@@ -214,7 +230,10 @@ class InferenceVariableMemberTable(
           }
           (m + (otherName -> resultingTable), assts ::: ls)
     }
-    (InferenceVariableMemberTable(typet, newAttributes, newMethods), assertions ::: moreAssertions)
+    (
+      InferenceVariableMemberTable(typet, newAttributes, newMethods, mustBeClass, mustBeInterface),
+      assertions ::: moreAssertions
+    )
 
   def getAttribute(
       identifier: String,
@@ -233,7 +252,9 @@ class InferenceVariableMemberTable(
       InferenceVariableMemberTable(
         typet,
         attributes + (identifier -> attributeType),
-        methods
+        methods,
+        mustBeClass,
+        mustBeInterface
       )
 
   def addMethod(
@@ -245,7 +266,9 @@ class InferenceVariableMemberTable(
     InferenceVariableMemberTable(
       typet,
       attributes,
-      methods + (identifier -> (methods(identifier) + ((paramTypes, context) -> returnType)))
+      methods + (identifier -> (methods(identifier) + ((paramTypes, context) -> returnType))),
+      mustBeClass,
+      mustBeInterface
     )
 
   def getMethodReturnType(
@@ -273,7 +296,9 @@ class InferenceVariableMemberTable(
       InferenceVariableMemberTable(
         typet.replace(oldType, newType).upwardProjection,
         attributes.map(_ -> _.replace(oldType, newType)),
-        newMethods
+        newMethods,
+        mustBeClass,
+        mustBeInterface
       ),
       assertions
     )
