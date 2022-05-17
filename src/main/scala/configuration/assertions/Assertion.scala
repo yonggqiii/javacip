@@ -5,6 +5,10 @@ import configuration.types.*
 
 sealed trait Assertion:
   def replace(oldType: ReplaceableType, newType: Type): Assertion
+  def &&(a: Assertion): ConjunctiveAssertion =
+    ConjunctiveAssertion(Vector(this, a))
+  def ||(a: Assertion): DisjunctiveAssertion =
+    DisjunctiveAssertion(Vector(this, a))
 
 case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
   override def toString = s"$left <: $right"
@@ -24,10 +28,14 @@ case class ContainmentAssertion(left: Type, right: Type) extends Assertion:
 case class DisjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion:
   def replace(oldType: ReplaceableType, newType: Type): DisjunctiveAssertion =
     copy(assertions = assertions.map(_.replace(oldType, newType)))
+  override def ||(a: Assertion): DisjunctiveAssertion =
+    copy(assertions = assertions :+ a)
 
 case class ConjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion:
   def replace(oldType: ReplaceableType, newType: Type): ConjunctiveAssertion =
     copy(assertions = assertions.map(_.replace(oldType, newType)))
+  override def &&(a: Assertion): ConjunctiveAssertion =
+    copy(assertions = assertions :+ a)
 
 case class IsClassAssertion(identifier: Type) extends Assertion:
   override def toString = s"isClass($identifier)"

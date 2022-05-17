@@ -22,6 +22,9 @@ case class Configuration(
 ):
   def asserts(a: Assertion): Configuration = copy(omega = omega.enqueue(a))
   def assertsAllOf(a: Iterable[Assertion]) = copy(omega = omega.enqueueAll(a))
+  def pop() =
+    val (a, newOmega) = omega.dequeue
+    (a, copy(omega = newOmega))
   def missingAncestorsOf(t: Type): Vector[Type] = t match
     case _: NormalType | _: SubstitutedReferenceType =>
       getFixedDeclaration(t) match
