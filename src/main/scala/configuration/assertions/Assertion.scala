@@ -52,3 +52,18 @@ case class HasMethodAssertion(
       args = args.map(_.replace(oldType, newType)),
       returnType = returnType.replace(oldType, newType)
     )
+
+case class IsDeclaredAssertion(t: Type) extends Assertion:
+  override def toString = s"${t.identifier} ∈ Δ"
+  def replace(oldType: ReplaceableType, newType: Type): IsDeclaredAssertion =
+    copy(t = t.replace(oldType, newType))
+
+case class IsMissingAssertion(t: Type) extends Assertion:
+  override def toString = s"${t.identifier} ∈ Φ₁"
+  def replace(oldType: ReplaceableType, newType: Type): IsMissingAssertion =
+    copy(t = t.replace(oldType, newType))
+
+case class IsUnknownAssertion(t: Type) extends Assertion:
+  override def toString = s"${t.identifier} ∈ Φ₂"
+  def replace(oldType: ReplaceableType, newType: Type): IsUnknownAssertion =
+    copy(t = t.replace(oldType, newType))

@@ -1,6 +1,7 @@
 package configuration.declaration
 
 import configuration.types.*
+import scala.annotation.tailrec
 
 private type MethodTable = Map[(Vector[TypeParameterName], Vector[Type]), Type]
 
@@ -51,6 +52,16 @@ class FixedDeclaration(
           if bounds.isEmpty then Set(OBJECT)
           else bounds.flatMap(getAllBounds(_, exclusions + t)).toSet
         case _ => Set(t)
+
+  def getBoundsAsTypeParameters(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
+    if exclusions.contains(t) then Set()
+    else
+      val b = getBounds(t).filter(x =>
+        x match
+          case y: TTypeParameter => true
+          case _                 => false
+      )
+      b.toSet.flatMap(x => getBoundsAsTypeParameters(x, exclusions + t) + x)
 
   def getBounds(typet: Type): Vector[Type] =
     typet match

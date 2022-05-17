@@ -1,5 +1,5 @@
 package configuration.types
-
+import configuration.assertions.*
 import scala.Console.{RED, RESET}
 
 val OBJECT = NormalType("java.lang.Object", 0)
@@ -31,6 +31,17 @@ sealed trait Type:
   /** The identifier of the type
     */
   val identifier: String
+
+  def ~:>(that: Type) = SubtypeAssertion(that, this)
+  def <:~(that: Type) = SubtypeAssertion(this, that)
+  def ~=~(that: Type) = EquivalenceAssertion(this, that)
+  def <=~(that: Type) = ContainmentAssertion(this, that)
+  def ~=>(that: Type) = ContainmentAssertion(that, this)
+  def isClass = IsClassAssertion(this)
+  def isInterface = IsInterfaceAssertion(this)
+  def isDeclared = IsDeclaredAssertion(this)
+  def isMissing = IsMissingAssertion(this)
+  def isSomehowUnknown: Boolean
 
   /** The substitutions this type has
     */
@@ -105,6 +116,7 @@ final case class ArrayType(
     copy(base = base.replace(oldType, newType))
   def substituted = copy(base = base.substituted)
   val args = Vector()
+  def isSomehowUnknown = base.isSomehowUnknown
 
 final case class NormalType(
     identifier: String,
@@ -126,6 +138,7 @@ final case class NormalType(
     .map(TypeParameterIndex(identifier, _))
     .map(_.addSubstitutionLists(substitutions))
     .toVector
+  def isSomehowUnknown = substituted.isSomehowUnknown
 
 object PrimitiveType:
     def apply(identifier: String): PrimitiveType = identifier match
@@ -152,7 +165,7 @@ final case class PrimitiveType(
   def replace(oldType: ReplaceableType, newType: Type): PrimitiveType = this
   def substituted = this
   val args = Vector()
-
+  def isSomehowUnknown = false
 case object Bottom extends Type:
   val upwardProjection: Bottom.type = this
   val downwardProjection: Bottom.type = this
@@ -163,7 +176,7 @@ case object Bottom extends Type:
   def replace(oldType: ReplaceableType, newType: Type): Bottom.type = this
   def substituted = this
   val args = Vector()
-
+  def isSomehowUnknown = false
 case object Wildcard extends Type:
   val upwardProjection: NormalType = OBJECT
   val downwardProjection: Bottom.type = Bottom
@@ -174,7 +187,7 @@ case object Wildcard extends Type:
   def replace(oldType: ReplaceableType, newType: Type): Wildcard.type = this
   def substituted = this
   val args = Vector()
-
+  def isSomehowUnknown = false
 final case class ExtendsWildcardType(
     upper: Type,
     _substitutions: SubstitutionList = Nil
@@ -194,6 +207,7 @@ final case class ExtendsWildcardType(
     )
   def substituted = copy(upper = upper.addSubstitutionLists(_substitutions).substituted, _substitutions = Nil)
   val args = Vector()
+  def isSomehowUnknown = upwardProjection.isSomehowUnknown
 
 final case class SuperWildcardType(
     lower: Type,
@@ -214,14 +228,17 @@ final case class SuperWildcardType(
     )
   def substituted = copy(lower = lower.addSubstitutionLists(_substitutions).substituted, _substitutions = Nil)
   val args = Vector()
+  def isSomehowUnknown = downwardProjection.isSomehowUnknown
 
-sealed trait TTypeParameter extends Type
+sealed trait TTypeParameter extends Type:
+    def containingTypeIdentifier: String
 
 final case class TypeParameterIndex(
     source: String,
     index: Int,
     substitutions: SubstitutionList = Nil
 ) extends TTypeParameter:
+  def containingTypeIdentifier = source
   val numArgs            = 0
   val identifier         = s"$source#${(84 + index).toChar.toString}"
   val upwardProjection: TypeParameterIndex   = this
@@ -238,6 +255,7 @@ final case class TypeParameterIndex(
       else
         copy(substitutions = xs).substituted
   val args = Vector()
+  def isSomehowUnknown = substitutions.isEmpty || substituted.isSomehowUnknown
 
 final case class TypeParameterName(
     sourceType: String,
@@ -245,6 +263,7 @@ final case class TypeParameterName(
     qualifiedName: String,
     substitutions: SubstitutionList = Nil
 ) extends TTypeParameter:
+  def containingTypeIdentifier = sourceType
   val identifier         = s"$source#$qualifiedName"
   val numArgs            = 0
   val upwardProjection   = this
@@ -266,9 +285,11 @@ final case class TypeParameterName(
       else
         copy(substitutions = xs).substituted
   val args = Vector()
+  def isSomehowUnknown = substitutions.isEmpty || substituted.isSomehowUnknown
 
 sealed trait ReplaceableType extends Type:
-    val id: Int
+  val id: Int
+  def isSomehowUnknown = true
 
 final case class AnyReplaceable(id: Int, substitutions: SubstitutionList = Nil) extends ReplaceableType:
   val numArgs = 0
@@ -358,6 +379,7 @@ final case class SubstitutedReferenceType(
   override def toString =
     val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
     s"$identifier$a"
+  def isSomehowUnknown = args.foldLeft(false)(_ || _.isSomehowUnknown)
 
 object InferenceVariableFactory:
   var id = 0

@@ -130,6 +130,10 @@ private[inference] def resolveSubtypeAssertion(
         resolveLeftFixedSubtypeAssertion(log, config, x, y)
       // case of subtype being a missing type and supertype is a known type
       case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
+        config upcast (m, n) match
+          case Some(newType) => (log, (config asserts (newType <:~ n)) :: Nil)
+          case None          => ???
+
         config.phi1(m.identifier).supertypes.find(_.identifier == n.identifier) match
           case Some(x) =>
             if m.numArgs == 0 then (log.addInfo(s"$m <: $n trivially is $m is raw"), config :: Nil)

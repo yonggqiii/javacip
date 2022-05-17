@@ -20,6 +20,74 @@ case class Configuration(
     phi2: Map[Type, InferenceVariableMemberTable],
     omega: Queue[Assertion]
 ):
+  def asserts(a: Assertion): Configuration = copy(omega = omega.enqueue(a))
+  def assertsAllOf(a: Iterable[Assertion]) = copy(omega = omega.enqueueAll(a))
+  def missingAncestorsOf(t: Type): Vector[Type] = t match
+    case _: NormalType | _: SubstitutedReferenceType =>
+      getFixedDeclaration(t) match
+        case Some(decl) => ???
+
+  def |-(a: Assertion): Boolean = a match
+    case SubtypeAssertion(sub, sup) =>
+      proveSubtype(sub.substituted.upwardProjection, sup.substituted.downwardProjection)
+    case EquivalenceAssertion(a, b) => a.substituted == b.substituted
+    case ContainmentAssertion(sub, sup) =>
+      if sup.substituted.upwardProjection == sup.substituted.downwardProjection then
+        this |- (sub ~=~ sup)
+      else
+        (this |- (sub.upwardProjection <:~ sup.upwardProjection)) &&
+        (this |- (sub.downwardProjection ~:> sup.downwardProjection))
+    case IsClassAssertion(a) =>
+      val id = a.substituted.upwardProjection.identifier
+      if delta.contains(id) then !delta(id).isInterface
+      else if phi1.contains(id) then phi1(id).mustBeClass
+      else if phi2.contains(a.substituted) then phi2(a.substituted).mustBeClass
+      else false
+    case IsInterfaceAssertion(a) =>
+      val id = a.substituted.upwardProjection.identifier
+      if delta.contains(id) then delta(id).isInterface
+      else if phi1.contains(id) then phi1(id).mustBeInterface
+      else if phi2.contains(a.substituted) then phi2(a.substituted).mustBeInterface
+      else false
+    case IsDeclaredAssertion(a) =>
+      delta.contains(a.substituted.upwardProjection.identifier) || getFixedDeclaration(
+        a.substituted.upwardProjection
+      ).isDefined
+    case IsMissingAssertion(a) => phi1.contains(a.substituted.upwardProjection.identifier)
+    case DisjunctiveAssertion(v) =>
+      if v.isEmpty then true
+      else (this |- v.head) || (this |- DisjunctiveAssertion(v.tail))
+    case ConjunctiveAssertion(v) =>
+      if v.isEmpty then true
+      else (this |- v.head) && (this |- ConjunctiveAssertion(v.tail))
+    case _ => ???
+  private def proveSubtype(sub: Type, sup: Type): Boolean =
+    if sup == OBJECT.substituted then true
+    else if sub == Bottom.substituted then true
+    else if sub.isSomehowUnknown || sup.isSomehowUnknown then false
+    else
+      (sub, sup) match
+        case (x: TTypeParameter, y: TTypeParameter) =>
+          val source = x.containingTypeIdentifier
+          getFixedDeclaration(NormalType(source, 0)) match
+            case None => false
+            case Some(decl) =>
+              val bounds = decl.getBoundsAsTypeParameters(x)
+              bounds.contains(y)
+        case (x: TTypeParameter, y: SubstitutedReferenceType) =>
+          val source = x.containingTypeIdentifier
+          getFixedDeclaration(NormalType(source, 0)) match
+            case None => false
+            case Some(decl) =>
+              val bounds = decl.getAllBounds(x)
+              this |- DisjunctiveAssertion(bounds.toVector.map(x => x <:~ y))
+        case (x: SubstitutedReferenceType, y: SubstitutedReferenceType) =>
+          upcast(x, y) match
+            case None => false
+            case Some(s) =>
+              if s.numArgs == 0 || y.numArgs == 0 then true
+              else this |- ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
+        case _ => false
   def replace(oldType: ReplaceableType, newType: Type): Option[Configuration] =
     /* There are two things that can happen during a replacement:
      * 1) an inference variable is replaced by one of its choices, and/or
@@ -252,7 +320,7 @@ case class Configuration(
               .map(_.addSubstitutionLists(t.substitutions))
           if supertypes.isEmpty then
             current ++ upcastOneToMethodContainer(
-              NormalType("java.lang.Object", 0),
+              OBJECT,
               methodName,
               arity
             )
@@ -269,12 +337,12 @@ case class Configuration(
       omega.mkString("\n")
 
   def upcastToAttributeContainer(typet: Type, attributeName: String): Option[Type] =
-    getFixedDeclaration(typet) match
+    getFixedDeclaration(typet.substituted) match
       case Some(x) =>
         if x.attributes.contains(attributeName) then Some(typet)
-        else if typet.identifier == "java.lang.Object" then None
+        else if typet.substituted == OBJECT.substituted then None
         else if x.isInterface || x.extendedTypes.isEmpty then
-          upcastToAttributeContainer(NormalType("java.lang.Object", 0, Nil), attributeName)
+          upcastToAttributeContainer(OBJECT, attributeName)
         else
           upcastToAttributeContainer(
             x.extendedTypes(0).addSubstitutionLists(typet.substitutions),
@@ -315,7 +383,6 @@ case class Configuration(
 
   def upcast(t: Type, target: Type): Option[Type] = (t.substituted, target.substituted) match
     case (x, y): (SubstitutedReferenceType, SubstitutedReferenceType) =>
-      println(s"$x ${x.substitutions}")
       if x.identifier == y.identifier then Some(t)
       else
         val (supertypes, isRaw) = getFixedDeclaration(t) match
