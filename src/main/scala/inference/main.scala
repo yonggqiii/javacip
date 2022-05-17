@@ -93,7 +93,8 @@ private def resolveIsInterfaceAssertion(
   val fixedAttempt            = config.getFixedDeclaration(cls)
   if !fixedAttempt.isEmpty then
     val fd = fixedAttempt.get
-    if fd.isInterface then (log.addWarn(s"$t was defined as a class but must be an interface"), Nil)
+    if !fd.isInterface then
+      (log.addWarn(s"$t was defined as a class but must be an interface"), Nil)
     else (log, config :: Nil)
   else
     cls match

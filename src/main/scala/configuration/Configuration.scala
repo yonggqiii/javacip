@@ -134,7 +134,7 @@ case class Configuration(
             case y: TypeParameterName  => y.sourceType
           val (erasure, allBounds) = getFixedDeclaration(NormalType(sourceType, 0, Nil)) match
             case None =>
-              (NormalType("java.lang.Object", 0, Nil), Set(NormalType("java.lang.Object", 0)))
+              (OBJECT, Set(OBJECT))
             case Some(d) =>
               (d.getErasure(x), d.getAllBounds(x))
           if newTable.mustBeClass || !newTable.attributes.isEmpty then
@@ -312,3 +312,28 @@ case class Configuration(
       Some(
         convertResolvedReferenceTypeDeclarationToFixedDeclaration(rtd, isAbstract, isFinal).get
       )
+
+  def upcast(t: Type, target: Type): Option[Type] = (t.substituted, target.substituted) match
+    case (x, y): (SubstitutedReferenceType, SubstitutedReferenceType) =>
+      println(s"$x ${x.substitutions}")
+      if x.identifier == y.identifier then Some(t)
+      else
+        val (supertypes, isRaw) = getFixedDeclaration(t) match
+          case Some(decl) =>
+            (
+              (decl.extendedTypes ++ decl.implementedTypes),
+              decl.typeParameters.size > 0 && x.numArgs == 0
+            )
+          case None =>
+            (phi1(x.identifier).supertypes, phi1(x.identifier).numParams > 0 && x.numArgs == 0)
+        (if supertypes.isEmpty && x != OBJECT.substituted then Vector(OBJECT) else supertypes)
+          .map(i =>
+            if isRaw then NormalType(i.identifier, 0)
+            else i.addSubstitutionLists(x.substitutions)
+          )
+          .foldLeft(None: Option[Type])((o, i) =>
+            o match
+              case None    => upcast(i, target)
+              case Some(_) => o
+          )
+    case _ => None

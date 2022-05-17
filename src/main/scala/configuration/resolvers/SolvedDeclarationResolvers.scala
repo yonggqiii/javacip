@@ -79,7 +79,7 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
   val (extendedTypes, implementedTypes) =
     if isInterface then
       val ifaced = decl.asInstanceOf[ResolvedInterfaceDeclaration]
-      (ifaced.getInterfacesExtended.asScala.map(x => resolveSolvedType(x)).toVector, Vector())
+      (ifaced.getAncestors.asScala.map(x => resolveSolvedType(x)).toVector, Vector())
     else
       val clsd = decl.asInstanceOf[ResolvedClassDeclaration]
       (
