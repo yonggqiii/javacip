@@ -95,6 +95,16 @@ sealed trait Type:
    */
   def isMissing = IsMissingAssertion(this)
 
+  /** Asserts that this type is primitive
+   * @return the resulting IsPrimitiveAssertion
+   */
+  def isPrimitive = IsPrimitiveAssertion(this)
+
+  /** Asserts that this type is a reference type
+   * @return the resulting IsReferenceAssertion
+   */
+  def isReference = IsReferenceAssertion(this)
+
   /** Determines if this type contains any inference variables, alphas or placeholder types */
   def isSomehowUnknown: Boolean
 

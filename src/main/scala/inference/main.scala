@@ -58,6 +58,45 @@ private def resolveOne(log: Log, config: Configuration): (Log, List[Configuratio
             newLog.addInfo(s"expanding $x"),
             (newConfig asserts newAsst) :: Nil
           )
+      case IsPrimitiveAssertion(t) =>
+        t.substituted match
+          case n: ReplaceableType =>
+            val newAssertion = (n ~=~ PRIMITIVE_BOOLEAN ||
+              n ~=~ PRIMITIVE_BYTE ||
+              n ~=~ PRIMITIVE_CHAR ||
+              n ~=~ PRIMITIVE_DOUBLE ||
+              n ~=~ PRIMITIVE_FLOAT ||
+              n ~=~ PRIMITIVE_INT ||
+              n ~=~ PRIMITIVE_LONG ||
+              n ~=~ PRIMITIVE_SHORT ||
+              n ~=~ PRIMITIVE_VOID)
+            (log, (config asserts newAssertion) :: Nil)
+          case _ =>
+            (newLog.addWarn(s"$t is not primitive"), Nil)
+      case IsReferenceAssertion(t) =>
+        t.substituted match
+          case m: InferenceVariable =>
+            val originalConfig = config asserts asst
+            m.source match
+              case Left(_) =>
+                val choices = m._choices
+                (
+                  log.addInfo(s"expanding ${m.identifier} into its choices"),
+                  choices
+                    .map(originalConfig.replace(m.copy(substitutions = Nil), _))
+                    .filter(!_.isEmpty)
+                    .map(_.get)
+                    .toList
+                )
+              case Right(_) =>
+                (
+                  log.addInfo(
+                    s"returning $asst back to config as insufficient information is available"
+                  ),
+                  originalConfig :: Nil
+                )
+          case _: PrimitiveType => (log.addWarn(s"$t is not a reference type"), Nil)
+
       case _ =>
         ???
 

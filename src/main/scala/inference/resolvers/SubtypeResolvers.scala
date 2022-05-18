@@ -61,7 +61,11 @@ private[inference] def resolveSubtypeAssertion(
             )
       case (ArrayType(i), ArrayType(j)) =>
         // array types are covariant
-        (log, (config asserts (i <:~ j)) :: Nil)
+        (
+          log,
+          (config asserts ((i <:~ j && i.isReference && j.isReference) ||
+            (i.isPrimitive && i ~=~ j))) :: Nil
+        )
       // array type cannot be sub/super types of other types except the trivial ones
       case (ArrayType(_), _) =>
         (log.addWarn(s"$x can only be a subtype of other array types or Object"), Nil)

@@ -11,7 +11,7 @@ import configuration.resolvers.*
 import java.lang.reflect.Modifier
 import utils.*
 import scala.collection.immutable.Queue
-import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
+import scala.collection.mutable.{ArrayBuffer, Map as MutableMap, Queue as MutableQueue}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 case class Configuration(
@@ -40,9 +40,23 @@ case class Configuration(
     * @return
     *   the assertion and the new config excluding the assertion
     */
-  def pop() =
-    val (a, newOmega) = omega.dequeue
-    (a, copy(omega = newOmega))
+  def pop(): (Assertion, Configuration) =
+    val tester: Assertion => Boolean = x =>
+      x match
+        case _: DisjunctiveAssertion => false
+        case _                       => true
+    val hasNonDisjunction = omega.exists(tester)
+    if hasNonDisjunction then
+      val mq  = MutableQueue().enqueueAll(omega)
+      var res = mq.dequeue
+      while !tester(res) do
+        mq.enqueue(res)
+        res = mq.dequeue
+      val newOmega = Queue().enqueueAll(mq)
+      (res, copy(omega = newOmega))
+    else
+      val (a, newOmega) = omega.dequeue
+      (a, copy(omega = newOmega))
 
   /** Upcasts some type to all of its missing supertypes. If the type itself is missing, then it is
     * returned
@@ -99,11 +113,19 @@ case class Configuration(
       ).isDefined
     case IsMissingAssertion(a) => phi1.contains(a.substituted.upwardProjection.identifier)
     case DisjunctiveAssertion(v) =>
-      if v.isEmpty then true
+      if v.isEmpty then false
       else (this |- v.head) || (this |- DisjunctiveAssertion(v.tail))
     case ConjunctiveAssertion(v) =>
       if v.isEmpty then true
       else (this |- v.head) && (this |- ConjunctiveAssertion(v.tail))
+    case IsPrimitiveAssertion(t) =>
+      t.substituted match
+        case _: PrimitiveType => true
+        case _                => false
+    case IsReferenceAssertion(t) =>
+      t.substituted match
+        case _: PrimitiveType => false
+        case _                => true
     case _ => ???
 
   private def proveSubtype(sub: Type, sup: Type): Boolean =
@@ -134,7 +156,9 @@ case class Configuration(
               else this |- ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
         case (x: PrimitiveType, y: PrimitiveType)            => x.widened.contains(y)
         case (x: PrimitiveType, y: SubstitutedReferenceType) => this |- (x.boxed <:~ y)
-        case _                                               => false
+        case (x: ArrayType, y: ArrayType) =>
+          this |- ((x.base.isReference && y.base.isReference && x.base <:~ y.base) || (x.base.isPrimitive && x.base ~=~ y.base))
+        case _ => false
 
   /** Replaces one type by another type everywhere in the configuration
     * @param oldType

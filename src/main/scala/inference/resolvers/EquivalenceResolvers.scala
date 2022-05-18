@@ -35,7 +35,7 @@ private[inference] def resolveEquivalenceAssertion(
             log.addInfo(s"lol, expanding $asst as assertions on its arguments"),
             config.copy(omega = config.omega.enqueueAll(newAssts)) :: Nil
           )
-      case (x: InferenceVariable, y: Type) =>
+      case (x: InferenceVariable, y: TypeAfterSubstitution) =>
         val originalConfig = config.copy(omega = config.omega.enqueue(asst))
         x.source match
           case Right(_) =>
@@ -55,7 +55,7 @@ private[inference] def resolveEquivalenceAssertion(
                 .map(_.get)
                 .toList
             )
-      case (y: Type, x: InferenceVariable) =>
+      case (y: TypeAfterSubstitution, x: InferenceVariable) =>
         val originalConfig = config.copy(omega = config.omega.enqueue(asst))
         x.source match
           case Right(_) =>
@@ -100,4 +100,9 @@ private[inference] def resolveEquivalenceAssertion(
             .filter(!_.isEmpty)
             .map(_.get)
         )
-      case _ => ???
+      case (x: PrimitiveType, _)        => (log.addWarn(s"$a != $b"), Nil)
+      case (_, x: PrimitiveType)        => (log.addWarn(s"$a != $b"), Nil)
+      case (x: ArrayType, y: ArrayType) => (log, (config asserts (x.base ~=~ y.base)) :: Nil)
+      case (x: ArrayType, _)            => (log.addWarn(s"$a != $b"), Nil)
+      case (_, x: ArrayType)            => (log.addWarn(s"$a != $b"), Nil)
+      case _                            => ???

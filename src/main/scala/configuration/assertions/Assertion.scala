@@ -75,3 +75,13 @@ case class IsUnknownAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} ∈ Φ₂"
   def replace(oldType: ReplaceableType, newType: Type): IsUnknownAssertion =
     copy(t = t.replace(oldType, newType))
+
+case class IsPrimitiveAssertion(t: Type) extends Assertion:
+  override def toString = s"${t.identifier} is primitive"
+  def replace(oldType: ReplaceableType, newType: Type): IsPrimitiveAssertion =
+    copy(t = t.replace(oldType, newType))
+
+case class IsReferenceAssertion(t: Type) extends Assertion:
+  override def toString = s"${t.identifier} is a reference type"
+  def replace(oldType: ReplaceableType, newType: Type): IsReferenceAssertion =
+    copy(t = t.replace(oldType, newType))
