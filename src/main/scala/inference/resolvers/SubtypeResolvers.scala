@@ -11,12 +11,17 @@ private[inference] def resolveSubtypeAssertion(
     a: SubtypeAssertion
 ): (Log, List[Configuration]) =
   val SubtypeAssertion(x, y) = a
-  val (sub, sup)             = (x.upwardProjection.substituted, y.downwardProjection.substituted)
+  val (sub, sup)             = (x.substituted.upwardProjection, y.substituted.downwardProjection)
   // trivial cases
   if sub == OBJECT.substituted || sup == Bottom then
     (log.addWarn(s"$x <: $y can never be true"), Nil)
   else
     (sub, sup) match
+      case (_, m: PrimitiveType) =>
+        val newAssertion = DisjunctiveAssertion(m.isAssignableBy.map(sub ~=~ _).toVector)
+        (log, (config asserts newAssertion) :: Nil)
+      case (m: PrimitiveType, _) =>
+        (log, (config asserts (m.boxed <:~ sup)) :: Nil)
       case (i: InferenceVariable, _) =>
         // return assertion back to config
         val originalConfig = config asserts a
@@ -160,8 +165,6 @@ private[inference] def resolveSubtypeAssertion(
               else
                 val newAsst = DisjunctiveAssertion(missingAncestors.map(_ <:~ n))
                 (log, (config asserts newAsst) :: Nil)
-      case (m: PrimitiveType, n: PrimitiveType) =>
-        (log.addWarn(s"$m does not widen to $n"), Nil)
       // case of subtype being a normal reference type and is declared
       case (m: SubstitutedReferenceType, _) if !config.getFixedDeclaration(m).isEmpty =>
         ???

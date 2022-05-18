@@ -156,6 +156,8 @@ case class Configuration(
               else this |- ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
         case (x: PrimitiveType, y: PrimitiveType)            => x.widened.contains(y)
         case (x: PrimitiveType, y: SubstitutedReferenceType) => this |- (x.boxed <:~ y)
+        case (x: SubstitutedReferenceType, y: PrimitiveType) =>
+          y.isAssignableBy.contains(x)
         case (x: ArrayType, y: ArrayType) =>
           this |- ((x.base.isReference && y.base.isReference && x.base <:~ y.base) || (x.base.isPrimitive && x.base ~=~ y.base))
         case _ => false

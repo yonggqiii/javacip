@@ -214,51 +214,70 @@ sealed trait PrimitiveType extends TypeAfterSubstitution:
   val args = Vector()
   def isSomehowUnknown = false
   def widened: Set[PrimitiveType]
+  def isAssignableBy: Set[Type]
 
 case object PRIMITIVE_INT extends PrimitiveType:
   val identifier = "int"
   val boxed = BOXED_INT
   def widened = Set(PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+  def isAssignableBy =
+    Set(PRIMITIVE_SHORT, PRIMITIVE_CHAR, PRIMITIVE_BYTE, PRIMITIVE_INT).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_BYTE extends PrimitiveType:
   val identifier = "byte"
   val boxed = BOXED_BYTE
   def widened = Set(PRIMITIVE_CHAR, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+  def isAssignableBy =
+    Set(PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_SHORT extends PrimitiveType:
   val identifier = "short"
   val boxed = BOXED_SHORT
   def widened = Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+  def isAssignableBy =
+    Set(PRIMITIVE_SHORT, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_CHAR extends PrimitiveType:
   val identifier = "char"
   val boxed = BOXED_CHAR
   def widened = Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+  def isAssignableBy =
+    Set(PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_LONG extends PrimitiveType:
   val identifier = "long"
   val boxed = BOXED_LONG
   def widened = Set(PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+  def isAssignableBy =
+    Set(PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_FLOAT extends PrimitiveType:
   val identifier = "float"
   val boxed = BOXED_FLOAT
   def widened = Set(PRIMITIVE_DOUBLE)
+  def isAssignableBy =
+    Set(PRIMITIVE_FLOAT, PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_DOUBLE extends PrimitiveType:
   val identifier = "double"
   val boxed = BOXED_DOUBLE
   def widened = Set()
+  def isAssignableBy =
+    Set(PRIMITIVE_DOUBLE, PRIMITIVE_FLOAT, PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_BOOLEAN extends PrimitiveType:
   val identifier = "boolean"
   val boxed = BOXED_BOOLEAN
   def widened = Set()
+  def isAssignableBy =
+    Set(PRIMITIVE_BOOLEAN).flatMap(x => Set(x, x.boxed))
 
 case object PRIMITIVE_VOID extends PrimitiveType:
   val identifier = "void"
   val boxed = BOXED_VOID
   def widened = Set()
+  def isAssignableBy =
+    Set(PRIMITIVE_VOID).flatMap(x => Set(x, x.boxed))
 
 case object Bottom extends TypeAfterSubstitution:
   val upwardProjection: Bottom.type = this
@@ -282,6 +301,7 @@ case object Wildcard extends TypeAfterSubstitution:
   def substituted = this
   val args = Vector()
   def isSomehowUnknown = false
+
 final case class ExtendsWildcardType(
     upper: Type,
     _substitutions: SubstitutionList = Nil

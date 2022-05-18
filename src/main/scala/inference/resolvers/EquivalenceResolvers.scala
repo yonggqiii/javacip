@@ -10,99 +10,97 @@ private[inference] def resolveEquivalenceAssertion(
     asst: EquivalenceAssertion
 ): (Log, List[Configuration]) =
   val EquivalenceAssertion(x, y) = asst
-  val (a, b)                     = (x.substituted, y.substituted)
-  if a.upwardProjection != a.downwardProjection || b.upwardProjection != b.downwardProjection then
-    (
-      log,
-      config.copy(omega =
-        config.omega.enqueueAll(
-          Vector(
-            EquivalenceAssertion(a.upwardProjection, b.upwardProjection),
-            EquivalenceAssertion(a.downwardProjection, b.downwardProjection)
-          )
-        )
-      ) :: Nil
-    )
-  else if a == b then (log, config :: Nil)
-  else
-    (a, b) match
-      case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
-        if m.identifier != n.identifier || m.numArgs != n.numArgs then
-          (log.addWarn(s"$m != $n"), Nil)
-        else
-          val newAssts = m.args.zip(n.args).map(EquivalenceAssertion(_, _))
+  (x.substituted, y.substituted) match
+    case (Bottom, Bottom) => (log, config :: Nil)
+    case (a: ExtendsWildcardType, b: ExtendsWildcardType) =>
+      (log, (config asserts (a.upwardProjection ~=~ b.upwardProjection)) :: Nil)
+    case (a: SuperWildcardType, b: SuperWildcardType) =>
+      (log, (config asserts (a.downwardProjection ~=~ b.downwardProjection)) :: Nil)
+    case (a: ArrayType, b: ArrayType) =>
+      (log, (config asserts (a.base ~=~ b.base)) :: Nil)
+    case (a: PrimitiveType, b: PrimitiveType) =>
+      // definitely false
+      (log.addWarn(s"$x != $y"), Nil)
+    case (a: TTypeParameter, b: TTypeParameter) =>
+      // definitely false
+      (log.addWarn(s"$x != $y"), Nil)
+    case (a: InferenceVariable, _) =>
+      val originalConfig = config asserts asst
+      a.source match
+        case Right(_) =>
+          // what?
+          if a.substitutions.isEmpty then
+            (
+              log.addInfo(s"replacing $x with $y"),
+              List(originalConfig.replace(a, y)).filter(!_.isEmpty).map(_.get)
+            )
+          else ???
+        case Left(_) =>
+          val choices = a._choices
           (
-            log.addInfo(s"lol, expanding $asst as assertions on its arguments"),
-            config.copy(omega = config.omega.enqueueAll(newAssts)) :: Nil
+            log.addInfo(s"expanding ${a.identifier} into its choices"),
+            choices
+              .map(originalConfig.replace(a.copy(substitutions = Nil), _))
+              .filter(!_.isEmpty)
+              .map(_.get)
+              .toList
           )
-      case (x: InferenceVariable, y: TypeAfterSubstitution) =>
-        val originalConfig = config.copy(omega = config.omega.enqueue(asst))
-        x.source match
-          case Right(_) =>
-            if x.substitutions.isEmpty then
-              (
-                log.addInfo(s"replacing $x with $y"),
-                List(originalConfig.replace(x, y)).filter(!_.isEmpty).map(_.get)
-              )
-            else ???
-          case Left(_) =>
-            val choices = x._choices
+    case (_, a: InferenceVariable) =>
+      val originalConfig = config asserts asst
+      a.source match
+        case Right(_) =>
+          // what?
+          if a.substitutions.isEmpty then
             (
-              log.addInfo(s"expanding ${x.identifier} into its choices"),
-              choices
-                .map(originalConfig.replace(x.copy(substitutions = Nil), _))
-                .filter(!_.isEmpty)
-                .map(_.get)
-                .toList
+              log.addInfo(s"replacing $a with $x"),
+              List(originalConfig.replace(a, x)).filter(!_.isEmpty).map(_.get)
             )
-      case (y: TypeAfterSubstitution, x: InferenceVariable) =>
-        val originalConfig = config.copy(omega = config.omega.enqueue(asst))
-        x.source match
-          case Right(_) =>
-            if x.substitutions.isEmpty then
-              val originalConfig = config.copy(omega = config.omega.enqueue(asst))
-              (
-                log.addInfo(s"replacing $x with $y"),
-                List(originalConfig.replace(x, y)).filter(!_.isEmpty).map(_.get)
+          else ???
+        case Left(_) =>
+          val choices = a._choices
+          (
+            log.addInfo(s"expanding ${a.identifier} into its choices"),
+            choices
+              .map(originalConfig.replace(a.copy(substitutions = Nil), _))
+              .filter(!_.isEmpty)
+              .map(_.get)
+              .toList
+          )
+    case (a: Alpha, b: PrimitiveType) =>
+      (
+        log.addInfo(s"concretizing $a to $b"),
+        List(config.replace(a.copy(substitutions = Nil), b))
+          .filter(!_.isEmpty)
+          .map(_.get)
+      )
+    case (b: PrimitiveType, a: Alpha) =>
+      (
+        log.addInfo(s"concretizing $a to $b"),
+        List(config.replace(a.copy(substitutions = Nil), b))
+          .filter(!_.isEmpty)
+          .map(_.get)
+      )
+    case (x: Alpha, y: SubstitutedReferenceType) =>
+      val originalConfig = config.copy(omega = config.omega.enqueue(asst))
+      val newType = NormalType(
+        y.identifier,
+        y.numArgs,
+        ((0 until y.numArgs)
+          .map(i =>
+            TypeParameterIndex(y.identifier, i) ->
+              InferenceVariableFactory.createInferenceVariable(
+                x.source,
+                Nil,
+                x.canBeBounded,
+                x.parameterChoices,
+                x.canBeBounded
               )
-            else ???
-          case Left(_) =>
-            val choices = x._choices
-            (
-              log.addInfo(s"expanding ${x.identifier} into its choices"),
-              choices
-                .map(originalConfig.replace(x.copy(substitutions = Nil), _))
-                .filter(!_.isEmpty)
-                .map(_.get)
-                .toList
-            )
-      case (x: Alpha, y: SubstitutedReferenceType) =>
-        val originalConfig = config.copy(omega = config.omega.enqueue(asst))
-        val newType = NormalType(
-          y.identifier,
-          y.numArgs,
-          ((0 until y.numArgs)
-            .map(i =>
-              TypeParameterIndex(y.identifier, i) ->
-                InferenceVariableFactory.createInferenceVariable(
-                  x.source,
-                  Nil,
-                  x.canBeBounded,
-                  x.parameterChoices,
-                  x.canBeBounded
-                )
-            )
-            .toMap :: Nil).filter(!_.isEmpty)
-        )
-        (
-          log.addInfo(s"concretizing $x to $newType"),
-          List(originalConfig.replace(x.copy(substitutions = Nil), newType))
-            .filter(!_.isEmpty)
-            .map(_.get)
-        )
-      case (x: PrimitiveType, _)        => (log.addWarn(s"$a != $b"), Nil)
-      case (_, x: PrimitiveType)        => (log.addWarn(s"$a != $b"), Nil)
-      case (x: ArrayType, y: ArrayType) => (log, (config asserts (x.base ~=~ y.base)) :: Nil)
-      case (x: ArrayType, _)            => (log.addWarn(s"$a != $b"), Nil)
-      case (_, x: ArrayType)            => (log.addWarn(s"$a != $b"), Nil)
-      case _                            => ???
+          )
+          .toMap :: Nil).filter(!_.isEmpty)
+      )
+      (
+        log.addInfo(s"concretizing $x to $newType"),
+        List(originalConfig.replace(x.copy(substitutions = Nil), newType))
+          .filter(!_.isEmpty)
+          .map(_.get)
+      )
