@@ -55,7 +55,7 @@ private[inference] def resolveSubtypeAssertion(
           case Right(_) =>
             (
               log.addInfo(
-                "returning $a back to config as insufficient information is available"
+                s"returning $a back to config as insufficient information is available"
               ),
               originalConfig :: Nil
             )
@@ -119,6 +119,8 @@ private[inference] def resolveSubtypeAssertion(
               val subIsInterface = config |- m.isInterface
               if supIsClass && subIsInterface then
                 (log.addWarn(s"interface $m cannot be a subtype of class $n"), Nil)
+              else if (config |- n.isDeclared) && config.getFixedDeclaration(n).get.isFinal then
+                (log.addWarn(s"$m cannot extend $n because $n is declared final"), Nil)
               else
                 val newSupertype = NormalType(
                   n.identifier,
@@ -154,93 +156,8 @@ private[inference] def resolveSubtypeAssertion(
               else
                 val newAsst = DisjunctiveAssertion(missingAncestors.map(_ <:~ n))
                 (log, (config asserts newAsst) :: Nil)
+      case (m: PrimitiveType, n: PrimitiveType) =>
+        (log.addWarn(s"$m does not widen to $n"), Nil)
       // case of subtype being a normal reference type and is declared
       case (m: SubstitutedReferenceType, _) if !config.getFixedDeclaration(m).isEmpty =>
-        resolveLeftFixedSubtypeAssertion(log, config, x, y)
-
-private def greedyExtendAll(
-    log: Log,
-    config: Configuration,
-    originalAssertion: Assertion,
-    subtype: SubstitutedReferenceType,
-    supertype: SubstitutedReferenceType,
-    missingSupertypes: Vector[Type]
-): (Log, List[Configuration]) =
-  val (newLog, res) = mapWithLog(log, missingSupertypes)(
-    greedyExtendOne(_, config, originalAssertion, subtype, supertype, _)
-  )
-  val newRes = res.filter(!_.isEmpty).map(_.get).toList
-  val finalLog =
-    if newRes.isEmpty then
-      newLog.addWarn(s"none of $missingSupertypes can greedily extend $supertype")
-    else newLog
-  (finalLog, newRes)
-
-private def greedyExtendOne(
-    log: Log,
-    config: Configuration,
-    originalAssertion: Assertion,
-    subtype: SubstitutedReferenceType,
-    supertype: SubstitutedReferenceType,
-    missingSupertype: Type
-): (Log, Option[Configuration]) =
-  // make greedily extend
-  val supIsClass     = config |- supertype.isClass
-  val subIsInterface = config |- subtype.isInterface
-  if supIsClass && subIsInterface then
-    (log.addWarn(s"interface $subtype cannot be a subtype of class $supertype"), None)
-  else
-    val newSupertype = NormalType(
-      supertype.identifier,
-      supertype.numArgs,
-      ((0 until supertype.numArgs)
-        .map(i =>
-          (TypeParameterIndex(supertype.identifier, i) -> InferenceVariableFactory
-            .createInferenceVariable(
-              Left(subtype.identifier),
-              Nil,
-              false,
-              (0 until subtype.numArgs).map(TypeParameterIndex(subtype.identifier, _)).toSet,
-              false
-            ))
-        )
-        .toMap :: Nil).filter(!_.isEmpty)
-    )
-    val newPhi1 = config.phi1 + (subtype.identifier -> config
-      .phi1(subtype.identifier)
-      .greedilyExtends(newSupertype))
-    val newAssts =
-      if supIsClass then Vector(originalAssertion, subtype.isClass)
-      else if subIsInterface then Vector(originalAssertion, supertype.isInterface)
-      else Vector(originalAssertion)
-    (log, Some(config.copy(phi1 = newPhi1).assertsAllOf(newAssts)))
-
-private def resolveLeftFixedSubtypeAssertion(
-    log: Log,
-    config: Configuration,
-    subtype: Type,
-    supertype: Type
-): (Log, List[Configuration]) =
-  val newAssertion = config
-    .getFixedDeclaration(subtype.upwardProjection.substituted)
-    .map(decl =>
-      val supertypes =
-        val tmp = (decl.extendedTypes ++ decl.implementedTypes).map(x =>
-          if subtype.numArgs == 0 then
-            // subtype is raw
-            NormalType(x.identifier, 0, Nil)
-          else
-            x.addSubstitutionLists(
-              subtype.upwardProjection.substituted.substitutions.filter(x => !x.isEmpty)
-            )
-        )
-        if tmp.isEmpty then Vector(OBJECT) else tmp
-      supertypes.map(x => SubtypeAssertion(x, supertype.downwardProjection))
-    )
-    .map(DisjunctiveAssertion(_))
-    .get
-  val newConfig = config.copy(omega = config.omega.enqueue(newAssertion))
-  (
-    log.addInfo(s"replacing ${SubtypeAssertion(subtype, supertype)} with $newAssertion"),
-    newConfig :: Nil
-  )
+        ???

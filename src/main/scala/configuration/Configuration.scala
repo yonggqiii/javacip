@@ -58,6 +58,13 @@ case class Configuration(
         .map(x => x.addSubstitutionLists(t.substitutions))
         .flatMap(x => upcastToMissingAncestors(x))
 
+  /** Attempts to prove an assertion. Returns true if it can be proven, false if it either proves to
+    * be false or does not have enough information to prove it
+    * @param a
+    *   the assertion to prove
+    * @return
+    *   true if it can be proven, false otherwise
+    */
   def |-(a: Assertion): Boolean = a match
     case SubtypeAssertion(sub, sup) =>
       proveSubtype(sub.substituted.upwardProjection, sup.substituted.downwardProjection)
@@ -98,6 +105,7 @@ case class Configuration(
       if v.isEmpty then true
       else (this |- v.head) && (this |- ConjunctiveAssertion(v.tail))
     case _ => ???
+
   private def proveSubtype(sub: Type, sup: Type): Boolean =
     if sup == OBJECT.substituted then true
     else if sub == Bottom.substituted then true
@@ -124,7 +132,19 @@ case class Configuration(
             case Some(s) =>
               if s.numArgs == 0 || y.numArgs == 0 then true
               else this |- ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
-        case _ => false
+        case (x: PrimitiveType, y: PrimitiveType)            => x.widened.contains(y)
+        case (x: PrimitiveType, y: SubstitutedReferenceType) => this |- (x.boxed <:~ y)
+        case _                                               => false
+
+  /** Replaces one type by another type everywhere in the configuration
+    * @param oldType
+    *   the type to be replaced
+    * @param newType
+    *   the type that will replace the oldType
+    * @return
+    *   an optional configuration where the types are replaced. it will be None if the replacement
+    *   cannot be done
+    */
   def replace(oldType: ReplaceableType, newType: Type): Option[Configuration] =
     /* There are two things that can happen during a replacement:
      * 1) an inference variable is replaced by one of its choices, and/or
@@ -337,9 +357,29 @@ case class Configuration(
       )
     )
 
+  /** Upcasts a bunch of types into its supertypes that contains the method with some arity
+    * @param bounds
+    *   the types to upcast
+    * @param methodName
+    *   the name of the method
+    * @param arity
+    *   the arity of the method
+    * @return
+    *   the ancestors who contain said method
+    */
   def upcastAllToMethodContainer(bounds: Set[Type], methodName: String, arity: Int): Set[Type] =
     bounds.flatMap(upcastOneToMethodContainer(_, methodName, arity))
 
+  /** Upcasts a type into its supertypes that contains the method with some arity
+    * @param t
+    *   the type to upcast
+    * @param methodName
+    *   the name of the method
+    * @param arity
+    *   the arity of the method
+    * @return
+    *   the ancestors who contain said method
+    */
   def upcastOneToMethodContainer(t: Type, methodName: String, arity: Int): Set[Type] =
     // we can guarantee that the type is a concrete type
     getFixedDeclaration(t) match
@@ -363,6 +403,8 @@ case class Configuration(
             )
           else current ++ upcastAllToMethodContainer(supertypes.toSet, methodName, arity)
 
+  /** Determines if the configuration is complete and ready to be built
+    */
   def isComplete: Boolean = omega.isEmpty // !omega.isEmpty && !phi1.isEmpty && !phi2.isEmpty
 
   override def toString =

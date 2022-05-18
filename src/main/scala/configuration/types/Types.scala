@@ -12,15 +12,6 @@ val BOXED_FLOAT = NormalType("java.lang.Float", 0)
 val BOXED_DOUBLE = NormalType("java.lang.Double", 0)
 val BOXED_BOOLEAN = NormalType("java.lang.Boolean", 0)
 val BOXED_VOID = NormalType("java.lang.Void", 0)
-val PRIMITIVE_INT = PrimitiveType("int", BOXED_INT)
-val PRIMITIVE_BYTE = PrimitiveType("byte", BOXED_BYTE)
-val PRIMITIVE_SHORT = PrimitiveType("short", BOXED_SHORT)
-val PRIMITIVE_CHAR = PrimitiveType("char", BOXED_CHAR)
-val PRIMITIVE_LONG = PrimitiveType("long", BOXED_LONG)
-val PRIMITIVE_FLOAT = PrimitiveType("float", BOXED_FLOAT)
-val PRIMITIVE_DOUBLE = PrimitiveType("double", BOXED_DOUBLE)
-val PRIMITIVE_BOOLEAN = PrimitiveType("boolean", BOXED_BOOLEAN)
-val PRIMITIVE_VOID = PrimitiveType("void", BOXED_VOID)
 
 // Type aliases
 private type SubstitutionList = List[Map[TTypeParameter, Type]]
@@ -32,17 +23,6 @@ sealed trait Type:
     */
   val identifier: String
 
-  def ~:>(that: Type) = SubtypeAssertion(that, this)
-  def <:~(that: Type) = SubtypeAssertion(this, that)
-  def ~=~(that: Type) = EquivalenceAssertion(this, that)
-  def <=~(that: Type) = ContainmentAssertion(this, that)
-  def ~=>(that: Type) = ContainmentAssertion(that, this)
-  def isClass = IsClassAssertion(this)
-  def isInterface = IsInterfaceAssertion(this)
-  def isDeclared = IsDeclaredAssertion(this)
-  def isMissing = IsMissingAssertion(this)
-  def isSomehowUnknown: Boolean
-
   /** The substitutions this type has
     */
   val substitutions: SubstitutionList
@@ -51,14 +31,6 @@ sealed trait Type:
     */
   val numArgs: Int
 
-  /** Appends some substitution lists to this type
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the type after adding the substitution lists
-    */
-  def addSubstitutionLists(substitutionList: SubstitutionList): Type
-
   /** The upward projection of this type
     */
   val upwardProjection: Type
@@ -66,6 +38,73 @@ sealed trait Type:
   /** The downward projection of this type
     */
   val downwardProjection: Type
+
+  /** The type arguments to this type */
+  val args: Vector[Type]
+
+  /** Asserts that this type is a supertype of another type
+   * @param that the type that this is a supertype of
+   * @return the resulting SubtypeAssertion
+   */
+  def ~:>(that: Type) = SubtypeAssertion(that, this)
+
+  /** Asserts that this type is a subtype of another type
+   * @param that the type that this is a subtype of
+   * @return the resulting SubtypeAssertion
+   */
+  def <:~(that: Type) = SubtypeAssertion(this, that)
+
+  /**
+   * Asserts that this type is equivalent to another type
+   * @param that the type that this is equivalent to
+   * @return the resulting EquivalenceAssertion
+   */
+  def ~=~(that: Type) = EquivalenceAssertion(this, that)
+
+  /**
+   * Asserts that this type is contained by another type
+   * @param that the type that this is contained by
+   * @return the resulting ContainmentAssertion
+   */
+  def <=~(that: Type) = ContainmentAssertion(this, that)
+
+  /**
+   * Asserts that this type contains another type
+   * @param that the type that this contains
+   * @return the resulting ContainmentAssertion
+   */
+  def ~=>(that: Type) = ContainmentAssertion(that, this)
+
+  /** Asserts that this type is a class
+   * @return the resulting IsClassAssertion
+   */
+  def isClass = IsClassAssertion(this)
+
+  /** Asserts that this type is an interface
+   * @return the resulting IsInterfaceAssertion
+   */
+  def isInterface = IsInterfaceAssertion(this)
+
+  /** Asserts that this type is declared
+   * @return the resulting IsDeclaredAssertion
+   */
+  def isDeclared = IsDeclaredAssertion(this)
+
+  /** Asserts that this type is missing
+   * @return the resulting IsMissingAssertion
+   */
+  def isMissing = IsMissingAssertion(this)
+
+  /** Determines if this type contains any inference variables, alphas or placeholder types */
+  def isSomehowUnknown: Boolean
+
+  /** Appends some substitution lists to this type
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the type after adding the substitution lists
+    */
+  def addSubstitutionLists(substitutionList: SubstitutionList): Type
 
   /** Replace any occurrences of an old type in this type
    * and all its substitutions/members with a new type
@@ -80,7 +119,7 @@ sealed trait Type:
    * for example, List<T>[T -> Integer] will become List<Integer>.
    * Replaceable types will not be substituted
    */
-  def substituted: Type
+  def substituted: TypeAfterSubstitution
 
   override def toString: String =
     val start =
@@ -97,11 +136,11 @@ sealed trait Type:
     val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
     s"$start$argumentList$subsstring"
 
-  val args: Vector[Type]
+sealed trait TypeAfterSubstitution extends Type
 
 final case class ArrayType(
   base: Type,
-) extends Type:
+) extends TypeAfterSubstitution:
   override def toString =
       base.toString + "[]"
   val identifier = base.identifier + "[]"
@@ -153,10 +192,8 @@ object PrimitiveType:
       case "void" => PRIMITIVE_VOID
       case _ => ???
 
-final case class PrimitiveType(
-    identifier: String,
-    boxed: NormalType
-) extends Type:
+sealed trait PrimitiveType extends TypeAfterSubstitution:
+  val boxed: NormalType
   val numArgs = 0
   val substitutions = Nil
   def addSubstitutionLists(substitutions: SubstitutionList): PrimitiveType = this
@@ -166,7 +203,54 @@ final case class PrimitiveType(
   def substituted = this
   val args = Vector()
   def isSomehowUnknown = false
-case object Bottom extends Type:
+  def widened: Set[PrimitiveType]
+
+case object PRIMITIVE_INT extends PrimitiveType:
+  val identifier = "int"
+  val boxed = BOXED_INT
+  def widened = Set(PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+
+case object PRIMITIVE_BYTE extends PrimitiveType:
+  val identifier = "byte"
+  val boxed = BOXED_BYTE
+  def widened = Set(PRIMITIVE_CHAR, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+
+case object PRIMITIVE_SHORT extends PrimitiveType:
+  val identifier = "short"
+  val boxed = BOXED_SHORT
+  def widened = Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+
+case object PRIMITIVE_CHAR extends PrimitiveType:
+  val identifier = "char"
+  val boxed = BOXED_CHAR
+  def widened = Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+
+case object PRIMITIVE_LONG extends PrimitiveType:
+  val identifier = "long"
+  val boxed = BOXED_LONG
+  def widened = Set(PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+
+case object PRIMITIVE_FLOAT extends PrimitiveType:
+  val identifier = "float"
+  val boxed = BOXED_FLOAT
+  def widened = Set(PRIMITIVE_DOUBLE)
+
+case object PRIMITIVE_DOUBLE extends PrimitiveType:
+  val identifier = "double"
+  val boxed = BOXED_DOUBLE
+  def widened = Set()
+
+case object PRIMITIVE_BOOLEAN extends PrimitiveType:
+  val identifier = "boolean"
+  val boxed = BOXED_BOOLEAN
+  def widened = Set()
+
+case object PRIMITIVE_VOID extends PrimitiveType:
+  val identifier = "void"
+  val boxed = BOXED_VOID
+  def widened = Set()
+
+case object Bottom extends TypeAfterSubstitution:
   val upwardProjection: Bottom.type = this
   val downwardProjection: Bottom.type = this
   val identifier = "⊥"
@@ -177,7 +261,7 @@ case object Bottom extends Type:
   def substituted = this
   val args = Vector()
   def isSomehowUnknown = false
-case object Wildcard extends Type:
+case object Wildcard extends TypeAfterSubstitution:
   val upwardProjection: NormalType = OBJECT
   val downwardProjection: Bottom.type = Bottom
   val identifier = "?"
@@ -191,7 +275,7 @@ case object Wildcard extends Type:
 final case class ExtendsWildcardType(
     upper: Type,
     _substitutions: SubstitutionList = Nil
-) extends Type:
+) extends TypeAfterSubstitution:
   val identifier                      = ""
   val substitutions: SubstitutionList = Nil
   val numArgs                         = 0
@@ -212,7 +296,7 @@ final case class ExtendsWildcardType(
 final case class SuperWildcardType(
     lower: Type,
     _substitutions: SubstitutionList = Nil
-) extends Type:
+) extends TypeAfterSubstitution:
   val identifier                      = ""
   val numArgs                         = 0
   val substitutions: SubstitutionList = Nil
@@ -230,7 +314,7 @@ final case class SuperWildcardType(
   val args = Vector()
   def isSomehowUnknown = downwardProjection.isSomehowUnknown
 
-sealed trait TTypeParameter extends Type:
+sealed trait TTypeParameter extends TypeAfterSubstitution:
     def containingTypeIdentifier: String
 
 final case class TypeParameterIndex(
@@ -247,7 +331,7 @@ final case class TypeParameterIndex(
     copy(substitutions = this.substitutions ::: substitutions)
   def replace(oldType: ReplaceableType, newType: Type): TypeParameterIndex =
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  def substituted: Type = substitutions match
+  def substituted: TypeAfterSubstitution = substitutions match
     case Nil => this
     case x :: xs =>
       if x.contains(copy(substitutions = Nil)) then
@@ -277,7 +361,7 @@ final case class TypeParameterName(
     )
   def replace(oldType: ReplaceableType, newType: Type): TypeParameterName =
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  def substituted: Type = substitutions match
+  def substituted: TypeAfterSubstitution = substitutions match
     case Nil => this
     case x :: xs =>
       if x.contains(copy(substitutions = Nil)) then
@@ -287,7 +371,7 @@ final case class TypeParameterName(
   val args = Vector()
   def isSomehowUnknown = substitutions.isEmpty || substituted.isSomehowUnknown
 
-sealed trait ReplaceableType extends Type:
+sealed trait ReplaceableType extends TypeAfterSubstitution:
   val id: Int
   def isSomehowUnknown = true
 
@@ -362,7 +446,7 @@ final case class Alpha(
 final case class SubstitutedReferenceType(
   identifier: String,
   args: Vector[Type]
-) extends Type:
+) extends TypeAfterSubstitution:
   val numArgs = args.size
   val substitutions: SubstitutionList = (0 until numArgs).map(i => (TypeParameterIndex(identifier, i) -> args(i))).toMap :: Nil
   val upwardProjection = this
@@ -390,7 +474,7 @@ object InferenceVariableFactory:
     canBeBounded: Boolean = false,
   ) =
     id += 1
-    val choices =
+    val choices: Set[Type] =
       if !canBeBounded then
         parameterChoices ++ Set[Type](createAlpha(source, Nil, canBeSubsequentlyBounded || canBeBounded, parameterChoices))
       else

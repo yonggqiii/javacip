@@ -115,6 +115,7 @@ private def visit(
    * 2) Resolve the ClassOrInterfaceDeclaration and convert to FixedDeclaration
    * 3) Add the FixedDeclaration to Delta
    * 4) Add some assertions on the supertypes and type parameter bounds
+   * 5) Search through expressions and resolve them
    */
   var finalLog = log
 
