@@ -14,6 +14,17 @@ import scala.collection.immutable.Queue
 import scala.collection.mutable.{ArrayBuffer, Map as MutableMap, Queue as MutableQueue}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
+
+/** Represents the configuration of the algorithm.
+  * @param delta
+  *   the table of declarations found in the program (does not include reflection types)
+  * @param phi1
+  *   the table of missing types referenced in the program
+  * @param phi2
+  *   the table of inference variables generated in the program
+  * @param omega
+  *   the queue of assertions to be resolved
+  */
 case class Configuration(
     delta: Map[String, FixedDeclaration],
     phi1: Map[String, MissingTypeDeclaration],
@@ -108,7 +119,7 @@ case class Configuration(
           else if phi2.contains(t) then phi2(t).mustBeInterface
           else false
     case IsDeclaredAssertion(a) =>
-      delta.contains(a.substituted.upwardProjection.identifier) || getFixedDeclaration(
+      getFixedDeclaration(
         a.substituted.upwardProjection
       ).isDefined
     case IsMissingAssertion(a) => phi1.contains(a.substituted.upwardProjection.identifier)
@@ -441,6 +452,14 @@ case class Configuration(
       "\n\nOmega:\n" +
       omega.mkString("\n")
 
+  /** Upcasts a type into the first ancestor that contains an attribute of attributeName
+    * @param typet
+    *   the type to upcast
+    * @param attributeName
+    *   the name of the attribute
+    * @return
+    *   an optional ancestor who contains said attribute
+    */
   def upcastToAttributeContainer(typet: Type, attributeName: String): Option[Type] =
     getFixedDeclaration(typet.substituted) match
       case Some(x) =>
@@ -457,20 +476,20 @@ case class Configuration(
       case None =>
         Some(typet)
 
-  def getFixedDeclaration(t: Type): Option[FixedDeclaration] =
-    val boxMap = Map(
-      "int"     -> NormalType("java.lang.Integer", 0, Nil),
-      "char"    -> NormalType("java.lang.Character", 0, Nil),
-      "short"   -> NormalType("java.lang.Short", 0, Nil),
-      "byte"    -> NormalType("java.lang.Byte", 0, Nil),
-      "long"    -> NormalType("java.lang.Long", 0, Nil),
-      "float"   -> NormalType("java.lang.Float", 0, Nil),
-      "double"  -> NormalType("java.lang.Double", 0, Nil),
-      "boolean" -> NormalType("java.lang.Boolean", 0, Nil)
-    )
-    if delta.contains(t.identifier) then Some(delta(t.identifier))
-    else if boxMap.contains(t.identifier) then getReflectionTypeDeclaration(boxMap(t.identifier))
-    else getReflectionTypeDeclaration(t)
+  /** Obtains the declaration of some declared type
+    * @param t
+    *   the type whose declaration is to be obtained
+    * @return
+    *   an optional declaration; it returns None as long as the type is missing or unknown
+    */
+  def getFixedDeclaration(t: Type): Option[FixedDeclaration] = t.substituted match
+    case x: PrimitiveType => getReflectionTypeDeclaration(x.boxed)
+    case x: SubstitutedReferenceType =>
+      if this |- x.isMissing then None
+      else if delta.contains(x.identifier) then Some(delta(x.identifier))
+      else getReflectionTypeDeclaration(x)
+    case _ => None
+
   private def getReflectionTypeDeclaration(t: Type): Option[FixedDeclaration] =
     val rts         = ReflectionTypeSolver()
     val declAttempt = rts.tryToSolveType(t.identifier)
@@ -486,6 +505,14 @@ case class Configuration(
         convertResolvedReferenceTypeDeclarationToFixedDeclaration(rtd, isAbstract, isFinal).get
       )
 
+  /** Upcasts a type into an instance of another type
+    * @param t
+    *   the type to upcast
+    * @param target
+    *   the type to upcast it into
+    * @return
+    *   the resulting type; it returns None if the upcast fails
+    */
   def upcast(t: Type, target: Type): Option[Type] = (t.substituted, target.substituted) match
     case (x, y): (SubstitutedReferenceType, SubstitutedReferenceType) =>
       if x.identifier == y.identifier then Some(t)

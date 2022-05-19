@@ -11,7 +11,8 @@ private[inference] def resolveEquivalenceAssertion(
 ): (Log, List[Configuration]) =
   val EquivalenceAssertion(x, y) = asst
   (x.substituted, y.substituted) match
-    case (Bottom, Bottom) => (log, config :: Nil)
+    case (Bottom, Bottom)     => (log, config :: Nil)
+    case (Wildcard, Wildcard) => (log, config :: Nil)
     case (a: ExtendsWildcardType, b: ExtendsWildcardType) =>
       (log, (config asserts (a.upwardProjection ~=~ b.upwardProjection)) :: Nil)
     case (a: SuperWildcardType, b: SuperWildcardType) =>
@@ -66,41 +67,57 @@ private[inference] def resolveEquivalenceAssertion(
               .map(_.get)
               .toList
           )
-    case (a: Alpha, b: PrimitiveType) =>
-      (
-        log.addInfo(s"concretizing $a to $b"),
-        List(config.replace(a.copy(substitutions = Nil), b))
-          .filter(!_.isEmpty)
-          .map(_.get)
-      )
-    case (b: PrimitiveType, a: Alpha) =>
-      (
-        log.addInfo(s"concretizing $a to $b"),
-        List(config.replace(a.copy(substitutions = Nil), b))
-          .filter(!_.isEmpty)
-          .map(_.get)
-      )
+    case (a: Alpha, b: PrimitiveType) => concretizeAlphaToPrimitive(log, config, a, b)
+    case (b: PrimitiveType, a: Alpha) => concretizeAlphaToPrimitive(log, config, a, b)
     case (x: Alpha, y: SubstitutedReferenceType) =>
-      val originalConfig = config.copy(omega = config.omega.enqueue(asst))
-      val newType = NormalType(
-        y.identifier,
-        y.numArgs,
-        ((0 until y.numArgs)
-          .map(i =>
-            TypeParameterIndex(y.identifier, i) ->
-              InferenceVariableFactory.createInferenceVariable(
-                x.source,
-                Nil,
-                x.canBeBounded,
-                x.parameterChoices,
-                x.canBeBounded
-              )
+      concretizeAlphaToReference(log, config asserts asst, x, y)
+    case (y: SubstitutedReferenceType, x: Alpha) =>
+      concretizeAlphaToReference(log, config asserts asst, x, y)
+    case (x: SubstitutedReferenceType, y: SubstitutedReferenceType) =>
+      if x.identifier != y.identifier || x.numArgs != y.numArgs then (log.addWarn(s"$x != $y"), Nil)
+      else if x.numArgs == 0 then (log, Nil)
+      else
+        val newAsst = x.args.zip(y.args).map(_ ~=~ _)
+        (log, (config assertsAllOf newAsst) :: Nil)
+
+private[inference] def concretizeAlphaToPrimitive(
+    log: Log,
+    config: Configuration,
+    a: Alpha,
+    p: PrimitiveType
+): (Log, List[Configuration]) =
+  (
+    log.addInfo(s"concretizing $a to $p"),
+    List(config.replace(a.copy(substitutions = Nil), p))
+      .filter(!_.isEmpty)
+      .map(_.get)
+  )
+
+private[inference] def concretizeAlphaToReference(
+    log: Log,
+    config: Configuration,
+    a: Alpha,
+    s: SubstitutedReferenceType
+): (Log, List[Configuration]) =
+  val newType = NormalType(
+    s.identifier,
+    s.numArgs,
+    ((0 until s.numArgs)
+      .map(i =>
+        TypeParameterIndex(s.identifier, i) ->
+          InferenceVariableFactory.createInferenceVariable(
+            a.source,
+            Nil,
+            a.canBeBounded,
+            a.parameterChoices,
+            a.canBeBounded
           )
-          .toMap :: Nil).filter(!_.isEmpty)
       )
-      (
-        log.addInfo(s"concretizing $x to $newType"),
-        List(originalConfig.replace(x.copy(substitutions = Nil), newType))
-          .filter(!_.isEmpty)
-          .map(_.get)
-      )
+      .toMap :: Nil).filter(!_.isEmpty)
+  )
+  (
+    log.addInfo(s"concretizing $a to $newType"),
+    List(config.replace(a.copy(substitutions = Nil), newType))
+      .filter(!_.isEmpty)
+      .map(_.get)
+  )

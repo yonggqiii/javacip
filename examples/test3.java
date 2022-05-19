@@ -1,26 +1,12 @@
-import java.util.List;
 import java.util.ArrayList;
-
-class A {
-
-  int x;
-  double y;
-
+import java.util.List;
+class A<T> extends D<T> {
   void main() {
-    List<Integer> l;
-    ArrayList al;
-    l = al;
+    D<Integer> d;
+    B<List<Integer>> b;
+    b = d;
+    A<String> a;
+    B<List<String>> b2;
+    b2 = a;
   }
-
-  // void main() {
-  // B<Integer> x;
-  // C<String> y;
-  // x = y;
-  // return;
-  // }
-
-  // <T extends List<U>, U> U main(T y, int z) {
-  // return y.get(z);
-  // }
-
 }
