@@ -8,6 +8,10 @@ This org file is used to track the progress and see upcoming updates of this rep
 ** TODO Type Elimination rewrite
 ** TODO 2nd order symbolic function investigation for alpha concretization
 ** TODO a new algorithm for concretizing alpha?
+** TODO Write heuristics for what makes our generated solution good
+- Reasonable use assumption
+- If a missing type is generic, our code also generates it as generic types
+- alpha will always try to be one of its sub/super types; therefore the least number of types are generated
 
 * Implementation to-do:
 ** TODO API rewrite
