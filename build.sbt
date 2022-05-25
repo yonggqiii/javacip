@@ -7,10 +7,10 @@ val scopt = "com.github.scopt" %% "scopt" % "4.0.1"
 
 lazy val app = (project in file("."))
   .settings(
-    name                            := "JavaCPP",
+    name                            := "JavaCIP",
     libraryDependencies += scalatest % Test,
     libraryDependencies += javaparser,
     libraryDependencies += scopt,
     assembly / mainClass       := Some("Main"),
-    assembly / assemblyJarName := "javacpp-0.0.1.jar"
+    assembly / assemblyJarName := "javacip-0.0.1.jar"
   )
