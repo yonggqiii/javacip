@@ -303,44 +303,35 @@ case object Wildcard extends TypeAfterSubstitution:
   def isSomehowUnknown = false
 
 final case class ExtendsWildcardType(
-    upper: Type,
-    _substitutions: SubstitutionList = Nil
+    upper: Type
 ) extends TypeAfterSubstitution:
   val identifier                      = ""
   val substitutions: SubstitutionList = Nil
   val numArgs                         = 0
-  val upwardProjection =
-    upper.addSubstitutionLists(_substitutions).upwardProjection
+  val upwardProjection = upper.upwardProjection
   val downwardProjection: Bottom.type = Bottom
   def addSubstitutionLists(substitutions: SubstitutionList): ExtendsWildcardType =
-    ExtendsWildcardType(upwardProjection, substitutions)
+    ExtendsWildcardType(upper.addSubstitutionLists(substitutions))
   def replace(oldType: ReplaceableType, newType: Type): ExtendsWildcardType =
-    copy(
-      upper = upper.replace(oldType, newType),
-      _substitutions = _substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
-    )
-  def substituted = copy(upper = upper.addSubstitutionLists(_substitutions).substituted, _substitutions = Nil)
+    copy(upper = upper.replace(oldType, newType))
+  def substituted = copy(upper = upper.substituted)
   val args = Vector()
   def isSomehowUnknown = upwardProjection.isSomehowUnknown
 
 final case class SuperWildcardType(
-    lower: Type,
-    _substitutions: SubstitutionList = Nil
+    lower: Type
 ) extends TypeAfterSubstitution:
   val identifier                      = ""
   val numArgs                         = 0
   val substitutions: SubstitutionList = Nil
   val upwardProjection: NormalType = OBJECT
   val downwardProjection =
-    lower.addSubstitutionLists(_substitutions).downwardProjection
+    lower.downwardProjection
   def addSubstitutionLists(substitutions: SubstitutionList) =
-    SuperWildcardType(downwardProjection, substitutions)
+    copy(lower.addSubstitutionLists(substitutions))
   def replace(oldType: ReplaceableType, newType: Type): SuperWildcardType =
-    copy(
-      lower = lower.replace(oldType, newType),
-      _substitutions = _substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
-    )
-  def substituted = copy(lower = lower.addSubstitutionLists(_substitutions).substituted, _substitutions = Nil)
+    copy(lower = lower.replace(oldType, newType))
+  def substituted = copy(lower.substituted)
   val args = Vector()
   def isSomehowUnknown = downwardProjection.isSomehowUnknown
 
@@ -472,6 +463,23 @@ final case class Alpha(
       newType.addSubstitutionLists(substitutions)
   def substituted = this
   val args = Vector()
+  def concretizeToReference(identifier: String, numArgs: Int): NormalType =
+    NormalType(
+      identifier,
+      numArgs,
+      ((0 until numArgs)
+         .map(i =>
+           TypeParameterIndex(identifier, i) ->
+             InferenceVariableFactory.createInferenceVariable(
+               source,
+               Nil,
+               canBeBounded,
+               parameterChoices,
+               canBeBounded
+             )
+         ).toMap :: Nil).filter(!_.isEmpty)
+      )
+
 
 final case class SubstitutedReferenceType(
   identifier: String,

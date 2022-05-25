@@ -4,6 +4,41 @@ import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
+import configuration.declaration.InferenceVariableMemberTable
+
+private def resolve(subtype: ArrayType, supertype: ArrayType, log: Log, config: Configuration) =
+  val (i, j)       = (subtype.base, supertype.base)
+  val newAssertion = (i <:~ j && i.isReference && j.isReference) || (i.isPrimitive && i ~=~ j)
+  (log, (config asserts newAssertion) :: Nil)
+
+private def expandInferenceVariable(i: InferenceVariable, log: Log, config: Configuration) =
+  i.source match
+    case Left(_) =>
+      val choices = i._choices
+      (
+        log.addInfo(s"expanding ${i.identifier} into its choices"),
+        choices
+          .map(config.replace(i.copy(substitutions = Nil), _))
+          .filter(!_.isEmpty)
+          .map(_.get)
+          .toList
+      )
+    case Right(_) =>
+      (
+        log.addInfo(
+          "returning $a back to config as insufficient information is available"
+        ),
+        config :: Nil
+      )
+
+private def addToConstraintStore(alpha: Alpha, asst: Assertion, log: Log, config: Configuration) =
+  val table =
+    if config.phi2.contains(alpha) then config.phi2(alpha) else InferenceVariableMemberTable(alpha)
+  val newTable = table.addConstraint(asst)
+  (
+    log.addInfo(s"adding $asst to constraint store in $alpha"),
+    (config.copy(phi2 = config.phi2 + (alpha -> newTable))) :: Nil
+  )
 
 private[inference] def resolveSubtypeAssertion(
     log: Log,
@@ -17,60 +52,13 @@ private[inference] def resolveSubtypeAssertion(
     (log.addWarn(s"$x <: $y can never be true"), Nil)
   else
     (sub, sup) match
-      case (_, m: PrimitiveType) =>
-        val newAssertion = DisjunctiveAssertion(m.isAssignableBy.map(sub ~=~ _).toVector)
-        (log, (config asserts newAssertion) :: Nil)
-      case (m: PrimitiveType, _) =>
-        (log, (config asserts (m.boxed <:~ sup)) :: Nil)
-      case (i: InferenceVariable, _) =>
-        // return assertion back to config
-        val originalConfig = config asserts a
-        i.source match
-          case Left(_) =>
-            val choices = i._choices
-            (
-              log.addInfo(s"expanding ${i.identifier} into its choices"),
-              choices
-                .map(originalConfig.replace(i.copy(substitutions = Nil), _))
-                .filter(!_.isEmpty)
-                .map(_.get)
-                .toList
-            )
-          case Right(_) =>
-            (
-              log.addInfo(
-                "returning $a back to config as insufficient information is available"
-              ),
-              originalConfig :: Nil
-            )
-
-      case (_, i: InferenceVariable) =>
-        val originalConfig = config.copy(omega = config.omega.enqueue(a))
-        i.source match
-          case Left(_) =>
-            val choices = i._choices
-            (
-              log.addInfo(s"expanding ${i.identifier} into its choices"),
-              choices
-                .map(originalConfig.replace(i.copy(substitutions = Nil), _))
-                .filter(!_.isEmpty)
-                .map(_.get)
-                .toList
-            )
-          case Right(_) =>
-            (
-              log.addInfo(
-                s"returning $a back to config as insufficient information is available"
-              ),
-              originalConfig :: Nil
-            )
-      case (ArrayType(i), ArrayType(j)) =>
-        // array types are covariant
-        (
-          log,
-          (config asserts ((i <:~ j && i.isReference && j.isReference) ||
-            (i.isPrimitive && i ~=~ j))) :: Nil
-        )
+      case (i: InferenceVariable, _)    => expandInferenceVariable(i, log, config asserts a)
+      case (_, i: InferenceVariable)    => expandInferenceVariable(i, log, config asserts a)
+      case (_, alpha: Alpha)            => addToConstraintStore(alpha, sub <:~ alpha, log, config)
+      case (alpha: Alpha, _)            => addToConstraintStore(alpha, alpha <:~ sup, log, config)
+      case (_, m: PrimitiveType)        => resolve(sub, m, log, config)
+      case (m: PrimitiveType, _)        => resolve(m, sup, log, config)
+      case (m: ArrayType, n: ArrayType) => resolve(m, n, log, config)
       // array type cannot be sub/super types of other types except the trivial ones
       case (ArrayType(_), _) =>
         (log.addWarn(s"$x can only be a subtype of other array types or Object"), Nil)
@@ -168,3 +156,33 @@ private[inference] def resolveSubtypeAssertion(
       // case of subtype being a normal reference type and is declared
       case (m: SubstitutedReferenceType, _) if !config.getFixedDeclaration(m).isEmpty =>
         ???
+
+/** Case of Type <: PrimitiveType
+  * @param subtype
+  *   the subtype of the primitive type
+  * @param supertype
+  *   the supertype
+  * @return
+  *   the resulting log and new configurations
+  */
+private def resolve(
+    subtype: Type,
+    supertype: PrimitiveType,
+    log: Log,
+    config: Configuration
+) =
+  // subtype must be one of the types that is assignable by this primitive type
+  val newAssertion = DisjunctiveAssertion(supertype.isAssignableBy.map(subtype ~=~ _).toVector)
+  (log, (config asserts newAssertion) :: Nil)
+
+private def resolve(
+    subtype: PrimitiveType,
+    supertype: Type,
+    log: Log,
+    config: Configuration
+) =
+  // box case
+  val box = subtype.boxed <:~ supertype
+  // widen case
+  val widen = DisjunctiveAssertion((subtype.widened + subtype).map(supertype ~=~ _).toVector)
+  (log, (config asserts (widen || box)) :: Nil)

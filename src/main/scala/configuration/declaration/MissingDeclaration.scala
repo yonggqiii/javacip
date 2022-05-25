@@ -208,8 +208,18 @@ class InferenceVariableMemberTable(
     val attributes: Map[String, Type] = Map(),
     val methods: Map[String, MissingMethodTable] = Map().withDefaultValue(Map()),
     val mustBeClass: Boolean = false,
-    val mustBeInterface: Boolean = false
+    val mustBeInterface: Boolean = false,
+    val constraintStore: Vector[Assertion] = Vector()
 ):
+  def addConstraint(asst: Assertion) =
+    InferenceVariableMemberTable(
+      typet,
+      attributes,
+      methods,
+      mustBeClass,
+      mustBeInterface,
+      constraintStore :+ asst
+    )
   def merge(other: InferenceVariableMemberTable): (InferenceVariableMemberTable, List[Assertion]) =
     val (newAttributes, assertions) = other.attributes.foldLeft(attributes, List[Assertion]()) {
       case ((a, ls), (otherName, otherType)) =>
@@ -231,7 +241,14 @@ class InferenceVariableMemberTable(
           (m + (otherName -> resultingTable), assts ::: ls)
     }
     (
-      InferenceVariableMemberTable(typet, newAttributes, newMethods, mustBeClass, mustBeInterface),
+      InferenceVariableMemberTable(
+        typet,
+        newAttributes,
+        newMethods,
+        mustBeClass,
+        mustBeInterface,
+        constraintStore ++ other.constraintStore
+      ),
       assertions ::: moreAssertions
     )
 
@@ -280,7 +297,7 @@ class InferenceVariableMemberTable(
     if methodTable.contains((argTypes, context)) then Some(methodTable((argTypes, context)))
     else None
   override def toString =
-    s"type $typet\nattributes:${attributes}\nmethods:$methods"
+    s"type $typet\nattributes:${attributes}\nmethods:$methods\nconstraints:$constraintStore"
 
   def replace(
       oldType: ReplaceableType,
@@ -298,7 +315,8 @@ class InferenceVariableMemberTable(
         attributes.map(_ -> _.replace(oldType, newType)),
         newMethods,
         mustBeClass,
-        mustBeInterface
+        mustBeInterface,
+        constraintStore.map(_.replace(oldType, newType))
       ),
       assertions
     )

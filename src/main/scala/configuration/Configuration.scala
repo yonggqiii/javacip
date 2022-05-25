@@ -204,6 +204,8 @@ case class Configuration(
       val newSource            = t.replace(oldType, newType).upwardProjection
       val (newTable, newAssts) = ivmt.replace(oldType, newType)
       newAssertions ++= newAssts
+      // add the assertions in the constraint stores
+      newAssertions ++= newTable.constraintStore
       newSource.substituted match
         case x: SubstitutedReferenceType =>
           getFixedDeclaration(x) match
@@ -290,6 +292,7 @@ case class Configuration(
                   for t <- missingMethodContainers do
                     disjassts += HasMethodAssertion(t, methodName, paramTypes, returnType)
                   newAssertions += DisjunctiveAssertion(disjassts.toVector)
+
         case x: TTypeParameter =>
           val sourceType = x match
             case y: TypeParameterIndex => y.source
@@ -448,7 +451,7 @@ case class Configuration(
     "Delta:\n" +
       delta.values.mkString("\n") +
       "\n\nPhi:\n" +
-      phi1.values.mkString("\n") + phi2.values.mkString("\n") +
+      phi1.values.mkString("\n") + "\n" + phi2.values.mkString("\n") +
       "\n\nOmega:\n" +
       omega.mkString("\n")
 

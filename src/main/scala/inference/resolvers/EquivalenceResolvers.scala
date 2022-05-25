@@ -99,25 +99,13 @@ private[inference] def concretizeAlphaToReference(
     a: Alpha,
     s: SubstitutedReferenceType
 ): (Log, List[Configuration]) =
-  val newType = NormalType(
-    s.identifier,
-    s.numArgs,
-    ((0 until s.numArgs)
-      .map(i =>
-        TypeParameterIndex(s.identifier, i) ->
-          InferenceVariableFactory.createInferenceVariable(
-            a.source,
-            Nil,
-            a.canBeBounded,
-            a.parameterChoices,
-            a.canBeBounded
-          )
-      )
-      .toMap :: Nil).filter(!_.isEmpty)
-  )
+  val newType = a.concretizeToReference(s.identifier, s.numArgs)
+
   (
     log.addInfo(s"concretizing $a to $newType"),
-    List(config.replace(a.copy(substitutions = Nil), newType))
+    List(
+      config.replace(a.copy(substitutions = Nil), newType)
+    )
       .filter(!_.isEmpty)
       .map(_.get)
   )
