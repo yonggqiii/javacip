@@ -1,0 +1,2 @@
+final interface A {
+}
