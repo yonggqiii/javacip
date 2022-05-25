@@ -8,7 +8,7 @@ final class Log(
 ):
   private def logOrNot(message: LogMessage) = message match
     case _: ErrorMessage => logOrFlush(message)
-    case _ => if appConfig.verbose then logOrFlush(message) else this
+    case _               => if appConfig.verbose then logOrFlush(message) else this
 
   private def logOrFlush(message: LogMessage) =
     if appConfig.debug then
@@ -16,6 +16,14 @@ final class Log(
       this
     else Log(appConfig, messages :+ message)
 
+  def addAll(messages: Vector[LogMessage]): Log =
+    messages.foldLeft(this)((l, m) =>
+      m match
+        case SuccessMessage(h, b) => l.addSuccess(h, b)
+        case InfoMessage(h, b)    => l.addInfo(h, b)
+        case WarnMessage(h, b)    => l.addWarn(h, b)
+        case ErrorMessage(h, b)   => l.addError(h, b)
+    )
   def addSuccess(header: String, body: String = "") =
     logOrNot(SuccessMessage(header, body))
   def addInfo(header: String, body: String = "") =
@@ -30,23 +38,19 @@ final class Log(
 
 sealed trait LogMessage:
   def flush(): Unit
-final case class SuccessMessage(val header: String, val body: String)
-    extends LogMessage:
+final case class SuccessMessage(val header: String, val body: String) extends LogMessage:
   def flush() =
     println(s"[${GREEN}SUCCESS$RESET] $header")
     if body != "" then println(body)
-final case class InfoMessage(val header: String, val body: String)
-    extends LogMessage:
+final case class InfoMessage(val header: String, val body: String) extends LogMessage:
   def flush() =
     println(s"[${CYAN}INFO$RESET] $header")
     if body != "" then println(body)
-final case class WarnMessage(val header: String, val body: String)
-    extends LogMessage:
+final case class WarnMessage(val header: String, val body: String) extends LogMessage:
   def flush() =
     println(s"[${YELLOW}WARN$RESET] $header")
     if body != "" then println(body)
-final case class ErrorMessage(val header: String, val body: String)
-    extends LogMessage:
+final case class ErrorMessage(val header: String, val body: String) extends LogMessage:
   def flush() =
     println(s"[${RED}ERROR$RESET] $header")
     if body != "" then println(body)
