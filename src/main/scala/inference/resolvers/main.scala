@@ -18,8 +18,10 @@ private[inference] def resolve(
     if newConfig |- asst then LogWithLeft(newLog, newConfig :: Nil)
     else
       val res = asst match
-        case x: SubtypeAssertion => resolveSubtypeAssertion(newLog, newConfig, x)
-        case x: IsClassAssertion => resolveIsClassAssertion(newLog, newConfig, x)
+        case x: SubtypeAssertion =>
+          resolveSubtypeAssertion(newLog, newConfig, x)
+        case x: IsClassAssertion =>
+          resolveIsClassAssertion(newLog, newConfig, x)
         case x: IsInterfaceAssertion =>
           resolveIsInterfaceAssertion(newLog, newConfig, x)
         case x @ DisjunctiveAssertion(assts) =>
@@ -34,47 +36,32 @@ private[inference] def resolve(
           )
         case x: EquivalenceAssertion =>
           resolveEquivalenceAssertion(newLog, newConfig, x)
-        case x @ ContainmentAssertion(y, z) =>
-          val (ys, zs) = (y.substituted, z.substituted)
-          if zs.upwardProjection == zs.downwardProjection then
-            val newAsst = y ~=~ z
-            (
-              newLog.addInfo(s"$x reduces to $newAsst"),
-              (newConfig asserts newAsst) :: Nil
-            )
-          else
-            val newAsst = (ys.upwardProjection <:~ zs.upwardProjection) &&
-              (zs.downwardProjection <:~ ys.downwardProjection)
-
-            (
-              newLog.addInfo(s"expanding $x"),
-              (newConfig asserts newAsst) :: Nil
-            )
-        case x: IsPrimitiveAssertion => resolveIsPrimitiveAssertion(newLog, config, x)
-        case IsReferenceAssertion(t) =>
-          t.substituted match
-            case m: InferenceVariable =>
-              val originalConfig = config asserts asst
-              m.source match
-                case Left(_) =>
-                  val choices = m._choices
-                  (
-                    log.addInfo(s"expanding ${m.identifier} into its choices"),
-                    choices
-                      .map(originalConfig.replace(m.copy(substitutions = Nil), _))
-                      .filter(!_.isEmpty)
-                      .map(_.get)
-                      .toList
-                  )
-                case Right(_) =>
-                  (
-                    log.addInfo(
-                      s"returning $asst back to config as insufficient information is available"
-                    ),
-                    originalConfig :: Nil
-                  )
-            case _: PrimitiveType => (log.addWarn(s"$t is not a reference type"), Nil)
-
+        case x: ContainmentAssertion =>
+          resolveContainmentAssertion(newLog, newConfig, x)
+        case x: IsPrimitiveAssertion =>
+          resolveIsPrimitiveAssertion(newLog, newConfig, x)
+        case x: IsReferenceAssertion =>
+          resolveIsReferenceAssertion(newLog, newConfig, x)
         case _ =>
           ???
       LogWithLeft(res._1, res._2)
+
+private def expandInferenceVariable(i: InferenceVariable, log: Log, config: Configuration) =
+  i.source match
+    case Left(_) =>
+      val choices = i._choices
+      (
+        log.addInfo(s"expanding ${i.identifier} into its choices"),
+        choices
+          .map(config.replace(i.copy(substitutions = Nil), _))
+          .filter(!_.isEmpty)
+          .map(_.get)
+          .toList
+      )
+    case Right(_) =>
+      (
+        log.addInfo(
+          "returning $a back to config as insufficient information is available"
+        ),
+        config :: Nil
+      )
