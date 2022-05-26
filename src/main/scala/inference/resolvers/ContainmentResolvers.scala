@@ -5,7 +5,7 @@ import configuration.assertions.*
 import configuration.types.*
 import utils.*
 
-def resolveContainmentAssertion(log: Log, config: Configuration, a: ContainmentAssertion) =
+private def resolveContainmentAssertion(log: Log, config: Configuration, a: ContainmentAssertion) =
   val ContainmentAssertion(y, z) = a
   val (ys, zs)                   = (y.substituted, z.substituted)
   if zs.upwardProjection == zs.downwardProjection then

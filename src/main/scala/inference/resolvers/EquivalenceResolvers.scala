@@ -26,59 +26,19 @@ private[inference] def resolveEquivalenceAssertion(
       // definitely false
       (log.addWarn(s"$x != $y"), Nil)
     case (a: InferenceVariable, _) =>
-      val originalConfig = config asserts asst
-      a.source match
-        case Right(_) =>
-          // what?
-          if a.substitutions.isEmpty then
-            (
-              log.addInfo(s"replacing $x with $y"),
-              List(originalConfig.replace(a, y)).filter(!_.isEmpty).map(_.get)
-            )
-          else ???
-        case Left(_) =>
-          val choices = a._choices
-          (
-            log.addInfo(s"expanding ${a.identifier} into its choices"),
-            choices
-              .map(originalConfig.replace(a.copy(substitutions = Nil), _))
-              .filter(!_.isEmpty)
-              .map(_.get)
-              .toList
-          )
+      expandInferenceVariable(a, log, config asserts asst)
     case (_, a: InferenceVariable) =>
-      val originalConfig = config asserts asst
-      a.source match
-        case Right(_) =>
-          // what?
-          if a.substitutions.isEmpty then
-            (
-              log.addInfo(s"replacing $a with $x"),
-              List(originalConfig.replace(a, x)).filter(!_.isEmpty).map(_.get)
-            )
-          else ???
-        case Left(_) =>
-          val choices = a._choices
-          (
-            log.addInfo(s"expanding ${a.identifier} into its choices"),
-            choices
-              .map(originalConfig.replace(a.copy(substitutions = Nil), _))
-              .filter(!_.isEmpty)
-              .map(_.get)
-              .toList
-          )
-    case (a: Alpha, b: PrimitiveType) => concretizeAlphaToPrimitive(log, config, a, b)
-    case (b: PrimitiveType, a: Alpha) => concretizeAlphaToPrimitive(log, config, a, b)
+      expandInferenceVariable(a, log, config asserts asst)
+    case (a: Alpha, b: PrimitiveType) =>
+      concretizeAlphaToPrimitive(log, config, a, b)
+    case (b: PrimitiveType, a: Alpha) =>
+      concretizeAlphaToPrimitive(log, config, a, b)
     case (x: Alpha, y: SubstitutedReferenceType) =>
       concretizeAlphaToReference(log, config asserts asst, x, y)
     case (y: SubstitutedReferenceType, x: Alpha) =>
       concretizeAlphaToReference(log, config asserts asst, x, y)
     case (x: SubstitutedReferenceType, y: SubstitutedReferenceType) =>
-      if x.identifier != y.identifier || x.numArgs != y.numArgs then (log.addWarn(s"$x != $y"), Nil)
-      else if x.numArgs == 0 then (log, Nil)
-      else
-        val newAsst = x.args.zip(y.args).map(_ ~=~ _)
-        (log, (config assertsAllOf newAsst) :: Nil)
+      resolveReferenceEquivalences(x, y, log, config)
 
 private[inference] def concretizeAlphaToPrimitive(
     log: Log,
@@ -109,3 +69,15 @@ private[inference] def concretizeAlphaToReference(
       .filter(!_.isEmpty)
       .map(_.get)
   )
+
+private def resolveReferenceEquivalences(
+    x: SubstitutedReferenceType,
+    y: SubstitutedReferenceType,
+    log: Log,
+    config: Configuration
+) =
+  if x.identifier != y.identifier || x.numArgs != y.numArgs then (log.addWarn(s"$x != $y"), Nil)
+  else if x.numArgs == 0 \ then (log, Nil)
+  else
+    val newAsst = x.args.zip(y.args).map(_ ~=~ _)
+    (log, (config assertsAllOf newAsst) :: Nil)
