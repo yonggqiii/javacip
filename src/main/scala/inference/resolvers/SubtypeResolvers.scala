@@ -6,7 +6,12 @@ import configuration.types.*
 import utils.*
 import configuration.declaration.InferenceVariableMemberTable
 
-private def resolve(subtype: ArrayType, supertype: ArrayType, log: Log, config: Configuration) =
+private def resolveArraySubArray(
+    subtype: ArrayType,
+    supertype: ArrayType,
+    log: Log,
+    config: Configuration
+) =
   val (i, j)       = (subtype.base, supertype.base)
   val newAssertion = (i <:~ j && i.isReference && j.isReference) || (i.isPrimitive && i ~=~ j)
   (log, (config asserts newAssertion) :: Nil)
@@ -56,9 +61,9 @@ private[inference] def resolveSubtypeAssertion(
       case (_, i: InferenceVariable)    => expandInferenceVariable(i, log, config asserts a)
       case (_, alpha: Alpha)            => addToConstraintStore(alpha, sub <:~ alpha, log, config)
       case (alpha: Alpha, _)            => addToConstraintStore(alpha, alpha <:~ sup, log, config)
-      case (_, m: PrimitiveType)        => resolve(sub, m, log, config)
-      case (m: PrimitiveType, _)        => resolve(m, sup, log, config)
-      case (m: ArrayType, n: ArrayType) => resolve(m, n, log, config)
+      case (_, m: PrimitiveType)        => resolveTypeSubPrimitive(sub, m, log, config)
+      case (m: PrimitiveType, _)        => resolvePrimitiveSubType(m, sup, log, config)
+      case (m: ArrayType, n: ArrayType) => resolveArraySubArray(m, n, log, config)
       // array type cannot be sub/super types of other types except the trivial ones
       case (ArrayType(_), _) =>
         (log.addWarn(s"$x can only be a subtype of other array types or Object"), Nil)
@@ -165,7 +170,7 @@ private[inference] def resolveSubtypeAssertion(
   * @return
   *   the resulting log and new configurations
   */
-private def resolve(
+private def resolveTypeSubPrimitive(
     subtype: Type,
     supertype: PrimitiveType,
     log: Log,
@@ -175,7 +180,7 @@ private def resolve(
   val newAssertion = DisjunctiveAssertion(supertype.isAssignableBy.map(subtype ~=~ _).toVector)
   (log, (config asserts newAssertion) :: Nil)
 
-private def resolve(
+private def resolvePrimitiveSubType(
     subtype: PrimitiveType,
     supertype: Type,
     log: Log,
