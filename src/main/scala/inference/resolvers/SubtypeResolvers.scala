@@ -2,9 +2,10 @@ package inference.resolvers
 
 import configuration.Configuration
 import configuration.assertions.*
+import configuration.declaration.*
 import configuration.types.*
+import inference.misc.expandInferenceVariable
 import utils.*
-import configuration.declaration.InferenceVariableMemberTable
 
 private[inference] def resolveSubtypeAssertion(
     log: Log,

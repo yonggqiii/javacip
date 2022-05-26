@@ -3,6 +3,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
+import inference.misc.expandInferenceVariable
 import utils.*
 
 private def resolveIsClassAssertion(
@@ -22,20 +23,4 @@ private def resolveIsClassAssertion(
         val newPhi = config.phi1 + (x.identifier -> config.phi1(x.identifier).asClass)
         (log, config.copy(phi1 = newPhi) :: Nil)
       case x: InferenceVariable =>
-        val originalConfig = config asserts a
-        x.source match
-          case Left(_) =>
-            val choices = x._choices
-            (
-              log.addInfo(s"expanding ${x.identifier} into its choices"),
-              choices
-                .map(originalConfig.replace(x.copy(substitutions = Nil), _))
-                .filter(!_.isEmpty)
-                .map(_.get)
-                .toList
-            )
-          case Right(_) =>
-            (
-              log.addInfo(s"returning $a back to config as insufficient information is available"),
-              originalConfig :: Nil
-            )
+        expandInferenceVariable(x, log, config asserts a)

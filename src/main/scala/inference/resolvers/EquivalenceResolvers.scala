@@ -2,6 +2,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
+import inference.misc.expandInferenceVariable
 import utils.*
 
 private[inference] def resolveEquivalenceAssertion(
@@ -77,7 +78,7 @@ private def resolveReferenceEquivalences(
     config: Configuration
 ) =
   if x.identifier != y.identifier || x.numArgs != y.numArgs then (log.addWarn(s"$x != $y"), Nil)
-  else if x.numArgs == 0 \ then (log, Nil)
+  else if x.numArgs == 0 then (log, Nil)
   else
     val newAsst = x.args.zip(y.args).map(_ ~=~ _)
     (log, (config assertsAllOf newAsst) :: Nil)
