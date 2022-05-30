@@ -336,7 +336,11 @@ final case class SuperWildcardType(
   def isSomehowUnknown = downwardProjection.isSomehowUnknown
 
 sealed trait TTypeParameter extends TypeAfterSubstitution:
-    def containingTypeIdentifier: String
+  def containingTypeIdentifier: String
+  def isSomehowUnknown =
+    substituted match
+      case _: TTypeParameter => false
+      case s => s.isSomehowUnknown
 
 final case class TypeParameterIndex(
     source: String,
@@ -360,7 +364,6 @@ final case class TypeParameterIndex(
       else
         copy(substitutions = xs).substituted
   val args = Vector()
-  def isSomehowUnknown = substitutions.isEmpty || substituted.isSomehowUnknown
 
 final case class TypeParameterName(
     sourceType: String,
@@ -390,7 +393,6 @@ final case class TypeParameterName(
       else
         copy(substitutions = xs).substituted
   val args = Vector()
-  def isSomehowUnknown = substitutions.isEmpty || substituted.isSomehowUnknown
 
 sealed trait ReplaceableType extends TypeAfterSubstitution:
   val id: Int

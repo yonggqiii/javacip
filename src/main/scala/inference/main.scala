@@ -24,8 +24,8 @@ private def infer(
     configs: List[Configuration],
     a: Int = 0
 ): LogWithOption[Configuration] =
-  //if a > 2000 then return LogWithNone(log.addError("max hit"))
-  //if a % 100 == 0 || a > 1900 then println(s"$a, ${configs.size}")
+  //if a > 100 then return LogWithNone(log.addError("max hit"))
+  if a % 100 == 0 then println(s"$a, ${configs.size}")
   configs match
     case Nil => LogWithNone(log.addError(s"Terminating as type errors exist"))
     // case _ =>

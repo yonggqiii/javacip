@@ -4,9 +4,11 @@ public class test2 {
         public static void main(String[] args) {
                 // 1
                 X<Integer> x;
+                int awsfgawef = x.get();
                 Y<? extends Number> xx = x;
                 // 2
                 X<String> xxx;
+                String ghhear = xxx.get();
                 Z<? extends A<? extends Comparable<String>>> z = xxx;
                 // 3
                 X<? extends Number> xxxx;
@@ -23,6 +25,7 @@ public class test2 {
                 // 7
                 E<Integer> t;
                 A<? super ArrayList<Integer>> h = t;
-
+                D r2;
+                A<Object> r3 = r2;
         }
 }

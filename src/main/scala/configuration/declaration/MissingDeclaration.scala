@@ -16,6 +16,16 @@ class MissingTypeDeclaration(
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false
 ):
+  def removeSupertype(t: NormalType | SubstitutedReferenceType) =
+    MissingTypeDeclaration(
+      identifier,
+      numParams,
+      supertypes.filter(x => x.identifier != t.identifier),
+      attributes,
+      methods,
+      mustBeClass,
+      mustBeInterface
+    )
 
   def greedilyExtends(t: Type) =
     MissingTypeDeclaration(

@@ -6,6 +6,7 @@ import configuration.types.*
 import utils.*
 import scala.annotation.tailrec
 import configuration.declaration.MissingTypeDeclaration
+import scala.util.{Either, Left, Right}
 
 def concretize(
     log: Log,
@@ -18,62 +19,74 @@ def concretize(
     val alpha          = oalpha.get
     val allConstraints = getAllConstraints(config, alpha)
     // get the field of sub/super types
-    val (lowerField, upperField) = getFieldOfTypes(alpha, allConstraints, config)
-    val lowerFieldString         = lowerField.mkString(", ")
-    val upperFieldString         = upperField.mkString(", ")
-    // if lower field types are all declared, then the subtypes are all fully declared
-    if lowerField.forall(x => config |- x.isDeclared) then
-      if lowerField.exists(x => upperField.forall(y => !(config |- x <:~ y))) then
+    getFieldOfTypes(alpha, allConstraints, config) match
+      case Right((lowerField, upperField)) =>
         val lowerFieldString = lowerField.mkString(", ")
         val upperFieldString = upperField.mkString(", ")
-        LogWithLeft(
-          log.addWarn(
-            s"not possible to concretize $alpha",
-            "lower field: $lowerFieldString\nupper field: $upperFieldString"
-          ),
-          Nil
-        )
-      else
-        // alpha must be one of the types in the lower and upper field
-        val res = (lowerField ++ upperField)
-          // get the identifier and arity of the new type
-          .map(x => (x.identifier, config.getArity(x)))
-          // concretize alpha into each of the possible types
-          .map((id, arity) => alpha.concretizeToReference(id, arity))
-          // replace the existing configuration with those types
-          .map(x => config.replace(alpha.copy(substitutions = Nil), x))
-          .filter(_.isDefined)
-          .map(_.get)
-          .toList
-        LogWithLeft(log.addInfo(s"concretizing $alpha into some fully-declared type"), res)
-    else
-      // it is possible for alpha to be some novel type
-      val variability = upperField.toVector.map(x => config.getArity(x)).foldLeft(0)(_ + _)
-      val newType     = alpha.concretizeToReference(s"UNKNOWN_TYPE_${alpha.id}", variability)
-      val newDecl     = MissingTypeDeclaration(newType.identifier, variability)
-      val newConfig = config
-        .copy(phi1 = config.phi1 + (newType.identifier -> newDecl))
-        .replace(alpha.copy(substitutions = Nil), newType)
-        .map(_ :: Nil)
-        .getOrElse(Nil)
-      // cases where alpha is not this novel type
-      val res = (lowerField ++ upperField)
-        // get the identifier and arity of the new type
-        .map(x => (x.identifier, config.getArity(x)))
-        // concretize alpha into each of the possible types
-        .map((id, arity) => alpha.concretizeToReference(id, arity))
-        // replace the existing configuration with those types
-        .map(x => config.replace(alpha.copy(substitutions = Nil), x))
-        .filter(_.isDefined)
-        .map(_.get)
-        .toList
-      LogWithLeft(
-        log.addInfo(
-          s"concretizing ${alpha.copy(substitutions = Nil)} to some type in the field or $newType",
-          s"lower field: $lowerFieldString\nupper field: $upperFieldString"
-        ),
-        newConfig ::: res
-      )
+        // if lower field types are all declared, then the subtypes are all fully declared
+        if lowerField.forall(x => config |- x.isDeclared) then
+          if lowerField.exists(x =>
+              !upperField.isEmpty && upperField.forall(y => !(config |- x <:~ y))
+            )
+          then
+            val lowerFieldString = lowerField.mkString(", ")
+            val upperFieldString = upperField.mkString(", ")
+            LogWithLeft(
+              log.addWarn(
+                s"not possible to concretize $alpha",
+                s"lower field: $lowerFieldString\nupper field: $upperFieldString"
+              ),
+              Nil
+            )
+          else
+            // alpha must be one of the types in the lower and upper field
+            val res = (lowerField ++ upperField)
+              // get the identifier and arity of the new type
+              .map(x => (x.identifier, config.getArity(x)))
+              // concretize alpha into each of the possible types
+              .map((id, arity) => alpha.concretizeToReference(id, arity))
+              // replace the existing configuration with those types
+              .map(x => config.replace(alpha.copy(substitutions = Nil), x))
+              .filter(_.isDefined)
+              .map(_.get)
+              .toList
+            LogWithLeft(log.addInfo(s"concretizing $alpha into some fully-declared type"), res)
+        else
+          // it is possible for alpha to be some novel type
+          val variability = upperField.toVector.map(x => config.getArity(x)).foldLeft(0)(_ + _)
+          val newType     = alpha.concretizeToReference(s"UNKNOWN_TYPE_${alpha.id}", variability)
+          val newDecl     = MissingTypeDeclaration(newType.identifier, variability)
+          val newConfig = config
+            .copy(phi1 = config.phi1 + (newType.identifier -> newDecl))
+            .replace(alpha.copy(substitutions = Nil), newType)
+            .map(_ :: Nil)
+            .getOrElse(Nil)
+          // cases where alpha is not this novel type
+          val res = (lowerField ++ upperField)
+            // get the identifier and arity of the new type
+            .map(x => (x.identifier, config.getArity(x)))
+            // concretize alpha into each of the possible types
+            .map((id, arity) => alpha.concretizeToReference(id, arity))
+            // replace the existing configuration with those types
+            .map(x => config.replace(alpha.copy(substitutions = Nil), x))
+            .filter(_.isDefined)
+            .map(_.get)
+            .toList
+          LogWithLeft(
+            log.addInfo(
+              s"concretizing ${alpha.copy(substitutions = Nil)} to some type in the field or $newType",
+              s"lower field: $lowerFieldString\nupper field: $upperFieldString"
+            ),
+            newConfig ::: res
+          )
+      case Left(Some(t)) =>
+        val arity    = config.getArity(t)
+        val newAlpha = alpha.concretizeToReference(t.identifier, arity)
+        val newConfig =
+          config.replace(alpha.copy(substitutions = Nil), newAlpha).map(_ :: Nil).getOrElse(Nil)
+        LogWithLeft(log.addInfo(s"concretizing $alpha to $newAlpha"), newConfig)
+      case Left(None) =>
+        LogWithLeft(log.addWarn(s"cannot concretize $alpha!"), Nil)
 // val numParams =
 //   knownSupertypes.foldLeft(0)((i, t) => i + t.numArgs) + alpha.parameterChoices.size
 // val a = (0 to numParams)
@@ -133,16 +146,24 @@ private def getAllSubtypesFromConstraints(alpha: Alpha, v: Vector[Assertion]) =
     .filter(a => a.right.isInstanceOf[Alpha] && a.right.asInstanceOf[Alpha].id == alpha.id)
     .map(_.left)
 
-private def getFieldOfTypes(alpha: Alpha, constraints: Vector[Assertion], config: Configuration) =
+private def getFieldOfTypes(
+    alpha: Alpha,
+    constraints: Vector[Assertion],
+    config: Configuration
+): Either[Option[NormalType], (Set[NormalType], Set[NormalType])] =
   val allConcreteSupertypes =
     getAllSupertypesFromConstraints(alpha, constraints).filter(!_.isInstanceOf[Alpha])
   val lowestSupertypes = getLowestSupertypes(config, allConcreteSupertypes)
   val allConcreteSubtypes =
     getAllSubtypesFromConstraints(alpha, constraints).filter(!_.isInstanceOf[Alpha])
-  val highestSubtypes = getHighestSubtypes(config, allConcreteSubtypes)
-  val supertypesOfSubtypes =
-    highestSubtypes.flatMap(getSupertypesOfSubtype(_, lowestSupertypes, config))
-  (supertypesOfSubtypes, lowestSupertypes)
+  val highestSubtypes    = getHighestSubtypes(config, allConcreteSubtypes)
+  val intersectionOfSets = lowestSupertypes & highestSubtypes
+  if intersectionOfSets.isEmpty then
+    val supertypesOfSubtypes =
+      highestSubtypes.flatMap(getSupertypesOfSubtype(_, lowestSupertypes, config))
+    Right((supertypesOfSubtypes, lowestSupertypes))
+  else if intersectionOfSets.size == 1 then Left(Some(intersectionOfSets.toVector(0)))
+  else Left(None)
 
 private def getSupertypesOfSubtype(
     t: NormalType,
