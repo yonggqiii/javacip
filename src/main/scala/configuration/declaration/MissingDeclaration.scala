@@ -209,7 +209,8 @@ class InferenceVariableMemberTable(
     val methods: Map[String, MissingMethodTable] = Map().withDefaultValue(Map()),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false,
-    val constraintStore: Vector[Assertion] = Vector()
+    val constraintStore: Vector[Assertion] = Vector(),
+    val exclusions: Set[String] = Set()
 ):
   def addConstraint(asst: Assertion) =
     InferenceVariableMemberTable(
@@ -218,8 +219,21 @@ class InferenceVariableMemberTable(
       methods,
       mustBeClass,
       mustBeInterface,
-      constraintStore :+ asst
+      constraintStore :+ asst,
+      exclusions
     )
+
+  def addExclusion(identifier: String) =
+    InferenceVariableMemberTable(
+      typet,
+      attributes,
+      methods,
+      mustBeClass,
+      mustBeInterface,
+      constraintStore,
+      exclusions + identifier
+    )
+
   def merge(other: InferenceVariableMemberTable): (InferenceVariableMemberTable, List[Assertion]) =
     val (newAttributes, assertions) = other.attributes.foldLeft(attributes, List[Assertion]()) {
       case ((a, ls), (otherName, otherType)) =>
@@ -247,7 +261,8 @@ class InferenceVariableMemberTable(
         newMethods,
         mustBeClass,
         mustBeInterface,
-        constraintStore ++ other.constraintStore
+        constraintStore ++ other.constraintStore,
+        exclusions ++ other.exclusions
       ),
       assertions ::: moreAssertions
     )
@@ -271,7 +286,9 @@ class InferenceVariableMemberTable(
         attributes + (identifier -> attributeType),
         methods,
         mustBeClass,
-        mustBeInterface
+        mustBeInterface,
+        constraintStore,
+        exclusions
       )
 
   def addMethod(
@@ -285,7 +302,9 @@ class InferenceVariableMemberTable(
       attributes,
       methods + (identifier -> (methods(identifier) + ((paramTypes, context) -> returnType))),
       mustBeClass,
-      mustBeInterface
+      mustBeInterface,
+      constraintStore,
+      exclusions
     )
 
   def getMethodReturnType(
@@ -316,7 +335,8 @@ class InferenceVariableMemberTable(
         newMethods,
         mustBeClass,
         mustBeInterface,
-        constraintStore.map(_.replace(oldType, newType))
+        constraintStore.map(_.replace(oldType, newType)),
+        exclusions
       ),
       assertions
     )

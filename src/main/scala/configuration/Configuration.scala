@@ -47,6 +47,11 @@ case class Configuration(
     */
   def assertsAllOf(a: Iterable[Assertion]) = copy(omega = omega.enqueueAll(a))
 
+  def getArity(t: NormalType | SubstitutedReferenceType): Int =
+    getFixedDeclaration(t) match
+      case Some(decl) => decl.typeParameters.size
+      case None       => phi1(t.identifier).numParams
+
   /** Pops an assertion from the configuration
     * @return
     *   the assertion and the new config excluding the assertion
@@ -205,9 +210,10 @@ case class Configuration(
       val (newTable, newAssts) = ivmt.replace(oldType, newType)
       newAssertions ++= newAssts
       // add the assertions in the constraint stores
-      newAssertions ++= newTable.constraintStore
+      // newAssertions ++= newTable.constraintStore
       newSource.substituted match
         case x: SubstitutedReferenceType =>
+          newAssertions ++= newTable.constraintStore
           getFixedDeclaration(x) match
             case None =>
               val (newT, newA) = newPhi1(x.identifier).merge(newTable, x)
@@ -294,6 +300,7 @@ case class Configuration(
                   newAssertions += DisjunctiveAssertion(disjassts.toVector)
 
         case x: TTypeParameter =>
+          newAssertions ++= newTable.constraintStore
           val sourceType = x match
             case y: TypeParameterIndex => y.source
             case y: TypeParameterName  => y.sourceType
@@ -539,3 +546,20 @@ case class Configuration(
               case Some(_) => o
           )
     case _ => None
+
+  def addExclusionToAlpha(id: Int, exclusion: String) =
+    val newPhi2 = MutableMap[Type, InferenceVariableMemberTable]()
+    for (t, ivmt) <- phi2 do
+      t match
+        case x: Alpha if x.id == id =>
+          val newTable = ivmt.addExclusion(exclusion)
+          newPhi2(x) = newTable
+        case _ =>
+          newPhi2(t) = ivmt
+    copy(phi2 = newPhi2.toMap)
+
+  def excludes(id: Int, exclusion: String) =
+    phi2
+      .filter((x, y) => x.isInstanceOf[Alpha] && x.asInstanceOf[Alpha].id == id)
+      .map((x, y) => y.exclusions.contains(exclusion))
+      .foldLeft(false)(_ || _)

@@ -40,6 +40,7 @@ private[inference] def resolveEquivalenceAssertion(
       concretizeAlphaToReference(log, config asserts asst, x, y)
     case (x: SubstitutedReferenceType, y: SubstitutedReferenceType) =>
       resolveReferenceEquivalences(x, y, log, config)
+    case _ => (log.addWarn(s"not implemented: $asst"), Nil)
 
 private[inference] def concretizeAlphaToPrimitive(
     log: Log,

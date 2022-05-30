@@ -517,10 +517,11 @@ object InferenceVariableFactory:
         parameterChoices ++ Set[Type](createAlpha(source, Nil, canBeSubsequentlyBounded || canBeBounded, parameterChoices))
       else
         val boundedParams = parameterChoices.flatMap(x => Set(x, SuperWildcardType(x), ExtendsWildcardType(x)))
+        val alpha = createAlpha(source, Nil, true, parameterChoices)
         boundedParams ++ Set(Wildcard,
-          createAlpha(source, Nil, true, parameterChoices),
-          SuperWildcardType(createAlpha(source, Nil, true, parameterChoices)),
-          ExtendsWildcardType(createAlpha(source, Nil, true, parameterChoices))
+          alpha,
+          SuperWildcardType(alpha),
+          ExtendsWildcardType(alpha)
         )
     InferenceVariable(id, source, substitutions, canBeSubsequentlyBounded, parameterChoices, choices)
 
