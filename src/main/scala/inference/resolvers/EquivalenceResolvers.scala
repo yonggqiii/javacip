@@ -45,14 +45,11 @@ private[inference] def resolveEquivalenceAssertion(
     case (x: TTypeParameter, y: Alpha) =>
       (log.addWarn(s"$x != $y"), Nil)
     case (x: Alpha, y: Alpha) =>
-      if x.id != y.id then
-        val newX = x.copy(id = y.id, substitutions = Nil)
-
-        (
-          log.addWarn(s"$x will now become $newX"),
-          config.replace(x.copy(substitutions = Nil), newX).map(_ :: Nil).getOrElse(Nil)
-        )
-      else addToConstraintStore(x, asst, log, config)
+      val (newLog, newList) = addToConstraintStore(x, asst, log, config)
+      if newList.isEmpty then (newLog, newList)
+      else
+        val c = newList(0)
+        addToConstraintStore(y, asst, newLog, c)
     case _ => (log.addWarn(s"not implemented: $asst"), Nil)
 
 private[inference] def concretizeAlphaToPrimitive(

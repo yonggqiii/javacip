@@ -205,6 +205,8 @@ case class Configuration(
 
     val newPhi2 = MutableMap[Type, InferenceVariableMemberTable]()
 
+    val alphaTable = MutableMap[Alpha, NormalType]()
+
     for (t, ivmt) <- phi2 do
       val newSource            = t.replace(oldType, newType).upwardProjection
       val (newTable, newAssts) = ivmt.replace(oldType, newType)
