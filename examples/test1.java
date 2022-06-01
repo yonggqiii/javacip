@@ -1,24 +1,18 @@
 import java.util.ArrayList;
 
-class A<T extends U, U extends Comparable<? super U> & Comparable<T>> extends ArrayList<U>
-    implements Comparable<D<E, F, G>> {
-
-  T t;
-  B b;
-  U u;
-  int i = b.d = 2;
-  Object o = b;
-
-  public static void main(String[] args) {
-    A<? extends ArrayList<Integer>, Integer> a;
-    System.out.println(a.run());
-    b.e = 1;
-  }
-
-  B run() {
-    b.c = "Hello";
-    Number n = b.d;
-    b.f.g;
-    return b;
+class test1 {
+  void main() {
+    A a;
+    D<Integer> d;
+    E<Cat> e;
+    a.x = d;
+    a.x = e;
+    B b;
+    D<String> d2;
+    E<Dog> e2;
+    b.x = d2;
+    b.x = e2;
+    // int i = a.x.get();
+    // String s = b.x.get();
   }
 }
