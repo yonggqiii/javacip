@@ -228,15 +228,48 @@ private def resolveAssignExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  // TODO handle operators
-  val t = expr.getTarget
-  val v = expr.getValue
-  resolveExpression(log, v, config, memo).flatMap((log, v) =>
-    resolveExpression(log, t, config, memo).rightmap(t =>
-      config._3 += SubtypeAssertion(v, t)
-      t
-    )
-  )
+  val op = expr.getOperator
+  val t  = expr.getTarget
+  val v  = expr.getValue
+  op match
+    case AssignExpr.Operator.ASSIGN =>
+      // right <: left
+      resolveExpression(log, v, config, memo).flatMap((log, v) =>
+        resolveExpression(log, t, config, memo).rightmap(t =>
+          config._3 += SubtypeAssertion(v, t)
+          t
+        )
+      )
+    case AssignExpr.Operator.BINARY_AND | AssignExpr.Operator.BINARY_OR |
+        AssignExpr.Operator.LEFT_SHIFT | AssignExpr.Operator.SIGNED_RIGHT_SHIFT |
+        AssignExpr.Operator.UNSIGNED_RIGHT_SHIFT | AssignExpr.Operator.XOR =>
+      // both sides of op are integrals
+      resolveExpression(log, v, config, memo).flatMap((log, v) =>
+        resolveExpression(log, t, config, memo).rightmap(t =>
+          config._3 += IsIntegralAssertion(v)
+          config._3 += IsIntegralAssertion(t)
+          t
+        )
+      )
+    case AssignExpr.Operator.DIVIDE | AssignExpr.Operator.MINUS | AssignExpr.Operator.MULTIPLY |
+        AssignExpr.Operator.REMAINDER =>
+      resolveExpression(log, v, config, memo).flatMap((log, v) =>
+        resolveExpression(log, t, config, memo).rightmap(t =>
+          config._3 += IsNumericAssertion(v)
+          config._3 += IsNumericAssertion(t)
+          t
+        )
+      )
+    case AssignExpr.Operator.PLUS =>
+      resolveExpression(log, v, config, memo).flatMap((log, v) =>
+        resolveExpression(log, t, config, memo).rightmap(t =>
+          config._3 += (IsNumericAssertion(v) && IsNumericAssertion(t)) || (v ~=~ NormalType(
+            "java.lang.String",
+            0
+          ) || t ~=~ NormalType("java.lang.String", 0))
+          t
+        )
+      )
 
 private def resolveBinaryExpr(
     config: MutableConfiguration,

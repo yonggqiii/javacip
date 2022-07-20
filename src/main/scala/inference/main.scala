@@ -57,6 +57,6 @@ private def infer(
     //       )
     //       infer(res._1, res._2, a + 1)
     case x :: xs =>
-      val res = resolve(log, x).flatMap(concretize).flatMap(deconflict).flatMap(parameterizeMembers)
+      val res = resolve(log, x).flatMap(deconflict).flatMap(concretize).flatMap(parameterizeMembers)
       if res.isLeft then infer(res.log, res.left ::: xs, a + 1)
       else LogWithSome(res.log, res.right)

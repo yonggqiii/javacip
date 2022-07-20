@@ -664,3 +664,18 @@ case class Configuration(
         phi1(t.identifier).supertypes
     ).map(_.addSubstitutionLists(t.substitutions).asInstanceOf[NormalType])
     allSupertypes.toSet.flatMap(x => getAllKnownSupertypes(x)) ++ allSupertypes + OBJECT
+
+  def getDirectSupertypes(t: NormalType | SubstitutedReferenceType): Set[NormalType] =
+    val allSupertypes = (getFixedDeclaration(t) match
+      case Some(decl) => decl.getDirectAncestors
+      case None =>
+        phi1(t.identifier).supertypes
+    ).map(_.addSubstitutionLists(t.substitutions).asInstanceOf[NormalType])
+    if allSupertypes.isEmpty then Set(OBJECT) else allSupertypes.toSet
+
+  def isFullyDeclared(t: NormalType | SubstitutedReferenceType): Boolean =
+    getFixedDeclaration(t) match
+      case None => false
+      case Some(decl) =>
+        val a = decl.getDirectAncestors
+        a.forall(x => isFullyDeclared(NormalType(x.identifier, 0)))

@@ -27,14 +27,15 @@ private[inference] def deconflict(
       // equality of duplicate supertypes
       for z <- otherSupertypes do
         if y.identifier == z.identifier then
-          if y.isSomehowUnknown || z.isSomehowUnknown then newAssertions += (y ~=~ z)
-          else
-            val (ysub, zsub) = (y.substituted, z.substituted)
-            if y.substituted != z.substituted then
-              return LogWithLeft(
-                log.addWarn(s"$x <: $ysub and $zsub!"),
-                Nil
-              )
+          if !(y.isSomehowUnknown && z.isSomehowUnknown) then
+            if (y.isSomehowUnknown || z.isSomehowUnknown) then newAssertions += (y ~=~ z)
+            else
+              val (ysub, zsub) = (y.substituted, z.substituted)
+              if y.substituted != z.substituted then
+                return LogWithLeft(
+                  log.addWarn(s"$x <: $ysub and $zsub!"),
+                  Nil
+                )
       // class/interface assertions
       if (config |- x.isInterface) && !(config |- y.isInterface) then newAssertions += y.isInterface
     if supertypes.exists(x =>
@@ -73,4 +74,4 @@ private[inference] def deconflict(
           log.addInfo(s"either $a <: $b or $b <: $a"),
           (resConfig asserts ((a <:~ b) || (b <:~ a))) :: Nil
         )
-  LogWithRight(log.addWarn("deconflict not implemented!"), resConfig)
+  LogWithRight(log.addWarn("deconflict might not be fully implemented!"), resConfig)

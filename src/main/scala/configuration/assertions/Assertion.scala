@@ -85,3 +85,13 @@ case class IsReferenceAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is a reference type"
   def replace(oldType: ReplaceableType, newType: Type): IsReferenceAssertion =
     copy(t = t.replace(oldType, newType))
+
+case class IsIntegralAssertion(t: Type) extends Assertion:
+  override def toString = s"${t.identifier} is an integral type"
+  def replace(oldType: ReplaceableType, newType: Type): IsIntegralAssertion =
+    copy(t = t.replace(oldType, newType))
+
+case class IsNumericAssertion(t: Type) extends Assertion:
+  override def toString = s"${t.identifier} is an integral type"
+  def replace(oldType: ReplaceableType, newType: Type): IsNumericAssertion =
+    copy(t = t.replace(oldType, newType))

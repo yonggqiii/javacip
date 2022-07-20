@@ -43,6 +43,10 @@ private[inference] def resolve(
           resolveIsPrimitiveAssertion(newLog, newConfig, x)
         case x: IsReferenceAssertion =>
           resolveIsReferenceAssertion(newLog, newConfig, x)
+        case x: IsIntegralAssertion =>
+          resolveIntegralAssertion(newLog, newConfig, x)
+        case x: IsNumericAssertion =>
+          resolveNumericAssertion(newLog, newConfig, x)
         case _ =>
           ???
       LogWithLeft(res._1, res._2)
