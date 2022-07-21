@@ -43,8 +43,7 @@ private[configuration] def resolveExpression(
       // else if expr.isArrayInitializerExpr then
       //   resolveArrayInitializerExpr(config, expr.asArrayInitializerExpr, memo)
       else if expr.isAssignExpr then resolveAssignExpr(log, expr.asAssignExpr, config, memo)
-      // else if expr.isBinaryExpr then
-      //   resolveBinaryExpr(config, expr.asBinaryExpr, memo)
+      else if expr.isBinaryExpr then resolveBinaryExpr(log, expr.asBinaryExpr, config, memo)
       // else if expr.isCastExpr then
       //   resolveCastExpr(config, expr.asCastExpr, memo)
       // else if expr.isClassExpr then
@@ -72,8 +71,7 @@ private[configuration] def resolveExpression(
       //   resolveSwitchExpr(config, expr.asSwitchExpr, memo)
       // else if expr.isThisExpr then
       //   resolveThisExpr(config, expr.asThisExpr, memo)
-      // else if expr.isUnaryExpr then
-      //   resolveUnaryExpr(config, expr.asUnaryExpr, memo)
+      else if expr.isUnaryExpr then resolveUnaryExpr(log, expr.asUnaryExpr, config, memo)
       else if expr.isVariableDeclarationExpr then
         resolveVariableDeclarationExpr(
           log,
@@ -228,10 +226,36 @@ private def resolveAssignExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  val op = expr.getOperator
-  val t  = expr.getTarget
-  val v  = expr.getValue
-  op match
+  val t = expr.getTarget
+  val v = expr.getValue
+  resolveExpression(log, v, config, memo).flatMap((log, v) =>
+    resolveExpression(log, t, config, memo).rightmap(t =>
+      expr.getOperator match
+        case AssignExpr.Operator.ASSIGN =>
+          // right <: left
+          config._3 += SubtypeAssertion(v, t)
+        case AssignExpr.Operator.BINARY_AND | AssignExpr.Operator.BINARY_OR |
+            AssignExpr.Operator.XOR =>
+          config._3 += (IsIntegralAssertion(v) &&
+            IsIntegralAssertion(t)) ||
+            (v <:~ PRIMITIVE_BOOLEAN &&
+              t <:~ PRIMITIVE_BOOLEAN)
+        case AssignExpr.Operator.LEFT_SHIFT | AssignExpr.Operator.SIGNED_RIGHT_SHIFT |
+            AssignExpr.Operator.UNSIGNED_RIGHT_SHIFT =>
+          config._3 += IsIntegralAssertion(v) && IsIntegralAssertion(t)
+        case AssignExpr.Operator.DIVIDE | AssignExpr.Operator.MINUS | AssignExpr.Operator.MULTIPLY |
+            AssignExpr.Operator.REMAINDER =>
+          config._3 += IsNumericAssertion(v)
+          config._3 += IsNumericAssertion(t)
+        case AssignExpr.Operator.PLUS =>
+          config._3 += (IsNumericAssertion(v)
+            && IsNumericAssertion(t)) ||
+            t ~=~ NormalType("java.lang.String", 0) ||
+            v ~=~ NormalType("java.lang.String", 0)
+      t
+    )
+  )
+  expr.getOperator match
     case AssignExpr.Operator.ASSIGN =>
       // right <: left
       resolveExpression(log, v, config, memo).flatMap((log, v) =>
@@ -240,14 +264,22 @@ private def resolveAssignExpr(
           t
         )
       )
-    case AssignExpr.Operator.BINARY_AND | AssignExpr.Operator.BINARY_OR |
-        AssignExpr.Operator.LEFT_SHIFT | AssignExpr.Operator.SIGNED_RIGHT_SHIFT |
-        AssignExpr.Operator.UNSIGNED_RIGHT_SHIFT | AssignExpr.Operator.XOR =>
+    case AssignExpr.Operator.BINARY_AND | AssignExpr.Operator.BINARY_OR | AssignExpr.Operator.XOR =>
+      // both sides of op are integrals or booleans
+      resolveExpression(log, v, config, memo).flatMap((log, v) =>
+        resolveExpression(log, t, config, memo).rightmap(t =>
+          config._3 += (IsIntegralAssertion(v) && IsIntegralAssertion(
+            t
+          )) || (v <:~ PRIMITIVE_BOOLEAN && t <:~ PRIMITIVE_BOOLEAN)
+          t
+        )
+      )
+    case AssignExpr.Operator.LEFT_SHIFT | AssignExpr.Operator.SIGNED_RIGHT_SHIFT |
+        AssignExpr.Operator.UNSIGNED_RIGHT_SHIFT =>
       // both sides of op are integrals
       resolveExpression(log, v, config, memo).flatMap((log, v) =>
         resolveExpression(log, t, config, memo).rightmap(t =>
-          config._3 += IsIntegralAssertion(v)
-          config._3 += IsIntegralAssertion(t)
+          config._3 += IsIntegralAssertion(v) && IsIntegralAssertion(t)
           t
         )
       )
@@ -263,20 +295,80 @@ private def resolveAssignExpr(
     case AssignExpr.Operator.PLUS =>
       resolveExpression(log, v, config, memo).flatMap((log, v) =>
         resolveExpression(log, t, config, memo).rightmap(t =>
-          config._3 += (IsNumericAssertion(v) && IsNumericAssertion(t)) || (v ~=~ NormalType(
-            "java.lang.String",
-            0
-          ) || t ~=~ NormalType("java.lang.String", 0))
+          config._3 += (IsNumericAssertion(v)
+            && IsNumericAssertion(t)) ||
+            t ~=~ NormalType("java.lang.String", 0)
           t
         )
       )
 
 private def resolveBinaryExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: BinaryExpr,
-    memo: MutableMap[Expression, Type]
-): Type =
-  ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  val left  = expr.getLeft
+  val right = expr.getRight
+  resolveExpression(log, left, config, memo).flatMap((log, left) =>
+    resolveExpression(log, right, config, memo).rightmap(right =>
+      expr.getOperator match
+        case BinaryExpr.Operator.AND | BinaryExpr.Operator.OR =>
+          config._3 += (left <:~ PRIMITIVE_BOOLEAN && right <:~ PRIMITIVE_BOOLEAN)
+          PRIMITIVE_BOOLEAN
+        case BinaryExpr.Operator.BINARY_AND | BinaryExpr.Operator.BINARY_OR |
+            BinaryExpr.Operator.XOR =>
+          val rt = InferenceVariableFactory.createAlpha(Left(""), Nil, false, Set())
+          config._2._2(rt) = InferenceVariableMemberTable(rt)
+          config._3 += (IsIntegralAssertion(left) &&
+            IsIntegralAssertion(right) &&
+            IsIntegralAssertion(rt)) ||
+            (left <:~ PRIMITIVE_BOOLEAN &&
+              right <:~ PRIMITIVE_BOOLEAN &&
+              rt ~=~ PRIMITIVE_BOOLEAN)
+          rt
+        case BinaryExpr.Operator.DIVIDE | BinaryExpr.Operator.MINUS | BinaryExpr.Operator.MULTIPLY |
+            BinaryExpr.Operator.REMAINDER =>
+          val rt = InferenceVariableFactory.createAlpha(Left(""), Nil, false, Set())
+          config._2._2(rt) = InferenceVariableMemberTable(rt)
+          config._3 += IsNumericAssertion(left) &&
+            IsNumericAssertion(right) &&
+            IsNumericAssertion(rt) &&
+            left <:~ rt &&
+            right <:~ rt
+          rt
+        case BinaryExpr.Operator.EQUALS | BinaryExpr.Operator.NOT_EQUALS => PRIMITIVE_BOOLEAN
+        case BinaryExpr.Operator.GREATER | BinaryExpr.Operator.GREATER_EQUALS |
+            BinaryExpr.Operator.LESS | BinaryExpr.Operator.LESS_EQUALS =>
+          config._3 += IsNumericAssertion(left) && IsNumericAssertion(right)
+          PRIMITIVE_BOOLEAN
+        case BinaryExpr.Operator.LEFT_SHIFT | BinaryExpr.Operator.SIGNED_RIGHT_SHIFT |
+            BinaryExpr.Operator.UNSIGNED_RIGHT_SHIFT =>
+          val rt = InferenceVariableFactory.createAlpha(Left(""), Nil, false, Set())
+          config._2._2(rt) = InferenceVariableMemberTable(rt)
+          config._3 += IsIntegralAssertion(left) &&
+            IsIntegralAssertion(right) &&
+            IsIntegralAssertion(rt) &&
+            left <:~ rt &&
+            right <:~ rt
+          rt
+        case BinaryExpr.Operator.PLUS =>
+          val rt = InferenceVariableFactory.createAlpha(Left(""), Nil, false, Set())
+          config._2._2(rt) = InferenceVariableMemberTable(rt)
+          config._3 += (IsNumericAssertion(left) &&
+            IsNumericAssertion(right) &&
+            IsNumericAssertion(rt) &&
+            left <:~ rt &&
+            right <:~ rt) ||
+            ((left ~=~ NormalType("java.lang.String", 0) ||
+              right ~=~ NormalType("java.lang.String", 0)) &&
+              rt ~=~ NormalType("java.lang.String", 0))
+          rt
+    )
+  )
 
 private def resolveCastExpr(
     config: MutableConfiguration,
@@ -742,10 +834,36 @@ private def resolveThisExpr(
 ): Type = ???
 
 private def resolveUnaryExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: UnaryExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  resolveExpression(log, expr.getExpression, config, memo).rightmap(x =>
+    expr.getOperator match
+      case UnaryExpr.Operator.BITWISE_COMPLEMENT =>
+        val rt = InferenceVariableFactory.createAlpha(Left(""), Nil, false, Set())
+        config._2._2(rt) = InferenceVariableMemberTable(rt)
+        config._3 += IsIntegralAssertion(x) &&
+          IsIntegralAssertion(rt) &&
+          x <:~ rt
+        rt
+      case UnaryExpr.Operator.LOGICAL_COMPLEMENT =>
+        config._3 += x <:~ PRIMITIVE_BOOLEAN
+        PRIMITIVE_BOOLEAN
+      case UnaryExpr.Operator.MINUS | UnaryExpr.Operator.PLUS |
+          UnaryExpr.Operator.POSTFIX_DECREMENT | UnaryExpr.Operator.POSTFIX_INCREMENT |
+          UnaryExpr.Operator.PREFIX_DECREMENT | UnaryExpr.Operator.PREFIX_INCREMENT =>
+        val rt = InferenceVariableFactory.createAlpha(Left(""), Nil, false, Set())
+        config._2._2(rt) = InferenceVariableMemberTable(rt)
+        config._3 += IsNumericAssertion(x) &&
+          IsNumericAssertion(rt) &&
+          x <:~ rt
+        rt
+  )
 
 private def resolveVariableDeclarationExpr(
     log: Log,
