@@ -19,7 +19,7 @@ class ErasureGraph(
     adjList(from) += to
   def EΔΦ(identifier: String): Set[String] =
     def helper(current: String, acc: Set[String] = Set()): Set[String] =
-      if current == identifier then return acc
+      if current == identifier || acc.contains(current) then return acc
       val neighbours              = adjList(current)
       val res: MutableSet[String] = MutableSet()
       for i <- neighbours do
