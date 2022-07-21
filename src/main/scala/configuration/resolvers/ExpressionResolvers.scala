@@ -45,8 +45,7 @@ private[configuration] def resolveExpression(
       else if expr.isAssignExpr then resolveAssignExpr(log, expr.asAssignExpr, config, memo)
       else if expr.isBinaryExpr then resolveBinaryExpr(log, expr.asBinaryExpr, config, memo)
       else if expr.isCastExpr then resolveCastExpr(log, expr.asCastExpr, config, memo)
-      // else if expr.isClassExpr then
-      //   resolveClassExpr(config, expr.asClassExpr, memo)
+      else if expr.isClassExpr then resolveClassExpr(log, expr.asClassExpr, config, memo)
       // else if expr.isConditionalExpr then
       //   resolveConditionalExpr(config, expr.asConditionalExpr, memo)
       // else if expr.isEnclosedExpr then
@@ -392,7 +391,8 @@ private def resolveClassExpr(
       (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
       Option[Type]
     ]
-): LogWithOption[Type] = ???
+): LogWithOption[Type] =
+  LogWithSome(log, resolveSolvedType(expr.calculateResolvedType))
 
 private def resolveConditionalExpr(
     log: Log,
