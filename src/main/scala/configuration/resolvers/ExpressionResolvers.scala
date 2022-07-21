@@ -46,8 +46,8 @@ private[configuration] def resolveExpression(
       else if expr.isBinaryExpr then resolveBinaryExpr(log, expr.asBinaryExpr, config, memo)
       else if expr.isCastExpr then resolveCastExpr(log, expr.asCastExpr, config, memo)
       else if expr.isClassExpr then resolveClassExpr(log, expr.asClassExpr, config, memo)
-      // else if expr.isConditionalExpr then
-      //   resolveConditionalExpr(config, expr.asConditionalExpr, memo)
+      else if expr.isConditionalExpr then
+        resolveConditionalExpr(log, expr.asConditionalExpr, config, memo)
       // else if expr.isEnclosedExpr then
       //   resolveEnclosedExpr(config, expr.asEnclosedExpr, memo)
       else if expr.isInstanceOfExpr then
@@ -402,7 +402,22 @@ private def resolveConditionalExpr(
       (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
       Option[Type]
     ]
-): LogWithOption[Type] = ???
+): LogWithOption[Type] =
+  val cond        = expr.getCondition()
+  val trueBranch  = expr.getThenExpr()
+  val falseBranch = expr.getElseExpr()
+  resolveExpression(log, cond, config, memo).flatMap((log, condType) =>
+    resolveExpression(log, trueBranch, config, memo).flatMap((log, trueType) =>
+      resolveExpression(log, falseBranch, config, memo).rightmap(falseType =>
+        // create the right inference variable
+        val result = createInferenceVariableFromContext(expr, config)
+        config._3 += condType <:~ PRIMITIVE_BOOLEAN &&
+          trueType <:~ result &&
+          falseType <:~ result
+        result
+      )
+    )
+  )
 
 private def resolveEnclosedExpr(
     log: Log,
@@ -609,7 +624,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         // either the original arguments were None, or the method doesn't exist
         // in the declaration yet
         originalArguments.rightmap(args =>
-          val returnType = createInferenceVariableForMethodCalls(expr, config)
+          val returnType = createInferenceVariableFromContext(expr, config)
           // create the new declaration by adding the method
           config._2._1 += (missingDeclaration.identifier -> missingDeclaration
             .addMethod(nameOfMethod, args, returnType, context))
@@ -618,7 +633,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
   else
     // we're not sure what the return type should be, so we have a placeholder
     // and encode the choices using a dijunctive assertion of conjuctive assertions
-    val returnType = createInferenceVariableForMethodCalls(expr, config)
+    val returnType = createInferenceVariableFromContext(expr, config)
     // assertions from the bunch of declared methods (might be empty)
     val ambiguousDeclaredMethods = originalArguments
       .rightmap(args =>
@@ -642,8 +657,8 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
       case (LogWithNone(log), _) => LogWithNone(log)
       case (_, LogWithNone(log)) => LogWithNone(log)
 
-private def createInferenceVariableForMethodCalls(
-    expr: MethodCallExpr,
+private def createInferenceVariableFromContext(
+    expr: Expression,
     config: MutableConfiguration
 ): InferenceVariable =
   // get the parameter choices
@@ -709,7 +724,7 @@ private def matchMethodCallToMethodUsage(
         tpd.getName
       )
       // create the inference variable
-      val iv = createInferenceVariableForMethodCalls(expr, config)
+      val iv = createInferenceVariableFromContext(expr, config)
       // add new inference variable to phi
       config._2._2(iv) = InferenceVariableMemberTable(iv)
       // return mapping
