@@ -142,8 +142,33 @@ case class Configuration(
       t.substituted match
         case _: PrimitiveType => false
         case _                => true
+    case IsIntegralAssertion(t) =>
+      t == PRIMITIVE_BYTE ||
+        t == PRIMITIVE_CHAR ||
+        t == PRIMITIVE_INT ||
+        t == PRIMITIVE_SHORT ||
+        t == PRIMITIVE_LONG ||
+        t == BOXED_BYTE ||
+        t == BOXED_CHAR ||
+        t == BOXED_INT ||
+        t == BOXED_SHORT ||
+        t == BOXED_LONG
+    case IsNumericAssertion(t) =>
+      t == PRIMITIVE_BYTE ||
+        t == PRIMITIVE_CHAR ||
+        t == PRIMITIVE_DOUBLE ||
+        t == PRIMITIVE_FLOAT ||
+        t == PRIMITIVE_INT ||
+        t == PRIMITIVE_LONG ||
+        t == PRIMITIVE_SHORT ||
+        t == BOXED_BYTE ||
+        t == BOXED_CHAR ||
+        t == BOXED_DOUBLE ||
+        t == BOXED_FLOAT ||
+        t == BOXED_INT ||
+        t == BOXED_LONG ||
+        t == BOXED_SHORT
     case _ => ???
-
   private def proveSubtype(sub: Type, sup: Type): Boolean =
     if sup == OBJECT.substituted then true
     else if sub == Bottom.substituted then true

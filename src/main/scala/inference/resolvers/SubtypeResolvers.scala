@@ -50,6 +50,9 @@ private[inference] def resolveSubtypeAssertion(
         `resolve Reference <: Reference`(m, n, log, config)
       case (m: Alpha, n: SubstitutedReferenceType) =>
         `resolve Alpha <: Ref`(m, n, log, config)
+      case (a1: Alpha, a2: Alpha) =>
+        val (l, c) = addToConstraintStore(a1, a1 <:~ a2, log, config)
+        addToConstraintStore(a2, a1 <:~ a2, l, c.head)
       case (_, alpha: Alpha) =>
         addToConstraintStore(alpha, sub <:~ alpha, log, config)
       case (alpha: Alpha, _) =>

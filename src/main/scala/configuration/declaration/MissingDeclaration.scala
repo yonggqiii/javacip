@@ -262,7 +262,10 @@ class InferenceVariableMemberTable(
                 val thisResult = t((args, ctx))
                 (t, EquivalenceAssertion(result, thisResult) :: ls)
           }
-          (m + (otherName -> resultingTable), assts ::: ls)
+          (
+            m + (otherName -> resultingTable),
+            assts ::: ls
+          )
     }
     (
       InferenceVariableMemberTable(
