@@ -48,8 +48,7 @@ private[configuration] def resolveExpression(
       else if expr.isClassExpr then resolveClassExpr(log, expr.asClassExpr, config, memo)
       else if expr.isConditionalExpr then
         resolveConditionalExpr(log, expr.asConditionalExpr, config, memo)
-      // else if expr.isEnclosedExpr then
-      //   resolveEnclosedExpr(config, expr.asEnclosedExpr, memo)
+      else if expr.isEnclosedExpr then resolveEnclosedExpr(log, expr.asEnclosedExpr, config, memo)
       else if expr.isInstanceOfExpr then
         resolveInstanceOfExpr(log, expr.asInstanceOfExpr, config, memo)
       // else if expr.isLambdaExpr then
@@ -427,7 +426,7 @@ private def resolveEnclosedExpr(
       (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
       Option[Type]
     ]
-): LogWithOption[Type] = ???
+): LogWithOption[Type] = resolveExpression(log, expr.getInner, config, memo)
 
 private def resolveInstanceOfExpr(
     log: Log,
