@@ -44,16 +44,15 @@ private[configuration] def resolveExpression(
       //   resolveArrayInitializerExpr(config, expr.asArrayInitializerExpr, memo)
       else if expr.isAssignExpr then resolveAssignExpr(log, expr.asAssignExpr, config, memo)
       else if expr.isBinaryExpr then resolveBinaryExpr(log, expr.asBinaryExpr, config, memo)
-      // else if expr.isCastExpr then
-      //   resolveCastExpr(config, expr.asCastExpr, memo)
+      else if expr.isCastExpr then resolveCastExpr(log, expr.asCastExpr, config, memo)
       // else if expr.isClassExpr then
       //   resolveClassExpr(config, expr.asClassExpr, memo)
       // else if expr.isConditionalExpr then
       //   resolveConditionalExpr(config, expr.asConditionalExpr, memo)
       // else if expr.isEnclosedExpr then
       //   resolveEnclosedExpr(config, expr.asEnclosedExpr, memo)
-      // else if expr.isInstanceOfExpr then
-      //   resolveInstanceOfExpr(config, expr.asInstanceOfExpr, memo)
+      else if expr.isInstanceOfExpr then
+        resolveInstanceOfExpr(log, expr.asInstanceOfExpr, config, memo)
       // else if expr.isLambdaExpr then
       //   resolveLambdaExpr(config, expr.asLambdaExpr, memo)
       else if expr.isMethodCallExpr then
@@ -371,35 +370,64 @@ private def resolveBinaryExpr(
   )
 
 private def resolveCastExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: CastExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  resolveExpression(log, expr.getExpression, config, memo).rightmap(e =>
+    val target = resolveSolvedType(expr.getType.resolve)
+    config._3 += e <:~ target || target <:~ e
+    target
+  )
 
 private def resolveClassExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: ClassExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] = ???
 
 private def resolveConditionalExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: ConditionalExpr,
-    memo: MutableMap[Expression, Type]
-): Type =
-  ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] = ???
 
 private def resolveEnclosedExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: EnclosedExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] = ???
 
 private def resolveInstanceOfExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: InstanceOfExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  resolveExpression(log, expr.getExpression, config, memo).rightmap(e =>
+    val target = resolveSolvedType(expr.getType.resolve)
+    config._3 += e <:~ target || target <:~ e
+    PRIMITIVE_BOOLEAN
+  )
 
 private def resolveLambdaExpr(
     config: MutableConfiguration,
