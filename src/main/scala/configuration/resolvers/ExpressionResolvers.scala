@@ -123,7 +123,7 @@ private def resolveFieldAccessExpr(
             _.upwardProjection
           )
           .flatMap((l, t) =>
-            if t.isInstanceOf[ReplaceableType] && !config._2._2.contains(t) then
+            if t.isInstanceOf[InferenceVariable] && !config._2._2.contains(t) then
               config._2._2(t) = InferenceVariableMemberTable(t)
             if !config._2._1.contains(t.identifier) && !config._2._2
                 .contains(t)
@@ -179,8 +179,8 @@ private def getAttrTypeFromMissingScope(
         val newIV = declaredType match
           case scala.util.Left(x) =>
             InferenceVariableFactory
-              .createInferenceVariable(source, Nil, true, parameterChoices, false)
-          case scala.util.Right(x) => InferenceVariableFactory.createAnyReplaceable()
+              .createDisjunctiveType(source, Nil, true, parameterChoices, false)
+          case scala.util.Right(x) => InferenceVariableFactory.createPlaceholderType()
         // get the actual type of the attribute
         val attrType: Type = newIV.addSubstitutionLists(context)
         // add attribute to the type declaration and add to phi
@@ -414,7 +414,7 @@ private def resolveConditionalExpr(
     resolveExpression(log, trueBranch, config, memo).flatMap((log, trueType) =>
       resolveExpression(log, falseBranch, config, memo).rightmap(falseType =>
         // create the right inference variable
-        val result = createInferenceVariableFromContext(expr, config)
+        val result = createDisjunctiveTypeFromContext(expr, config)
         config._3 += condType <:~ PRIMITIVE_BOOLEAN &&
           trueType <:~ result &&
           falseType <:~ result
@@ -483,7 +483,7 @@ private def resolveMethodCallExpr(
             case scala.util.Failure(_) =>
               // scope cannot be fully resolved, likely an inference variable
               resolveExpression(log, x, config, memo).flatMap(
-                resolveMethodFromInferenceVariable(_, expr, config, memo, _)
+                resolveMethodFromDisjunctiveType(_, expr, config, memo, _)
               )
         case None =>
           // no scope.
@@ -628,7 +628,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         // either the original arguments were None, or the method doesn't exist
         // in the declaration yet
         originalArguments.rightmap(args =>
-          val returnType = createInferenceVariableFromContext(expr, config)
+          val returnType = createDisjunctiveTypeFromContext(expr, config)
           // create the new declaration by adding the method
           config._2._1 += (missingDeclaration.identifier -> missingDeclaration
             .addMethod(nameOfMethod, args, returnType, context))
@@ -637,7 +637,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
   else
     // we're not sure what the return type should be, so we have a placeholder
     // and encode the choices using a dijunctive assertion of conjuctive assertions
-    val returnType = createInferenceVariableFromContext(expr, config)
+    val returnType = createDisjunctiveTypeFromContext(expr, config)
     // assertions from the bunch of declared methods (might be empty)
     val ambiguousDeclaredMethods = originalArguments
       .rightmap(args =>
@@ -661,10 +661,10 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
       case (LogWithNone(log), _) => LogWithNone(log)
       case (_, LogWithNone(log)) => LogWithNone(log)
 
-private def createInferenceVariableFromContext(
+private def createDisjunctiveTypeFromContext(
     expr: Expression,
     config: MutableConfiguration
-): InferenceVariable =
+): DisjunctiveType =
   // get the parameter choices
   val parameterChoices = getParamChoicesFromExpression(expr)
   val source = Left(
@@ -682,7 +682,7 @@ private def createInferenceVariableFromContext(
   )
 
   val iv = InferenceVariableFactory
-    .createInferenceVariable(source, Nil, true, parameterChoices, false)
+    .createDisjunctiveType(source, Nil, true, parameterChoices, false)
   config._2._2(iv) = InferenceVariableMemberTable(iv)
   iv
 
@@ -728,7 +728,7 @@ private def matchMethodCallToMethodUsage(
         tpd.getName
       )
       // create the inference variable
-      val iv = createInferenceVariableFromContext(expr, config)
+      val iv = createDisjunctiveTypeFromContext(expr, config)
       // add new inference variable to phi
       config._2._2(iv) = InferenceVariableMemberTable(iv)
       // return mapping
@@ -772,7 +772,7 @@ private def resolveMethodFromResolvedDeclaration(
     scope: ResolvedReferenceTypeDeclaration
 ): LogWithOption[Type] = ???
 
-private def resolveMethodFromInferenceVariable(
+private def resolveMethodFromDisjunctiveType(
     log: Log,
     expr: MethodCallExpr,
     config: MutableConfiguration,

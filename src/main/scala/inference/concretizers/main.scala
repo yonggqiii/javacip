@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import configuration.declaration.MissingTypeDeclaration
 import scala.util.{Either, Left, Right}
 import scala.collection.mutable.{Map as MutableMap, Set as MutableSet}
-import inference.misc.expandInferenceVariable
+import inference.misc.expandDisjunctiveType
 import scala.collection.mutable.ArrayBuffer
 class ErasureGraph(
     val adjList: MutableMap[String, MutableSet[String]] = MutableMap()
@@ -143,10 +143,10 @@ def concretize(
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
   // case of having inference variables to concretize
-  val ivs = config.phi2.keys.filter(x => x.isInstanceOf[InferenceVariable]).toVector
+  val ivs = config.phi2.keys.filter(x => x.isInstanceOf[DisjunctiveType]).toVector
   if !ivs.isEmpty then
     val iv       = ivs(0)
-    val (lg, ls) = expandInferenceVariable(iv.asInstanceOf[InferenceVariable], log, config)
+    val (lg, ls) = expandDisjunctiveType(iv.asInstanceOf[DisjunctiveType], log, config)
     return LogWithLeft(lg, ls)
 
   // construct erasure graph
@@ -184,7 +184,13 @@ def concretize(
     )
 
   // immediately concretize if |ec| = 1
-  if ec.size == 1 then return concretizeToAll(log, config, lowestAlpha, ec)
+  if ec.size == 1 then
+    return concretizeToAll(
+      log.addInfo(s"$lowestAlpha must only be of one type:"),
+      config,
+      lowestAlpha,
+      ec
+    )
 
   // get L and U
   val lowerField = allConcretes.filter(t =>

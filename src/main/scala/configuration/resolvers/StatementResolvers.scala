@@ -54,10 +54,10 @@ private def resolveAssertStmt(
     .flatMap((log, checkType) =>
       val message = stmt.getMessage.toScala
         .map(e => resolveExpression(log, e, config, memo))
-        .getOrElse(LogWithSome(log, NormalType("java.lang.String", 0)))
+        .getOrElse(LogWithSome(log, STRING))
       message.rightmap(messageType =>
         config._3 += checkType <:~ PRIMITIVE_BOOLEAN
-        config._3 += messageType <:~ NormalType("java.lang.String", 0)
+        config._3 += messageType <:~ STRING
       )
     )
     .rightmap(x => config)
@@ -99,7 +99,7 @@ private def resolveForEachStmt(
   resolveExpression(log, iterable, config, memo)
     .flatMap((log, iterableType) =>
       resolveExpression(log, loopVariable, config, memo).rightmap(varType =>
-        val iterableProducerType = createInferenceVariableFromContext(iterable, config)
+        val iterableProducerType = createDisjunctiveTypeFromContext(iterable, config)
         // whatever the iterable produces, must be a subtype of the var type
         config._3 += iterableProducerType <:~ varType
         val iterType = NormalType(
@@ -165,8 +165,8 @@ private def resolveSwitchStmt(
     resolveExpression(log, stmt.getSelector, config, memo).rightmap(selectorType =>
       val intType = selectorType <:~ PRIMITIVE_INT &&
         ConjunctiveAssertion(entryTypes.map(_ <:~ PRIMITIVE_INT))
-      val stringType = selectorType <:~ NormalType("java.lang.String", 0) &&
-        ConjunctiveAssertion(entryTypes.map(_ <:~ NormalType("java.lang.String", 0)))
+      val stringType = selectorType <:~ STRING &&
+        ConjunctiveAssertion(entryTypes.map(_ <:~ STRING))
       config._3 += intType || stringType
       config
     )

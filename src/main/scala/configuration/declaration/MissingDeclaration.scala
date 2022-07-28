@@ -62,7 +62,7 @@ class MissingTypeDeclaration(
         )
       else
         val createdAttrType = InferenceVariableFactory
-          .createInferenceVariable(
+          .createDisjunctiveType(
             Left(this.identifier),
             Nil,
             true,
@@ -93,7 +93,7 @@ class MissingTypeDeclaration(
           )
     (mttable, newAssertions.toList)
   def replace(
-      oldType: ReplaceableType,
+      oldType: InferenceVariable,
       newType: Type
   ): (MissingTypeDeclaration, List[Assertion]) =
     val (newMethods, assertions) =
@@ -117,7 +117,7 @@ class MissingTypeDeclaration(
 
   def replaceMissingMethodTable(
       mt: MissingMethodTable,
-      oldType: ReplaceableType,
+      oldType: InferenceVariable,
       newType: Type
   ): (MissingMethodTable, List[Assertion]) =
     mt.foldLeft((Map(): MissingMethodTable, List[Assertion]())) {
@@ -332,7 +332,7 @@ class InferenceVariableMemberTable(
     s"type $typet\nattributes:${attributes}\nmethods:$methods\nconstraints:$constraintStore"
 
   def replace(
-      oldType: ReplaceableType,
+      oldType: InferenceVariable,
       newType: Type
   ): (InferenceVariableMemberTable, List[Assertion]) =
     val (newMethods, assertions) =
@@ -356,7 +356,7 @@ class InferenceVariableMemberTable(
 
   def replaceMissingMethodTable(
       mt: MissingMethodTable,
-      oldType: ReplaceableType,
+      oldType: InferenceVariable,
       newType: Type
   ): (MissingMethodTable, List[Assertion]) =
     mt.foldLeft((Map(): MissingMethodTable, List[Assertion]())) {

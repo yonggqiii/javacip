@@ -15,21 +15,21 @@ given assertionOrdering: Ordering[Assertion] with
     val replaceableTester: Assertion => Boolean = asst =>
       asst match
         case SubtypeAssertion(x, y) =>
-          x.isInstanceOf[AnyReplaceable] || y.isInstanceOf[AnyReplaceable]
+          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
         case EquivalenceAssertion(x, y) =>
-          x.isInstanceOf[AnyReplaceable] && y.isInstanceOf[AnyReplaceable]
+          x.isInstanceOf[PlaceholderType] && y.isInstanceOf[PlaceholderType]
         case ContainmentAssertion(x, y) =>
-          x.isInstanceOf[AnyReplaceable] || y.isInstanceOf[AnyReplaceable]
+          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
         case x: ConjunctiveAssertion        => false
         case y: DisjunctiveAssertion        => false
-        case IsClassAssertion(x)            => x.isInstanceOf[AnyReplaceable]
-        case IsInterfaceAssertion(x)        => x.isInstanceOf[AnyReplaceable]
-        case HasMethodAssertion(x, _, _, _) => x.isInstanceOf[AnyReplaceable]
+        case IsClassAssertion(x)            => x.isInstanceOf[PlaceholderType]
+        case IsInterfaceAssertion(x)        => x.isInstanceOf[PlaceholderType]
+        case HasMethodAssertion(x, _, _, _) => x.isInstanceOf[PlaceholderType]
         case IsDeclaredAssertion(x)         => false
         case IsMissingAssertion(x)          => false
         case IsUnknownAssertion(x)          => false
         case IsPrimitiveAssertion(x)        => false
-        case IsReferenceAssertion(x)        => x.isInstanceOf[AnyReplaceable]
+        case IsReferenceAssertion(x)        => x.isInstanceOf[PlaceholderType]
         case IsIntegralAssertion(x)         => false
         case IsNumericAssertion(x)          => false
     val (xdisj, xreplace, ydisj, yreplace) =
@@ -51,7 +51,7 @@ sealed trait Assertion:
     * @return
     *   the resulting assertion
     */
-  def replace(oldType: ReplaceableType, newType: Type): Assertion
+  def replace(oldType: InferenceVariable, newType: Type): Assertion
 
   /** Asserts that this assertion and another assertion must both be true
     * @param that
@@ -79,7 +79,7 @@ sealed trait Assertion:
   */
 case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
   override def toString = s"${left.substituted} <: ${right.substituted}"
-  def replace(oldType: ReplaceableType, newType: Type): SubtypeAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): SubtypeAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
 /** An assertion stating that two types are equivalent
@@ -90,7 +90,7 @@ case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
   */
 case class EquivalenceAssertion(left: Type, right: Type) extends Assertion:
   override def toString = s"${left.substituted} = ${right.substituted}"
-  def replace(oldType: ReplaceableType, newType: Type): EquivalenceAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): EquivalenceAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
 /** An assertion stating that one type is contained by another type
@@ -101,7 +101,7 @@ case class EquivalenceAssertion(left: Type, right: Type) extends Assertion:
   */
 case class ContainmentAssertion(left: Type, right: Type) extends Assertion:
   override def toString = s"${left.substituted} <= ${right.substituted}"
-  def replace(oldType: ReplaceableType, newType: Type): ContainmentAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): ContainmentAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
 /** An assertion stating that at least one of the assertions in the disjunction must be true
@@ -109,7 +109,7 @@ case class ContainmentAssertion(left: Type, right: Type) extends Assertion:
   *   the assertions whom at least one must be true
   */
 case class DisjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion:
-  def replace(oldType: ReplaceableType, newType: Type): DisjunctiveAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): DisjunctiveAssertion =
     copy(assertions = assertions.map(_.replace(oldType, newType)))
   override def ||(a: Assertion): DisjunctiveAssertion =
     copy(assertions = assertions :+ a)
@@ -120,7 +120,7 @@ case class DisjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion
   *   the assertions all of whom must be true
   */
 case class ConjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion:
-  def replace(oldType: ReplaceableType, newType: Type): ConjunctiveAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): ConjunctiveAssertion =
     copy(assertions = assertions.map(_.replace(oldType, newType)))
   override def &&(a: Assertion): ConjunctiveAssertion =
     copy(assertions = assertions :+ a)
@@ -132,7 +132,7 @@ case class ConjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion
   */
 case class IsClassAssertion(t: Type) extends Assertion:
   override def toString = s"isClass(${t.substituted})"
-  def replace(oldType: ReplaceableType, newType: Type): IsClassAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsClassAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** An assertion stating that a type must be an interface
@@ -141,7 +141,7 @@ case class IsClassAssertion(t: Type) extends Assertion:
   */
 case class IsInterfaceAssertion(t: Type) extends Assertion:
   override def toString = s"isInterface(${t.substituted})"
-  def replace(oldType: ReplaceableType, newType: Type): IsInterfaceAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsInterfaceAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** An assertion stating that a type must have a method
@@ -161,7 +161,7 @@ case class HasMethodAssertion(
     returnType: Type
 ) extends Assertion:
   override def toString = s"$source has $returnType $methodName($args)"
-  def replace(oldType: ReplaceableType, newType: Type): HasMethodAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): HasMethodAssertion =
     copy(
       source = source.replace(oldType, newType),
       args = args.map(_.replace(oldType, newType)),
@@ -174,7 +174,7 @@ case class HasMethodAssertion(
   */
 case class IsDeclaredAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} ∈ Δ"
-  def replace(oldType: ReplaceableType, newType: Type): IsDeclaredAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsDeclaredAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** A predicate checking if a type is missing in the program
@@ -183,7 +183,7 @@ case class IsDeclaredAssertion(t: Type) extends Assertion:
   */
 case class IsMissingAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} ∈ Φ₁"
-  def replace(oldType: ReplaceableType, newType: Type): IsMissingAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsMissingAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** A predicate checking if a type is unknown
@@ -192,7 +192,7 @@ case class IsMissingAssertion(t: Type) extends Assertion:
   */
 case class IsUnknownAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} ∈ Φ₂"
-  def replace(oldType: ReplaceableType, newType: Type): IsUnknownAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsUnknownAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** An assertion stating that a type is one of the primitive types
@@ -201,7 +201,7 @@ case class IsUnknownAssertion(t: Type) extends Assertion:
   */
 case class IsPrimitiveAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is primitive"
-  def replace(oldType: ReplaceableType, newType: Type): IsPrimitiveAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsPrimitiveAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** An assertion stating that a type is not a primitive type
@@ -210,7 +210,7 @@ case class IsPrimitiveAssertion(t: Type) extends Assertion:
   */
 case class IsReferenceAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is a reference type"
-  def replace(oldType: ReplaceableType, newType: Type): IsReferenceAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsReferenceAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** An assertion stating that a type must be treated as integral (integer or smaller)
@@ -219,7 +219,7 @@ case class IsReferenceAssertion(t: Type) extends Assertion:
   */
 case class IsIntegralAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is an integral type"
-  def replace(oldType: ReplaceableType, newType: Type): IsIntegralAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsIntegralAssertion =
     copy(t = t.replace(oldType, newType))
 
 /** An assertion stating that a type must be treated as numeric (double or smaller)
@@ -228,5 +228,5 @@ case class IsIntegralAssertion(t: Type) extends Assertion:
   */
 case class IsNumericAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is an integral type"
-  def replace(oldType: ReplaceableType, newType: Type): IsNumericAssertion =
+  def replace(oldType: InferenceVariable, newType: Type): IsNumericAssertion =
     copy(t = t.replace(oldType, newType))

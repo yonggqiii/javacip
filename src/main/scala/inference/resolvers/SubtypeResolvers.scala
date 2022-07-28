@@ -4,7 +4,7 @@ import configuration.Configuration
 import configuration.assertions.*
 import configuration.declaration.*
 import configuration.types.*
-import inference.misc.expandInferenceVariable
+import inference.misc.expandDisjunctiveType
 import utils.*
 
 private[inference] def resolveSubtypeAssertion(
@@ -17,10 +17,10 @@ private[inference] def resolveSubtypeAssertion(
     (x.substituted.upwardProjection.substituted, y.substituted.downwardProjection.substituted)
   // trivial cases
   (sub, sup) match
-    case (i: InferenceVariable, _) =>
-      expandInferenceVariable(i, log, config asserts a)
-    case (_, i: InferenceVariable) =>
-      expandInferenceVariable(i, log, config asserts a)
+    case (i: DisjunctiveType, _) =>
+      expandDisjunctiveType(i, log, config asserts a)
+    case (_, i: DisjunctiveType) =>
+      expandDisjunctiveType(i, log, config asserts a)
     // case (m: SubstitutedReferenceType, n: Alpha) =>
     //   `resolve Ref <: Alpha`(m, n, log, config)
     case (_, m: PrimitiveType) =>
@@ -231,7 +231,7 @@ private def `resolve Reference <: Reference`(
               ((0 until supertype.numArgs)
                 .map(i =>
                   (TypeParameterIndex(supertype.identifier, i) -> InferenceVariableFactory
-                    .createInferenceVariable(
+                    .createDisjunctiveType(
                       Left(subtype.identifier),
                       Nil,
                       false,

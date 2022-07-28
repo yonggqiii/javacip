@@ -3,7 +3,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
-import inference.misc.expandInferenceVariable
+import inference.misc.expandDisjunctiveType
 import utils.*
 
 import scala.util.{Try, Success, Failure, Either, Left, Right}
@@ -15,9 +15,9 @@ private[inference] def resolve(
   if config.isComplete then LogWithRight(log, config)
   else
     val (asst, newConfig) = config.pop()
-    val newLog            = log.addInfo(s"resolving $asst")
-    if newConfig |- asst then LogWithLeft(newLog, newConfig :: Nil)
+    if newConfig |- asst then LogWithLeft(log, newConfig :: Nil)
     else
+      val newLog = log.addInfo(s"resolving $asst")
       val res = asst match
         case x: SubtypeAssertion =>
           resolveSubtypeAssertion(newLog, newConfig, x)

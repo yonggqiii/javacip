@@ -227,7 +227,7 @@ case class Configuration(
     *   an optional configuration where the types are replaced. it will be None if the replacement
     *   cannot be done
     */
-  def replace(oldType: ReplaceableType, newType: Type): Option[Configuration] =
+  def replace(oldType: InferenceVariable, newType: Type): Option[Configuration] =
     /* There are two things that can happen during a replacement:
      * 1) an inference variable is replaced by one of its choices, and/or
      * 2) some alpha is concretized
@@ -288,7 +288,7 @@ case class Configuration(
                             mttable.attributes(attrName).addSubstitutionLists(ac.substitutions)
                           )
                         else
-                          val createdAttrType = InferenceVariableFactory.createInferenceVariable(
+                          val createdAttrType = InferenceVariableFactory.createDisjunctiveType(
                             Left(ac.identifier),
                             Nil,
                             true,
@@ -323,7 +323,7 @@ case class Configuration(
                       // create the assertions
                       val tpMap: Map[TTypeParameter, Type] =
                         realTypeParams
-                          .map(x => x -> InferenceVariableFactory.createAnyReplaceable())
+                          .map(x => x -> InferenceVariableFactory.createPlaceholderType())
                           .toMap
                       val conjAssertion = ArrayBuffer[Assertion]()
                       val subs          = (tpMap :: t.substitutions).filter(!_.isEmpty)
@@ -377,7 +377,7 @@ case class Configuration(
                         mttable.attributes(attrName).addSubstitutionLists(ac.substitutions)
                       )
                     else
-                      val createdAttrType = InferenceVariableFactory.createInferenceVariable(
+                      val createdAttrType = InferenceVariableFactory.createDisjunctiveType(
                         Left(ac.identifier),
                         Nil,
                         true,
@@ -412,7 +412,7 @@ case class Configuration(
                   // create the assertions
                   val tpMap: Map[TTypeParameter, Type] =
                     realTypeParams
-                      .map(x => x -> InferenceVariableFactory.createAnyReplaceable())
+                      .map(x => x -> InferenceVariableFactory.createPlaceholderType())
                       .toMap
                   val conjAssertion = ArrayBuffer[Assertion]()
                   val subs          = (tpMap :: t.substitutions).filter(!_.isEmpty)
@@ -429,7 +429,7 @@ case class Configuration(
               for t <- missingMethodContainers do
                 disjassts += HasMethodAssertion(t, methodName, paramTypes, returnType)
               newAssertions += DisjunctiveAssertion(disjassts.toVector)
-        case x: ReplaceableType =>
+        case x: InferenceVariable =>
           if !newPhi2.contains(x) then newPhi2(newSource) = newTable
           else
             val (nt, na) = newPhi2(x).merge(newTable)
@@ -470,7 +470,7 @@ case class Configuration(
                             mttable.attributes(attrName).addSubstitutionLists(ac.substitutions)
                           )
                         else
-                          val createdAttrType = InferenceVariableFactory.createInferenceVariable(
+                          val createdAttrType = InferenceVariableFactory.createDisjunctiveType(
                             Left(ac.identifier),
                             Nil,
                             true,
@@ -505,7 +505,7 @@ case class Configuration(
                       // create the assertions
                       val tpMap: Map[TTypeParameter, Type] =
                         realTypeParams
-                          .map(x => x -> InferenceVariableFactory.createAnyReplaceable())
+                          .map(x => x -> InferenceVariableFactory.createPlaceholderType())
                           .toMap
                       val conjAssertion = ArrayBuffer[Assertion]()
                       val subs          = (tpMap :: t.substitutions).filter(!_.isEmpty)
@@ -596,21 +596,21 @@ case class Configuration(
     val tester: Assertion => Boolean = asst =>
       asst match
         case SubtypeAssertion(x, y) =>
-          x.isInstanceOf[AnyReplaceable] || y.isInstanceOf[AnyReplaceable]
+          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
         case EquivalenceAssertion(x, y) =>
-          x.isInstanceOf[AnyReplaceable] && y.isInstanceOf[AnyReplaceable]
+          x.isInstanceOf[PlaceholderType] && y.isInstanceOf[PlaceholderType]
         case ContainmentAssertion(x, y) =>
-          x.isInstanceOf[AnyReplaceable] || y.isInstanceOf[AnyReplaceable]
+          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
         case x: ConjunctiveAssertion        => false
         case y: DisjunctiveAssertion        => false
-        case IsClassAssertion(x)            => x.isInstanceOf[AnyReplaceable]
-        case IsInterfaceAssertion(x)        => x.isInstanceOf[AnyReplaceable]
-        case HasMethodAssertion(x, _, _, _) => x.isInstanceOf[AnyReplaceable]
+        case IsClassAssertion(x)            => x.isInstanceOf[PlaceholderType]
+        case IsInterfaceAssertion(x)        => x.isInstanceOf[PlaceholderType]
+        case HasMethodAssertion(x, _, _, _) => x.isInstanceOf[PlaceholderType]
         case IsDeclaredAssertion(x)         => false
         case IsMissingAssertion(x)          => false
         case IsUnknownAssertion(x)          => false
         case IsPrimitiveAssertion(x)        => false
-        case IsReferenceAssertion(x)        => x.isInstanceOf[AnyReplaceable]
+        case IsReferenceAssertion(x)        => x.isInstanceOf[PlaceholderType]
         case IsIntegralAssertion(x)         => false
         case IsNumericAssertion(x)          => false
     omega.isEmpty || omega.forall(tester)

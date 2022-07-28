@@ -2,7 +2,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
-import inference.misc.expandInferenceVariable
+import inference.misc.expandDisjunctiveType
 import utils.*
 
 private[inference] def resolveEquivalenceAssertion(
@@ -17,12 +17,12 @@ private[inference] def resolveEquivalenceAssertion(
     (x.substituted, y.substituted) match
       case (Bottom, Bottom)     => (log, config :: Nil)
       case (Wildcard, Wildcard) => (log, config :: Nil)
-      case (a: AnyReplaceable, b) =>
+      case (a: PlaceholderType, b) =>
         (
           log.addInfo(s"replacing $a with $b"),
           (config.replace(a, b) :: Nil).filter(!_.isEmpty).map(_.get)
         )
-      case (b, a: AnyReplaceable) =>
+      case (b, a: PlaceholderType) =>
         (
           log.addInfo(s"replacing $a with $b"),
           (config.replace(a, b) :: Nil).filter(!_.isEmpty).map(_.get)
@@ -51,10 +51,10 @@ private[inference] def resolveEquivalenceAssertion(
       case (a: TTypeParameter, b: TTypeParameter) =>
         // definitely false
         (log.addWarn(s"$x != $y"), Nil)
-      case (a: InferenceVariable, _) =>
-        expandInferenceVariable(a, log, config asserts asst)
-      case (_, a: InferenceVariable) =>
-        expandInferenceVariable(a, log, config asserts asst)
+      case (a: DisjunctiveType, _) =>
+        expandDisjunctiveType(a, log, config asserts asst)
+      case (_, a: DisjunctiveType) =>
+        expandDisjunctiveType(a, log, config asserts asst)
       case (a: Alpha, b: PrimitiveType) =>
         concretizeAlphaToPrimitive(log, config, a, b)
       case (b: PrimitiveType, a: Alpha) =>

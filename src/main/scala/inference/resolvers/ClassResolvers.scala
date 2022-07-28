@@ -3,7 +3,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
-import inference.misc.expandInferenceVariable
+import inference.misc.expandDisjunctiveType
 import utils.*
 
 private def resolveIsClassAssertion(
@@ -22,7 +22,7 @@ private def resolveIsClassAssertion(
       case x: SubstitutedReferenceType =>
         val newPhi = config.phi1 + (x.identifier -> config.phi1(x.identifier).asClass)
         (log, config.copy(phi1 = newPhi) :: Nil)
-      case x: InferenceVariable =>
-        expandInferenceVariable(x, log, config asserts a)
+      case x: DisjunctiveType =>
+        expandDisjunctiveType(x, log, config asserts a)
       case x: Alpha =>
         addToConstraintStore(x, a, log, config)

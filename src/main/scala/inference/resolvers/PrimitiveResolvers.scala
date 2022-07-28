@@ -12,7 +12,7 @@ private def resolveIsPrimitiveAssertion(
 ): (Log, List[Configuration]) =
   val IsPrimitiveAssertion(t) = a
   t.substituted match
-    case n: ReplaceableType =>
+    case n: InferenceVariable =>
       val newAssertion = (n ~=~ PRIMITIVE_BOOLEAN ||
         n ~=~ PRIMITIVE_BYTE ||
         n ~=~ PRIMITIVE_CHAR ||
