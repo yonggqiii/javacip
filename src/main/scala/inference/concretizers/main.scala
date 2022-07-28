@@ -17,6 +17,8 @@ class ErasureGraph(
     if !adjList.contains(from) then adjList(from) = MutableSet()
     if !adjList.contains(to) then adjList(to) = MutableSet()
     adjList(from) += to
+  def addVertex(node: String): Unit =
+    if !adjList.contains(node) then adjList(node) = MutableSet()
   def EΔΦ(identifier: String): Set[String] =
     def helper(current: String, acc: Set[String] = Set()): Set[String] =
       if current == identifier || acc.contains(current) then return acc
@@ -46,16 +48,28 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
   val alphas = config.phi2.keys.filter(x => x.isInstanceOf[Alpha]).toVector
   val ceff = alphas
     .flatMap(x => config.phi2(x).constraintStore)
-    .filter(x => x.isInstanceOf[SubtypeAssertion])
-    .map(x => x.asInstanceOf[SubtypeAssertion])
+    .filter(x => x.isInstanceOf[SubtypeAssertion] || x.isInstanceOf[EquivalenceAssertion])
   val eg = ErasureGraph()
   val q  = ArrayBuffer[String]()
   q.addAll(config.delta.keys)
   q.addAll(config.phi1.keys)
   val otherTypes = ceff
-    .filter(x => !(x.left.isInstanceOf[Alpha] && x.right.isInstanceOf[Alpha]))
-    .map(x => if !x.left.isInstanceOf[Alpha] then x.left.identifier else x.right.identifier)
+    .map(x =>
+      val (left, right) =
+        if x.isInstanceOf[SubtypeAssertion] then
+          val sub = x.asInstanceOf[SubtypeAssertion]
+          (sub.left, sub.right)
+        else
+          val equiv = x.asInstanceOf[EquivalenceAssertion]
+          (equiv.left, equiv.right)
+      if !left.isInstanceOf[Alpha] then Some(left.identifier)
+      else if !right.isInstanceOf[Alpha] then Some(right.identifier)
+      else None
+    )
+    .filter(_.isDefined)
+    .map(_.get)
   q.addAll(otherTypes)
+  // add all the concrete types
   while !q.isEmpty do
     val c = q.remove(0)
     if !eg.adjList.contains(c) && c != OBJECT.identifier then
@@ -63,7 +77,16 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
       for s <- sups do
         eg.addEdge(c, s.identifier)
         q += s.identifier
-  for c <- ceff do eg.addEdge(c.left.identifier, c.right.identifier)
+  // add the alphas
+  for c <- ceff do
+    if c.isInstanceOf[SubtypeAssertion] then
+      val sub = c.asInstanceOf[SubtypeAssertion]
+      eg.addEdge(sub.left.identifier, sub.right.identifier)
+    else
+      val equiv = c.asInstanceOf[EquivalenceAssertion]
+      eg.addEdge(equiv.left.identifier, equiv.right.identifier)
+      eg.addEdge(equiv.right.identifier, equiv.left.identifier)
+  for a <- alphas do eg.addEdge(a.identifier, OBJECT.identifier)
   eg
 
 private def concretizeToUnknown(
@@ -134,6 +157,7 @@ def concretize(
   val allConcretes = allVertices.diff(alphas)
   // nothing to do!
   if alphas.isEmpty then return LogWithRight(log.addWarn("concretize not implemented!"), config)
+  println(erasureGraph.adjList)
   // find A*
   val lowestAlpha = alphas
     .filter(x =>

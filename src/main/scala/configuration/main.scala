@@ -24,6 +24,7 @@ import scala.jdk.OptionConverters.*
 
 // Package imports
 import configuration.assertions.*
+import configuration.assertions.given
 import configuration.declaration.*
 import configuration.resolvers.{
   convertResolvedReferenceTypeDeclarationToFixedDeclaration,
@@ -37,6 +38,7 @@ import configuration.types.*
 import utils.*
 import com.github.javaparser.ast.stmt.Statement
 import com.github.javaparser.ast.body.FieldDeclaration
+import scala.collection.mutable.PriorityQueue
 // Type aliases
 private type MutableDelta = MutableMap[String, FixedDeclaration]
 private type MutablePhi = (
@@ -90,7 +92,9 @@ def parseConfiguration(
   // visit each class
   decls
     .flatMap(visitAll(_, _, c))
-    .rightmap(x => Configuration(x._1.toMap, x._2._1.toMap, x._2._2.toMap, Queue(x._3.toList: _*)))
+    .rightmap(x =>
+      Configuration(x._1.toMap, x._2._1.toMap, x._2._2.toMap, PriorityQueue(x._3.toList: _*))
+    )
     .map((l, c) => (l.addSuccess("Successfully built configuration", c.toString), c))
 
 private def visitAll(

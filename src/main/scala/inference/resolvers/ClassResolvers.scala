@@ -15,7 +15,7 @@ private def resolveIsClassAssertion(
   if config |- t.isInterface then
     (log.addWarn(s"$t was defined as an interface so it can't be a class"), Nil)
   else
-    val substitutedType = t.upwardProjection.substituted
+    val substitutedType = t.substituted.upwardProjection
     // substitutedType is for sure missing or unknown
     substitutedType match
       case x: TTypeParameter => (log, config :: Nil) // why?
@@ -24,3 +24,5 @@ private def resolveIsClassAssertion(
         (log, config.copy(phi1 = newPhi) :: Nil)
       case x: InferenceVariable =>
         expandInferenceVariable(x, log, config asserts a)
+      case x: Alpha =>
+        addToConstraintStore(x, a, log, config)

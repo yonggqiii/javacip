@@ -37,7 +37,8 @@ private[inference] def deconflict(
                   Nil
                 )
       // class/interface assertions
-      if (config |- x.isInterface) && !(config |- y.isInterface) then newAssertions += y.isInterface
+      if (config |- x.isInterface) && !(config |- y.isInterface) && y != OBJECT then
+        newAssertions += y.isInterface
     if supertypes.exists(x =>
         (config |- x.isClass) && x.substituted != OBJECT.substituted
       ) && !(config |- x.isClass)

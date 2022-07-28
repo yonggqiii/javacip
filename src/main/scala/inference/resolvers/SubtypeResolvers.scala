@@ -13,53 +13,59 @@ private[inference] def resolveSubtypeAssertion(
     a: SubtypeAssertion
 ): (Log, List[Configuration]) =
   val SubtypeAssertion(x, y) = a
-  val (sub, sup)             = (x.substituted.upwardProjection, y.substituted.downwardProjection)
+  val (sub, sup) =
+    (x.substituted.upwardProjection.substituted, y.substituted.downwardProjection.substituted)
   // trivial cases
-  if sub == OBJECT.substituted || sup == Bottom then
-    (log.addWarn(s"$x <: $y can never be true"), Nil)
-  else
-    (sub, sup) match
-      case (i: InferenceVariable, _) =>
-        expandInferenceVariable(i, log, config asserts a)
-      case (_, i: InferenceVariable) =>
-        expandInferenceVariable(i, log, config asserts a)
-      // case (m: SubstitutedReferenceType, n: Alpha) =>
-      //   `resolve Ref <: Alpha`(m, n, log, config)
-      case (_, m: PrimitiveType) =>
-        `resolve Type <: Primitive`(sub, m, log, config)
-      case (m: PrimitiveType, _) =>
-        `resolve Primitive <: Type`(m, sup, log, config)
-      case (m: ArrayType, n: ArrayType) =>
-        `resolve Array <: Array`(m, n, log, config)
-      // array type cannot be sub/super types of other types except the trivial ones
-      case (m: ArrayType, _) =>
-        `resolve Array <: Type`(m, sup, log, config)
-      case (_, m: ArrayType) =>
-        `resolve Type <: Array`(sub, m, log, config)
-      // left type parameter can be reduces to assertions on its bounds
-      case (m: TTypeParameter, n: TTypeParameter) =>
-        `resolve TypeParam <: TypeParam`(m, n, log, config)
-      case (m: TTypeParameter, _) =>
-        `resolve TypeParam <: Type`(m, sup, log, config)
-      case (_, m: TTypeParameter) =>
-        `resolve Type <: TypeParam`(sub, m, log, config)
-      case (m: SubstitutedReferenceType, n: SubstitutedReferenceType)
-          if m.identifier == n.identifier =>
-        `resolve τ<...> <: τ<...>`(m, n, log, config)
-      case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
-        `resolve Reference <: Reference`(m, n, log, config)
-      case (m: Alpha, n: SubstitutedReferenceType) =>
-        `resolve Alpha <: Ref`(m, n, log, config)
-      case (a1: Alpha, a2: Alpha) =>
-        val (l, c) = addToConstraintStore(a1, a1 <:~ a2, log, config)
-        addToConstraintStore(a2, a1 <:~ a2, l, c.head)
-      case (_, alpha: Alpha) =>
-        addToConstraintStore(alpha, sub <:~ alpha, log, config)
-      case (alpha: Alpha, _) =>
-        addToConstraintStore(alpha, alpha <:~ sup, log, config)
-      // case of subtype being a normal reference type and is declared
-      case (m: SubstitutedReferenceType, _) if !config.getFixedDeclaration(m).isEmpty =>
-        ???
+  (sub, sup) match
+    case (i: InferenceVariable, _) =>
+      expandInferenceVariable(i, log, config asserts a)
+    case (_, i: InferenceVariable) =>
+      expandInferenceVariable(i, log, config asserts a)
+    // case (m: SubstitutedReferenceType, n: Alpha) =>
+    //   `resolve Ref <: Alpha`(m, n, log, config)
+    case (_, m: PrimitiveType) =>
+      `resolve Type <: Primitive`(sub, m, log, config)
+    case (m: PrimitiveType, _) =>
+      `resolve Primitive <: Type`(m, sup, log, config)
+    case (m: ArrayType, n: ArrayType) =>
+      `resolve Array <: Array`(m, n, log, config)
+    // array type cannot be sub/super types of other types except the trivial ones
+    case (m: ArrayType, _) =>
+      `resolve Array <: Type`(m, sup, log, config)
+    case (_, m: ArrayType) =>
+      `resolve Type <: Array`(sub, m, log, config)
+    // left type parameter can be reduces to assertions on its bounds
+    case (m: TTypeParameter, n: TTypeParameter) =>
+      `resolve TypeParam <: TypeParam`(m, n, log, config)
+    case (m: TTypeParameter, _) =>
+      `resolve TypeParam <: Type`(m, sup, log, config)
+    case (_, m: TTypeParameter) =>
+      `resolve Type <: TypeParam`(sub, m, log, config)
+    case (m: SubstitutedReferenceType, n: SubstitutedReferenceType)
+        if m.identifier == n.identifier =>
+      `resolve τ<...> <: τ<...>`(m, n, log, config)
+    case (m: SubstitutedReferenceType, n: SubstitutedReferenceType) =>
+      `resolve Reference <: Reference`(m, n, log, config)
+    case (m: Alpha, n: SubstitutedReferenceType) =>
+      `resolve Alpha <: Ref`(m, n, log, config)
+    case (a1: Alpha, a2: Alpha) =>
+      val (l, c) = addToConstraintStore(a1, a1 <:~ a2, log, config)
+      addToConstraintStore(a2, a1 <:~ a2, l, c.head)
+    case (_, alpha: Alpha) =>
+      addToConstraintStore(alpha, sub <:~ alpha, log, config)
+    case (alpha: Alpha, _) =>
+      addToConstraintStore(alpha, alpha <:~ sup, log, config)
+    case (Bottom, _) =>
+      (log, config :: Nil)
+    case (x, Bottom) =>
+      (log.addWarn(s"$x <: $Bottom will always be false"), Nil)
+    case x =>
+      println(x)
+      println(a)
+      ???
+// case of subtype being a normal reference type and is declared
+// case (m: SubstitutedReferenceType, _) if !config.getFixedDeclaration(m).isEmpty =>
+//   ???
 
 /** Case of Type <: PrimitiveType
   * @param subtype

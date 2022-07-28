@@ -12,7 +12,7 @@ private[inference] def resolve(
     log: Log,
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
-  if config.omega.isEmpty then LogWithRight(log, config)
+  if config.isComplete then LogWithRight(log, config)
   else
     val (asst, newConfig) = config.pop()
     val newLog            = log.addInfo(s"resolving $asst")

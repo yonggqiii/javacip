@@ -131,6 +131,28 @@ sealed trait Type:
    */
   def substituted: TypeAfterSubstitution
 
+  /**
+   * Checks if this type strictly occurs in, but is not equal to,
+   * another type
+   * @param that the other type
+   */
+  def ⊂(that: Type): Boolean = that.substituted match
+    case ArrayType(x) => this.substituted ⊆ x
+    case x: PrimitiveType => false
+    case Bottom | Wildcard => false
+    case x: ExtendsWildcardType => this.substituted ⊆ x.upper
+    case x: SuperWildcardType => this.substituted ⊆ x.lower
+    case x: TTypeParameter => false
+    case x: ReplaceableType => false
+    case x: SubstitutedReferenceType => x.args.exists(this.substituted ⊆ _)
+
+  /**
+   * Checks if this type occurs in or is equal to another
+   * type
+   * @param that the other type
+   */
+  def ⊆(that: Type): Boolean = this.substituted == that.substituted || this.substituted ⊂ that.substituted
+
   override def toString: String =
     val start =
       if upwardProjection != downwardProjection then
@@ -353,7 +375,7 @@ final case class TypeParameterIndex(
   val upwardProjection: TypeParameterIndex   = this
   val downwardProjection: TypeParameterIndex = this
   def addSubstitutionLists(substitutions: SubstitutionList): TypeParameterIndex =
-    copy(substitutions = this.substitutions ::: substitutions)
+    copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
   def replace(oldType: ReplaceableType, newType: Type): TypeParameterIndex =
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
   def substituted: TypeAfterSubstitution = substitutions match
@@ -381,7 +403,7 @@ final case class TypeParameterName(
       sourceType,
       source,
       qualifiedName,
-      this.substitutions ::: substitutions
+      (this.substitutions ::: substitutions).filter(!_.isEmpty)
     )
   def replace(oldType: ReplaceableType, newType: Type): TypeParameterName =
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
@@ -398,15 +420,18 @@ sealed trait ReplaceableType extends TypeAfterSubstitution:
   val id: Int
   def isSomehowUnknown = true
 
-final case class AnyReplaceable(id: Int, substitutions: SubstitutionList = Nil) extends ReplaceableType:
+final case class AnyReplaceable(id: Int) extends ReplaceableType:
+  val substitutions = Nil
   val numArgs = 0
-  val identifier         = s"τ$id"
+  val identifier         = s"REPLACEABLE$id"
   val upwardProjection: AnyReplaceable = this
   val downwardProjection: AnyReplaceable = this
-  def addSubstitutionLists(substitutions: SubstitutionList): AnyReplaceable =
-    copy(substitutions = this.substitutions ::: substitutions)
+  def addSubstitutionLists(substitutions: SubstitutionList): AnyReplaceable = this
+//    copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
   def replace(oldType: ReplaceableType, newType: Type): Type =
-      newType.addSubstitutionLists(substitutions)
+//    val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
+    if id != oldType.id then this
+    else newType
   def substituted = this
   val args = Vector()
 
@@ -417,14 +442,14 @@ final case class InferenceVariable(
     substitutions: SubstitutionList = Nil,
     canBeSubsequentlyBounded: Boolean = false,
     parameterChoices: Set[TTypeParameter] = Set(),
-    _choices: Set[Type] = Set()
+    _choices: Vector[Type] = Vector()
 ) extends ReplaceableType:
   val numArgs            = 0
   val identifier         = s"τ$id($_choices)"
   val upwardProjection: InferenceVariable   = this
   val downwardProjection: InferenceVariable = this
   def addSubstitutionLists(substitutions: SubstitutionList): InferenceVariable =
-    copy(substitutions = this.substitutions ::: substitutions)
+    copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
   def choices = _choices.map(_.addSubstitutionLists(substitutions))
   def replace(oldType: ReplaceableType, newType: Type): Type =
     val newChoices = _choices.map(_.replace(oldType, newType))
@@ -436,6 +461,9 @@ final case class InferenceVariable(
       newType.addSubstitutionLists(substitutions)
   def substituted = this
   val args = Vector()
+  override def ⊆(that: Type): Boolean = that.substituted match
+    case x: InferenceVariable => this.id == x.id
+    case _ => super.⊆(that)
 
 final case class Alpha(
     id: Int,
@@ -452,7 +480,7 @@ final case class Alpha(
     Alpha(
       id,
       source,
-      this.substitutions ::: substitutions,
+      (this.substitutions ::: substitutions).filter(!_.isEmpty),
       canBeBounded,
       parameterChoices
     )
@@ -481,6 +509,9 @@ final case class Alpha(
              )
          ).toMap :: Nil).filter(!_.isEmpty)
       )
+  override def ⊆(that: Type): Boolean = that.substituted match
+    case x: Alpha => this.id == x.id
+    case _ => super.⊆(that)
 
 
 final case class SubstitutedReferenceType(
@@ -514,17 +545,21 @@ object InferenceVariableFactory:
     canBeBounded: Boolean = false,
   ) =
     id += 1
-    val choices: Set[Type] =
+    val choices: Vector[Type] =
       if !canBeBounded then
-        parameterChoices ++ Set[Type](createAlpha(source, Nil, canBeSubsequentlyBounded || canBeBounded, parameterChoices))
+        parameterChoices.toVector :+ createAlpha(source, Nil, canBeSubsequentlyBounded || canBeBounded, parameterChoices)
       else
-        val boundedParams = parameterChoices.flatMap(x => Set(x, SuperWildcardType(x), ExtendsWildcardType(x)))
+        //val boundedParams = parameterChoices.flatMap(x => Set(x, SuperWildcardType(x), ExtendsWildcardType(x)))
         val alpha = createAlpha(source, Nil, true, parameterChoices)
-        boundedParams ++ Set(Wildcard,
-          alpha,
-          SuperWildcardType(alpha),
-          ExtendsWildcardType(alpha)
-        )
+        val baseChoices = parameterChoices.toVector :+ alpha
+        val supers = baseChoices.map(SuperWildcardType(_))
+        val extend = baseChoices.map(ExtendsWildcardType(_))
+        (baseChoices :+ Wildcard) ++ supers ++ extend
+        // boundedParams ++ Set(Wildcard,
+        //   alpha,
+        //   SuperWildcardType(alpha),
+        //   ExtendsWildcardType(alpha)
+        // )
     InferenceVariable(id, source, substitutions, canBeSubsequentlyBounded, parameterChoices, choices)
 
   def createAlpha(source: scala.util.Either[String, Type],

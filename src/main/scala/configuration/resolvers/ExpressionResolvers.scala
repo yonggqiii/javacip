@@ -62,12 +62,10 @@ private[configuration] def resolveExpression(
       //   resolveObjectCreationExpr(config, expr.asObjectCreationExpr, memo)
       // else if expr.isPatternExpr then
       //   resolvePatternExpr(config, expr.asPatternExpr, memo)
-      // else if expr.isSuperExpr then
-      //   resolveSuperExpr(config, expr.asSuperExpr, memo)
+      else if expr.isSuperExpr then resolveSuperExpr(log, expr.asSuperExpr, config, memo)
       // else if expr.isSwitchExpr then
       //   resolveSwitchExpr(config, expr.asSwitchExpr, memo)
-      // else if expr.isThisExpr then
-      //   resolveThisExpr(config, expr.asThisExpr, memo)
+      else if expr.isThisExpr then resolveThisExpr(log, expr.asThisExpr, config, memo)
       else if expr.isUnaryExpr then resolveUnaryExpr(log, expr.asUnaryExpr, config, memo)
       else if expr.isVariableDeclarationExpr then
         resolveVariableDeclarationExpr(
@@ -125,6 +123,8 @@ private def resolveFieldAccessExpr(
             _.upwardProjection
           )
           .flatMap((l, t) =>
+            if t.isInstanceOf[ReplaceableType] && !config._2._2.contains(t) then
+              config._2._2(t) = InferenceVariableMemberTable(t)
             if !config._2._1.contains(t.identifier) && !config._2._2
                 .contains(t)
             then
@@ -176,8 +176,11 @@ private def getAttrTypeFromMissingScope(
             val numParams = x.numParams
             (0 until numParams).map(TypeParameterIndex(x.identifier, _)).toSet
           case scala.util.Right(_) => Set()
-        val newIV = InferenceVariableFactory
-          .createInferenceVariable(source, Nil, true, parameterChoices, false)
+        val newIV = declaredType match
+          case scala.util.Left(x) =>
+            InferenceVariableFactory
+              .createInferenceVariable(source, Nil, true, parameterChoices, false)
+          case scala.util.Right(x) => InferenceVariableFactory.createAnyReplaceable()
         // get the actual type of the attribute
         val attrType: Type = newIV.addSubstitutionLists(context)
         // add attribute to the type declaration and add to phi
@@ -337,7 +340,9 @@ private def resolveBinaryExpr(
             left <:~ rt &&
             right <:~ rt
           rt
-        case BinaryExpr.Operator.EQUALS | BinaryExpr.Operator.NOT_EQUALS => PRIMITIVE_BOOLEAN
+        case BinaryExpr.Operator.EQUALS | BinaryExpr.Operator.NOT_EQUALS =>
+          config._3 += left <:~ right || right <:~ left
+          PRIMITIVE_BOOLEAN
         case BinaryExpr.Operator.GREATER | BinaryExpr.Operator.GREATER_EQUALS |
             BinaryExpr.Operator.LESS | BinaryExpr.Operator.LESS_EQUALS =>
           config._3 += IsNumericAssertion(left) && IsNumericAssertion(right)
@@ -857,10 +862,20 @@ private def resolvePatternExpr(
   ???
 
 private def resolveSuperExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: SuperExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  try LogWithSome(log, resolveSolvedType(expr.calculateResolvedType))
+  catch
+    case e: Throwable =>
+      LogWithNone(
+        log.addError(s"super can only be present in a type with a supertype", expr.toString)
+      )
 
 private def resolveSwitchExpr(
     config: MutableConfiguration,
@@ -870,10 +885,15 @@ private def resolveSwitchExpr(
   ???
 
 private def resolveThisExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: ThisExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  LogWithSome(log, resolveSolvedType(expr.calculateResolvedType))
 
 private def resolveUnaryExpr(
     log: Log,

@@ -24,7 +24,7 @@ private def infer(
     configs: List[Configuration],
     a: Int = 0
 ): LogWithOption[Configuration] =
-  //if a > 100 then return LogWithNone(log.addError("max hit"))
+  if a > 1000000 then return LogWithNone(log.addError("max hit", configs(0).toString))
   if a % 100 == 0 then println(s"$a, ${configs.size}")
   configs match
     case Nil => LogWithNone(log.addError(s"Terminating as type errors exist"))
@@ -59,4 +59,5 @@ private def infer(
     case x :: xs =>
       val res = resolve(log, x).flatMap(deconflict).flatMap(concretize).flatMap(parameterizeMembers)
       if res.isLeft then infer(res.log, res.left ::: xs, a + 1)
+      else if !res.right.omega.isEmpty then infer(res.log, res.right :: xs, a + 1)
       else LogWithSome(res.log, res.right)

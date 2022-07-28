@@ -22,8 +22,204 @@ def resolveStatement(
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
-  if stmt.isReturnStmt then resolveReturnStmt(log, stmt.asReturnStmt, config, memo)
+  if stmt.isAssertStmt then resolveAssertStmt(log, stmt.asAssertStmt, config, memo)
+  else if stmt.isDoStmt then resolveDoStmt(log, stmt.asDoStmt, config, memo)
+  else if stmt.isExplicitConstructorInvocationStmt then
+    resolveExplicitConstructorInvocationStmt(
+      log,
+      stmt.asExplicitConstructorInvocationStmt,
+      config,
+      memo
+    )
+  else if stmt.isForEachStmt then resolveForEachStmt(log, stmt.asForEachStmt, config, memo)
+  else if stmt.isForStmt then resolveForStmt(log, stmt.asForStmt, config, memo)
+  else if stmt.isIfStmt then resolveIfStmt(log, stmt.asIfStmt, config, memo)
+  else if stmt.isReturnStmt then resolveReturnStmt(log, stmt.asReturnStmt, config, memo)
+  else if stmt.isSwitchStmt then resolveSwitchStmt(log, stmt.asSwitchStmt, config, memo)
+  else if stmt.isThrowStmt then resolveThrowStmt(log, stmt.asThrowStmt, config, memo)
+  else if stmt.isTryStmt then resolveTryStmt(log, stmt.asTryStmt, config, memo)
+  else if stmt.isWhileStmt then resolveWhileStmt(log, stmt.asWhileStmt, config, memo)
   else LogWithSome(log, config)
+
+private def resolveAssertStmt(
+    log: Log,
+    stmt: AssertStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  resolveExpression(log, stmt.getCheck, config, memo)
+    .flatMap((log, checkType) =>
+      val message = stmt.getMessage.toScala
+        .map(e => resolveExpression(log, e, config, memo))
+        .getOrElse(LogWithSome(log, NormalType("java.lang.String", 0)))
+      message.rightmap(messageType =>
+        config._3 += checkType <:~ PRIMITIVE_BOOLEAN
+        config._3 += messageType <:~ NormalType("java.lang.String", 0)
+      )
+    )
+    .rightmap(x => config)
+
+private def resolveDoStmt(
+    log: Log,
+    stmt: DoStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  resolveExpression(log, stmt.getCondition, config, memo)
+    .rightmap(condType => config._3 += condType <:~ PRIMITIVE_BOOLEAN)
+    .rightmap(x => config)
+
+private def resolveExplicitConstructorInvocationStmt(
+    log: Log,
+    stmt: ExplicitConstructorInvocationStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] = ???
+
+private def resolveForEachStmt(
+    log: Log,
+    stmt: ForEachStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  val iterable     = stmt.getIterable
+  val loopVariable = stmt.getVariable
+  resolveExpression(log, iterable, config, memo)
+    .flatMap((log, iterableType) =>
+      resolveExpression(log, loopVariable, config, memo).rightmap(varType =>
+        val iterableProducerType = createInferenceVariableFromContext(iterable, config)
+        // whatever the iterable produces, must be a subtype of the var type
+        config._3 += iterableProducerType <:~ varType
+        val iterType = NormalType(
+          "java.lang.Iterable",
+          1,
+          Map(TypeParameterIndex("java.lang.Iterable", 0, Nil) -> iterableProducerType) :: Nil
+        )
+        val arrayType = ArrayType(iterableProducerType)
+        // the iterable must be an array of the produced type, or a subtype of Iterable<produced type>
+        config._3 += iterableType <:~ iterType || iterableType ~=~ arrayType
+      )
+    )
+    .rightmap(x => config)
+
+private def resolveForStmt(
+    log: Log,
+    stmt: ForStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  stmt.getCompare.toScala
+    .map(cmp =>
+      resolveExpression(log, cmp, config, memo)
+        .rightmap(t =>
+          config._3 += t <:~ PRIMITIVE_BOOLEAN
+          config
+        )
+    )
+    .getOrElse(LogWithSome(log, config))
+
+private def resolveIfStmt(
+    log: Log,
+    stmt: IfStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  resolveExpression(log, stmt.getCondition, config, memo).rightmap(t =>
+    config._3 += t <:~ PRIMITIVE_BOOLEAN
+    config
+  )
+
+private def resolveSwitchStmt(
+    log: Log,
+    stmt: SwitchStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  // constant and enums
+  val entries =
+    stmt.getEntries.asScala.flatMap(switchEntry => switchEntry.getLabels.asScala).toVector
+  val entryTypes =
+    flatMapWithLog(log, entries)((log, expr) => resolveExpression(log, expr, config, memo))
+  entryTypes.flatMap((log, entryTypes) =>
+    resolveExpression(log, stmt.getSelector, config, memo).rightmap(selectorType =>
+      val intType = selectorType <:~ PRIMITIVE_INT &&
+        ConjunctiveAssertion(entryTypes.map(_ <:~ PRIMITIVE_INT))
+      val stringType = selectorType <:~ NormalType("java.lang.String", 0) &&
+        ConjunctiveAssertion(entryTypes.map(_ <:~ NormalType("java.lang.String", 0)))
+      config._3 += intType || stringType
+      config
+    )
+  )
+
+private def resolveThrowStmt(
+    log: Log,
+    stmt: ThrowStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  resolveExpression(log, stmt.getExpression, config, memo).rightmap(exprType =>
+    config._3 += exprType <:~ NormalType("java.lang.Throwable", 0)
+    config
+  )
+
+private def resolveTryStmt(
+    log: Log,
+    stmt: TryStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  val resources = stmt.getResources.asScala.toVector
+  val catchClauses = stmt.getCatchClauses.asScala
+    .map(x => resolveSolvedType(x.getParameter.getType.resolve))
+    .toVector
+  flatMapWithLog(log, resources)(resolveExpression(_, _, config, memo)).rightmap(v =>
+    config._3 += ConjunctiveAssertion(v.map(x => x <:~ NormalType("java.lang.AutoCloseable", 0)))
+    config._3 += ConjunctiveAssertion(
+      catchClauses.map(x => x <:~ NormalType("java.lang.Throwable", 0))
+    )
+    config
+  )
+
+private def resolveWhileStmt(
+    log: Log,
+    stmt: WhileStmt,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[MutableConfiguration] =
+  resolveExpression(log, stmt.getCondition, config, memo).rightmap(t =>
+    config._3 += t <:~ PRIMITIVE_BOOLEAN
+    config
+  )
 
 private def resolveReturnStmt(
     log: Log,

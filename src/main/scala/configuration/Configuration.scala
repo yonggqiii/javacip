@@ -6,12 +6,18 @@ import configuration.declaration.FixedDeclaration
 import configuration.declaration.MissingTypeDeclaration
 import configuration.declaration.InferenceVariableMemberTable
 import configuration.assertions.*
+import configuration.assertions.given
 import configuration.types.*
 import configuration.resolvers.*
 import java.lang.reflect.Modifier
 import utils.*
 import scala.collection.immutable.Queue
-import scala.collection.mutable.{ArrayBuffer, Map as MutableMap, Queue as MutableQueue}
+import scala.collection.mutable.{
+  ArrayBuffer,
+  Map as MutableMap,
+  Queue as MutableQueue,
+  PriorityQueue
+}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 
@@ -29,7 +35,7 @@ case class Configuration(
     delta: Map[String, FixedDeclaration],
     phi1: Map[String, MissingTypeDeclaration],
     phi2: Map[Type, InferenceVariableMemberTable],
-    omega: Queue[Assertion]
+    omega: PriorityQueue[Assertion]
 ):
   /** Add an assertion to the configuration
     * @param a
@@ -37,7 +43,10 @@ case class Configuration(
     * @return
     *   the resulting config
     */
-  def asserts(a: Assertion): Configuration = copy(omega = omega.enqueue(a))
+  def asserts(a: Assertion): Configuration =
+    val newOmega = omega.clone
+    newOmega.enqueue(a)
+    copy(omega = newOmega)
 
   /** Adds a bunch of assertions to the configuration
     * @param a
@@ -45,7 +54,10 @@ case class Configuration(
     * @return
     *   the resulting config
     */
-  def assertsAllOf(a: Iterable[Assertion]) = copy(omega = omega.enqueueAll(a))
+  def assertsAllOf(a: Iterable[Assertion]) =
+    val newOmega = omega.clone
+    newOmega.addAll(a)
+    copy(omega = newOmega)
 
   def getArity(t: NormalType | SubstitutedReferenceType): Int =
     getFixedDeclaration(t) match
@@ -57,22 +69,25 @@ case class Configuration(
     *   the assertion and the new config excluding the assertion
     */
   def pop(): (Assertion, Configuration) =
-    val tester: Assertion => Boolean = x =>
-      x match
-        case _: DisjunctiveAssertion => false
-        case _                       => true
-    val hasNonDisjunction = omega.exists(tester)
-    if hasNonDisjunction then
-      val mq  = MutableQueue().enqueueAll(omega)
-      var res = mq.dequeue
-      while !tester(res) do
-        mq.enqueue(res)
-        res = mq.dequeue
-      val newOmega = Queue().enqueueAll(mq)
-      (res, copy(omega = newOmega))
-    else
-      val (a, newOmega) = omega.dequeue
-      (a, copy(omega = newOmega))
+    val newOmega = omega.clone
+    val a        = newOmega.dequeue
+    (a, copy(omega = newOmega))
+  // val tester: Assertion => Boolean = x =>
+  //   x match
+  //     case _: DisjunctiveAssertion => false
+  //     case _                       => true
+  // val hasNonDisjunction = omega.exists(tester)
+  // if hasNonDisjunction then
+  //   val mq  = MutableQueue().enqueueAll(omega)
+  //   var res = mq.dequeue
+  //   while !tester(res) do
+  //     mq.enqueue(res)
+  //     res = mq.dequeue
+  //   val newOmega = Queue().enqueueAll(mq)
+  //   (res, copy(omega = newOmega))
+  // else
+  //   val (a, newOmega) = omega.dequeue
+  //   (a, copy(omega = newOmega))
 
   /** Upcasts some type to all of its missing supertypes. If the type itself is missing, then it is
     * returned
@@ -233,7 +248,7 @@ case class Configuration(
     val alphaTable = MutableMap[Alpha, NormalType]()
 
     for (t, ivmt) <- phi2 do
-      val newSource            = t.replace(oldType, newType).upwardProjection
+      val newSource            = t.replace(oldType, newType).substituted.upwardProjection
       val (newTable, newAssts) = ivmt.replace(oldType, newType)
       newAssertions ++= newAssts
       // add the assertions in the constraint stores
@@ -511,15 +526,23 @@ case class Configuration(
         case x =>
           println(x)
           ???
-
+    val newOmega = omega.toVector ++ newAssertions
     Some(
       Configuration(
         delta,
         newPhi1.toMap,
         newPhi2.toMap,
-        omega.enqueueAll(newAssertions).map(_.replace(oldType, newType))
+        PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*)
       )
     )
+  // Some(
+  //   Configuration(
+  //     delta,
+  //     newPhi1.toMap,
+  //     newPhi2.toMap,
+  //     omega.enqueueAll(newAssertions).map(_.replace(oldType, newType))
+  //   )
+  // )
 
   /** Upcasts a bunch of types into its supertypes that contains the method with some arity
     * @param bounds
@@ -569,7 +592,28 @@ case class Configuration(
 
   /** Determines if the configuration is complete and ready to be built
     */
-  def isComplete: Boolean = omega.isEmpty // !omega.isEmpty && !phi1.isEmpty && !phi2.isEmpty
+  def isComplete: Boolean =
+    val tester: Assertion => Boolean = asst =>
+      asst match
+        case SubtypeAssertion(x, y) =>
+          x.isInstanceOf[AnyReplaceable] || y.isInstanceOf[AnyReplaceable]
+        case EquivalenceAssertion(x, y) =>
+          x.isInstanceOf[AnyReplaceable] && y.isInstanceOf[AnyReplaceable]
+        case ContainmentAssertion(x, y) =>
+          x.isInstanceOf[AnyReplaceable] || y.isInstanceOf[AnyReplaceable]
+        case x: ConjunctiveAssertion        => false
+        case y: DisjunctiveAssertion        => false
+        case IsClassAssertion(x)            => x.isInstanceOf[AnyReplaceable]
+        case IsInterfaceAssertion(x)        => x.isInstanceOf[AnyReplaceable]
+        case HasMethodAssertion(x, _, _, _) => x.isInstanceOf[AnyReplaceable]
+        case IsDeclaredAssertion(x)         => false
+        case IsMissingAssertion(x)          => false
+        case IsUnknownAssertion(x)          => false
+        case IsPrimitiveAssertion(x)        => false
+        case IsReferenceAssertion(x)        => x.isInstanceOf[AnyReplaceable]
+        case IsIntegralAssertion(x)         => false
+        case IsNumericAssertion(x)          => false
+    omega.isEmpty || omega.forall(tester)
 
   override def toString =
     "Delta:\n" +
