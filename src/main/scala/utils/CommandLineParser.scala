@@ -25,5 +25,11 @@ private val cmdOptsParser =
       .text("debug mode")
   )
 
+/** parses the command line arguments into the compiler
+  * @param args
+  *   the array of command line arguments
+  * @return
+  *   the resulting AppConfig
+  */
 def parseCommandLineArgs(args: Array[String]) =
   OParser.parse(cmdOptsParser, args, AppConfig())
