@@ -15,7 +15,10 @@ private def resolveContainmentAssertion(log: Log, config: Configuration, a: Cont
     case (_, yy: InferenceVariable) =>
       expandInferenceVariable(yy, log, config asserts (ys <=~ yy))
     case _ =>
-      if zs.upwardProjection == zs.downwardProjection then
+      if !zs.isInstanceOf[ExtendsWildcardType] &&
+        !zs.isInstanceOf[SuperWildcardType]
+        && zs != Wildcard
+      then
         val newAsst = y ~=~ z
         (
           log.addInfo(s"$a reduces to $newAsst"),

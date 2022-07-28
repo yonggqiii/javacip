@@ -2,15 +2,27 @@ package configuration.types
 import configuration.assertions.*
 import scala.Console.{RED, RESET}
 
+/** The `java.lang.Object` type */
 val OBJECT = NormalType("java.lang.Object", 0)
+/** The `java.lang.String` type */
+val STRING = NormalType("java.lang.String", 0)
+/** The `java.lang.Integer` type */
 val BOXED_INT = NormalType("java.lang.Integer", 0)
+/** The `java.lang.Short` type */
 val BOXED_SHORT = NormalType("java.lang.Short", 0)
+/** The `java.lang.Long` type */
 val BOXED_LONG = NormalType("java.lang.Long", 0)
+/** The `java.lang.Byte` type */
 val BOXED_BYTE = NormalType("java.lang.Byte", 0)
+/** The `java.lang.Character` type */
 val BOXED_CHAR = NormalType("java.lang.Character", 0)
+/** The `java.lang.Float` type */
 val BOXED_FLOAT = NormalType("java.lang.Float", 0)
+/** The `java.lang.Double` type */
 val BOXED_DOUBLE = NormalType("java.lang.Double", 0)
+/** The `java.lang.Boolean` type */
 val BOXED_BOOLEAN = NormalType("java.lang.Boolean", 0)
+/** The `java.lang.Void` type */
 val BOXED_VOID = NormalType("java.lang.Void", 0)
 
 // Type aliases
@@ -126,15 +138,16 @@ sealed trait Type:
 
   /**
    * Returns the equivalent type after substituting as much as possible;
-   * for example, List<T>[T -> Integer] will become List<Integer>.
+   * for example, `List<T>[T -> Integer]` will become `List<Integer>`.
    * Replaceable types will not be substituted
    */
-  def substituted: TypeAfterSubstitution
+  def substituted: Type
 
   /**
    * Checks if this type strictly occurs in, but is not equal to,
    * another type
    * @param that the other type
+   * @return true if this strictly occurs in that, false otherwise
    */
   def ⊂(that: Type): Boolean = that.substituted match
     case ArrayType(x) => this.substituted ⊆ x
@@ -145,11 +158,13 @@ sealed trait Type:
     case x: TTypeParameter => false
     case x: ReplaceableType => false
     case x: SubstitutedReferenceType => x.args.exists(this.substituted ⊆ _)
+    case x: NormalType => ??? // not possible
 
   /**
    * Checks if this type occurs in or is equal to another
    * type
    * @param that the other type
+   * @return true if this occurs in or is equal to that, false otherwise
    */
   def ⊆(that: Type): Boolean = this.substituted == that.substituted || this.substituted ⊂ that.substituted
 
@@ -168,11 +183,12 @@ sealed trait Type:
     val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
     s"$start$argumentList$subsstring"
 
-sealed trait TypeAfterSubstitution extends Type
-
+/** An array
+ * @param base the type of the elements of this array
+ */
 final case class ArrayType(
   base: Type,
-) extends TypeAfterSubstitution:
+) extends Type:
   override def toString =
       base.toString + "[]"
   val identifier = base.identifier + "[]"
@@ -189,6 +205,11 @@ final case class ArrayType(
   val args = Vector()
   def isSomehowUnknown = base.isSomehowUnknown
 
+/** Just your regular reference type
+ * @param identifier the name of the type
+ * @param numArgs the number of arguments of this type
+ * @param substitutions the list of substitutions of this type
+ */
 final case class NormalType(
     identifier: String,
     numArgs: Int,
@@ -211,7 +232,12 @@ final case class NormalType(
     .toVector
   def isSomehowUnknown = substituted.isSomehowUnknown
 
+/** Companion object to [[configuration.types.PrimitiveType]]. */
 object PrimitiveType:
+    /** Creates a primitive given its name
+     * @param identifier the name of the primitive type
+     * @return the resulting primitive type
+     */
     def apply(identifier: String): PrimitiveType = identifier match
       case "byte" => PRIMITIVE_BYTE
       case "short" => PRIMITIVE_SHORT
@@ -222,9 +248,10 @@ object PrimitiveType:
       case "double" => PRIMITIVE_DOUBLE
       case "boolean" => PRIMITIVE_BOOLEAN
       case "void" => PRIMITIVE_VOID
-      case _ => ???
+      case _ => ??? // definitely fails
 
-sealed trait PrimitiveType extends TypeAfterSubstitution:
+/** The primitive types */
+sealed trait PrimitiveType extends Type:
   val boxed: NormalType
   val numArgs = 0
   val substitutions = Nil
@@ -235,9 +262,12 @@ sealed trait PrimitiveType extends TypeAfterSubstitution:
   def substituted = this
   val args = Vector()
   def isSomehowUnknown = false
+  /** the types which this primitive type can widen to */
   def widened: Set[PrimitiveType]
+  /** the types which can be assigned into this type */
   def isAssignableBy: Set[Type]
 
+/** the `int` type */
 case object PRIMITIVE_INT extends PrimitiveType:
   val identifier = "int"
   val boxed = BOXED_INT
@@ -245,6 +275,7 @@ case object PRIMITIVE_INT extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_SHORT, PRIMITIVE_CHAR, PRIMITIVE_BYTE, PRIMITIVE_INT).flatMap(x => Set(x, x.boxed))
 
+/** the `byte` type */
 case object PRIMITIVE_BYTE extends PrimitiveType:
   val identifier = "byte"
   val boxed = BOXED_BYTE
@@ -252,6 +283,7 @@ case object PRIMITIVE_BYTE extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
+/** the `short` type */
 case object PRIMITIVE_SHORT extends PrimitiveType:
   val identifier = "short"
   val boxed = BOXED_SHORT
@@ -259,6 +291,7 @@ case object PRIMITIVE_SHORT extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_SHORT, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
+/** the `char` type */
 case object PRIMITIVE_CHAR extends PrimitiveType:
   val identifier = "char"
   val boxed = BOXED_CHAR
@@ -266,6 +299,7 @@ case object PRIMITIVE_CHAR extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
+/** the `long` type */
 case object PRIMITIVE_LONG extends PrimitiveType:
   val identifier = "long"
   val boxed = BOXED_LONG
@@ -273,6 +307,7 @@ case object PRIMITIVE_LONG extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
+/** the `float` type */
 case object PRIMITIVE_FLOAT extends PrimitiveType:
   val identifier = "float"
   val boxed = BOXED_FLOAT
@@ -280,6 +315,7 @@ case object PRIMITIVE_FLOAT extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_FLOAT, PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
+/** the `double` type */
 case object PRIMITIVE_DOUBLE extends PrimitiveType:
   val identifier = "double"
   val boxed = BOXED_DOUBLE
@@ -287,6 +323,7 @@ case object PRIMITIVE_DOUBLE extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_DOUBLE, PRIMITIVE_FLOAT, PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
 
+/** the `boolean` type */
 case object PRIMITIVE_BOOLEAN extends PrimitiveType:
   val identifier = "boolean"
   val boxed = BOXED_BOOLEAN
@@ -294,6 +331,7 @@ case object PRIMITIVE_BOOLEAN extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_BOOLEAN).flatMap(x => Set(x, x.boxed))
 
+/** the `void` type */
 case object PRIMITIVE_VOID extends PrimitiveType:
   val identifier = "void"
   val boxed = BOXED_VOID
@@ -301,7 +339,8 @@ case object PRIMITIVE_VOID extends PrimitiveType:
   def isAssignableBy =
     Set(PRIMITIVE_VOID).flatMap(x => Set(x, x.boxed))
 
-case object Bottom extends TypeAfterSubstitution:
+/** The bottom type, usually a null */
+case object Bottom extends Type:
   val upwardProjection: Bottom.type = this
   val downwardProjection: Bottom.type = this
   val identifier = "⊥"
@@ -312,7 +351,9 @@ case object Bottom extends TypeAfterSubstitution:
   def substituted = this
   val args = Vector()
   def isSomehowUnknown = false
-case object Wildcard extends TypeAfterSubstitution:
+
+/** the `?` type */
+case object Wildcard extends Type:
   val upwardProjection: NormalType = OBJECT
   val downwardProjection: Bottom.type = Bottom
   val identifier = "?"
@@ -324,9 +365,10 @@ case object Wildcard extends TypeAfterSubstitution:
   val args = Vector()
   def isSomehowUnknown = false
 
+/** the `? extends Foo` type */
 final case class ExtendsWildcardType(
     upper: Type
-) extends TypeAfterSubstitution:
+) extends Type:
   val identifier                      = ""
   val substitutions: SubstitutionList = Nil
   val numArgs                         = 0
@@ -340,9 +382,10 @@ final case class ExtendsWildcardType(
   val args = Vector()
   def isSomehowUnknown = upwardProjection.isSomehowUnknown
 
+/** the `? super Foo` type */
 final case class SuperWildcardType(
     lower: Type
-) extends TypeAfterSubstitution:
+) extends Type:
   val identifier                      = ""
   val numArgs                         = 0
   val substitutions: SubstitutionList = Nil
@@ -357,13 +400,20 @@ final case class SuperWildcardType(
   val args = Vector()
   def isSomehowUnknown = downwardProjection.isSomehowUnknown
 
-sealed trait TTypeParameter extends TypeAfterSubstitution:
+/** A type parameter of some sort */
+sealed trait TTypeParameter extends Type:
+  /** The type who contains this type parameter */
   def containingTypeIdentifier: String
   def isSomehowUnknown =
     substituted match
       case _: TTypeParameter => false
       case s => s.isSomehowUnknown
 
+/** A type parameter by index (de Bruijn indexing)
+ * @param source the type containing this parameter
+ * @param index the index of this parameter
+ * @param substitutions the substitutions of this type
+ */
 final case class TypeParameterIndex(
     source: String,
     index: Int,
@@ -378,7 +428,7 @@ final case class TypeParameterIndex(
     copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
   def replace(oldType: ReplaceableType, newType: Type): TypeParameterIndex =
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  def substituted: TypeAfterSubstitution = substitutions match
+  def substituted: Type = substitutions match
     case Nil => this
     case x :: xs =>
       if x.contains(copy(substitutions = Nil)) then
@@ -387,6 +437,12 @@ final case class TypeParameterIndex(
         copy(substitutions = xs).substituted
   val args = Vector()
 
+/** A type parameter by name
+ * @param sourceType the type containing this type parameter
+ * @param source the full container id (including the method signature)
+ * @param qualifiedName the name of the type parameter
+ * @param substitutions the substitutions to this type parameter
+ */
 final case class TypeParameterName(
     sourceType: String,
     source: String,
@@ -407,7 +463,7 @@ final case class TypeParameterName(
     )
   def replace(oldType: ReplaceableType, newType: Type): TypeParameterName =
     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  def substituted: TypeAfterSubstitution = substitutions match
+  def substituted: Type = substitutions match
     case Nil => this
     case x :: xs =>
       if x.contains(copy(substitutions = Nil)) then
@@ -416,10 +472,15 @@ final case class TypeParameterName(
         copy(substitutions = xs).substituted
   val args = Vector()
 
-sealed trait ReplaceableType extends TypeAfterSubstitution:
+/** Some type that is to be replaced by another */
+sealed trait ReplaceableType extends Type:
+  /** the ID of this type */
   val id: Int
   def isSomehowUnknown = true
 
+/** Some random replaceable type
+ * @param id the ID of this type
+ */
 final case class AnyReplaceable(id: Int) extends ReplaceableType:
   val substitutions = Nil
   val numArgs = 0
@@ -427,15 +488,13 @@ final case class AnyReplaceable(id: Int) extends ReplaceableType:
   val upwardProjection: AnyReplaceable = this
   val downwardProjection: AnyReplaceable = this
   def addSubstitutionLists(substitutions: SubstitutionList): AnyReplaceable = this
-//    copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
   def replace(oldType: ReplaceableType, newType: Type): Type =
-//    val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then this
     else newType
   def substituted = this
   val args = Vector()
 
-
+/** An inference variable */
 final case class InferenceVariable(
     id: Int,
     source: Either[String, Type],
@@ -517,7 +576,7 @@ final case class Alpha(
 final case class SubstitutedReferenceType(
   identifier: String,
   args: Vector[Type]
-) extends TypeAfterSubstitution:
+) extends Type:
   val numArgs = args.size
   val substitutions: SubstitutionList = (0 until numArgs).map(i => (TypeParameterIndex(identifier, i) -> args(i))).toMap :: Nil
   val upwardProjection = this
