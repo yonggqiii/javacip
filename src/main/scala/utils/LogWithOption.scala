@@ -67,7 +67,7 @@ sealed trait LogWithOption[+A]:
     * @return
     *   the log object after the object has been consumed
     */
-  def rightConsume(f: A => Unit): Log
+  def consume(f: (Log, A) => Log): Log
 
 /** A type who has a log and a Some[A] */
 case class LogWithSome[+A](log: Log, some: A) extends LogWithOption[A]:
@@ -93,9 +93,8 @@ case class LogWithSome[+A](log: Log, some: A) extends LogWithOption[A]:
     val vector = x(some)
     LogWithSome(log, vector.map(f))
 
-  def rightConsume(f: A => Unit): Log =
-    f(some)
-    log
+  def consume(f: (Log, A) => Log): Log =
+    f(log, some)
 
 /** A type who has a log and a None */
 case class LogWithNone[+A](log: Log) extends LogWithOption[A]:
@@ -114,7 +113,7 @@ case class LogWithNone[+A](log: Log) extends LogWithOption[A]:
   def rightvmap[B, C](f: B => C)(using x: A <:< Vector[B]): LogWithOption[Vector[C]] =
     LogWithNone(log)
 
-  def rightConsume(f: A => Unit): Log = log
+  def consume(f: (Log, A) => Log): Log = log
 
 /** Companion object to the LogWithOption class */
 object LogWithOption:

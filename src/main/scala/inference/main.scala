@@ -29,4 +29,8 @@ private def infer(
       val res = resolve(log, x).flatMap(deconflict).flatMap(concretize).flatMap(parameterizeMembers)
       if res.isLeft then infer(res.log, res.left ::: xs, a + 1)
       else if !res.right.omega.isEmpty then infer(res.log, res.right :: xs, a + 1)
-      else LogWithSome(res.log, res.right)
+      else
+        LogWithSome(
+          res.log.addSuccess(s"successfully inferred compilable configuration", res.right.toString),
+          res.right
+        )

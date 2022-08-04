@@ -81,7 +81,7 @@ def parseConfiguration(
   // Parse the file and generate AST
   val s: LogWithOption[CompilationUnit] =
     parseSource(log.addInfo(s"attempting to parse $filePath..."), filePath)
-
+  val o = s.rightmap(x => x.clone)
   ///////// Step 3 /////////
   // 3a
   val c: MutableConfiguration =
@@ -93,7 +93,13 @@ def parseConfiguration(
   decls
     .flatMap(visitAll(_, _, c))
     .rightmap(x =>
-      Configuration(x._1.toMap, x._2._1.toMap, x._2._2.toMap, PriorityQueue(x._3.toList: _*))
+      Configuration(
+        x._1.toMap,
+        x._2._1.toMap,
+        x._2._2.toMap,
+        PriorityQueue(x._3.toList: _*),
+        o.opt.get // safe since decls already depends on s
+      )
     )
     .map((l, c) => (l.addSuccess("Successfully built configuration", c.toString), c))
 

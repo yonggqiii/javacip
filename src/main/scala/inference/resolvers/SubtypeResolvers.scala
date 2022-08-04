@@ -21,8 +21,6 @@ private[inference] def resolveSubtypeAssertion(
       expandDisjunctiveType(i, log, config asserts a)
     case (_, i: DisjunctiveType) =>
       expandDisjunctiveType(i, log, config asserts a)
-    // case (m: SubstitutedReferenceType, n: Alpha) =>
-    //   `resolve Ref <: Alpha`(m, n, log, config)
     case (_, m: PrimitiveType) =>
       `resolve Type <: Primitive`(sub, m, log, config)
     case (m: PrimitiveType, _) =>
@@ -63,9 +61,6 @@ private[inference] def resolveSubtypeAssertion(
       println(x)
       println(a)
       ???
-// case of subtype being a normal reference type and is declared
-// case (m: SubstitutedReferenceType, _) if !config.getFixedDeclaration(m).isEmpty =>
-//   ???
 
 /** Case of Type <: PrimitiveType
   * @param subtype
@@ -345,14 +340,3 @@ private def `resolve Alpha <: Ref`(
   if supertypeIsFinal then
     (log.addInfo(s"$subtype must be an instance of ${supertype.identifier}"), concretizedConfig)
   else addToConstraintStore(subtype, subtype <:~ supertype, log, config)
-// // case where subtype is an instance of supertype
-// val table =
-//   if !config.phi2.contains(subtype) then InferenceVariableMemberTable(subtype)
-//   else config.phi2(subtype)
-// val newTable = table.addConstraint(subtype <:~ supertype)
-// val constraintStoreConfig =
-//   if supertypeIsFinal then Nil else config.copy(phi2 = config.phi2 + (subtype -> newTable)) :: Nil
-// val newLog =
-//   if supertypeIsFinal then log.addInfo(s"$subtype must be an instance of ${supertype.identifier}")
-//   else log.addInfo(s"$subtype is either an instance of ${supertype.identifier} or something else")
-// (newLog, concretizedConfig ::: constraintStoreConfig)

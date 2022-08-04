@@ -20,6 +20,7 @@ import scala.collection.mutable.{
 }
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
+import com.github.javaparser.ast.CompilationUnit
 
 /** Represents the configuration of the algorithm.
   * @param delta
@@ -35,7 +36,8 @@ case class Configuration(
     delta: Map[String, FixedDeclaration],
     phi1: Map[String, MissingTypeDeclaration],
     phi2: Map[Type, InferenceVariableMemberTable],
-    omega: PriorityQueue[Assertion]
+    omega: PriorityQueue[Assertion],
+    cu: CompilationUnit
 ):
   /** Add an assertion to the configuration
     * @param a
@@ -72,22 +74,6 @@ case class Configuration(
     val newOmega = omega.clone
     val a        = newOmega.dequeue
     (a, copy(omega = newOmega))
-  // val tester: Assertion => Boolean = x =>
-  //   x match
-  //     case _: DisjunctiveAssertion => false
-  //     case _                       => true
-  // val hasNonDisjunction = omega.exists(tester)
-  // if hasNonDisjunction then
-  //   val mq  = MutableQueue().enqueueAll(omega)
-  //   var res = mq.dequeue
-  //   while !tester(res) do
-  //     mq.enqueue(res)
-  //     res = mq.dequeue
-  //   val newOmega = Queue().enqueueAll(mq)
-  //   (res, copy(omega = newOmega))
-  // else
-  //   val (a, newOmega) = omega.dequeue
-  //   (a, copy(omega = newOmega))
 
   /** Upcasts some type to all of its missing supertypes. If the type itself is missing, then it is
     * returned
@@ -532,7 +518,8 @@ case class Configuration(
         delta,
         newPhi1.toMap,
         newPhi2.toMap,
-        PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*)
+        PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*),
+        cu
       )
     )
   // Some(
