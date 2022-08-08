@@ -37,7 +37,8 @@ case class Configuration(
     phi1: Map[String, MissingTypeDeclaration],
     phi2: Map[Type, InferenceVariableMemberTable],
     omega: PriorityQueue[Assertion],
-    cu: CompilationUnit
+    cu: CompilationUnit,
+    _cache: MutableMap[String, FixedDeclaration] = MutableMap()
 ):
   /** Add an assertion to the configuration
     * @param a
@@ -263,7 +264,7 @@ case class Configuration(
                       case Some(table) =>
                         newAssertions += EquivalenceAssertion(
                           attrType,
-                          table.attributes(attrName).addSubstitutionLists(ac.substitutions)
+                          table.attributes(attrName).`type`.addSubstitutionLists(ac.substitutions)
                         )
                       // attribute can be added to a missing type
                       case None =>
@@ -303,9 +304,18 @@ case class Configuration(
                   for t <- fixedMethodContainers do
                     // get all relevant methods
                     val decl = getFixedDeclaration(t).get // definitely ok
-                    val relevantMethods =
-                      decl.methods(methodName).toVector.filter(x => x._1._2.size == paramTypes.size)
-                    for ((realTypeParams, realParamTypes), realRt) <- relevantMethods do
+                    // val relevantMethods =
+                    //   decl.methods(methodName).toVector.filter(x => x._1._2.size == paramTypes.size)
+                    val relevantMethods = decl
+                      .methods(methodName)
+                      .filter((k, v) => k.size == paramTypes.size)
+                      .values
+                    for relevantMethod <- relevantMethods do
+                      val (realTypeParams, realParamTypes, realRt) = (
+                        relevantMethod.typeParameterBounds.keys,
+                        relevantMethod.signature.formalParameters,
+                        relevantMethod.returnType
+                      )
                       // create the assertions
                       val tpMap: Map[TTypeParameter, Type] =
                         realTypeParams
@@ -352,7 +362,7 @@ case class Configuration(
                   case Some(table) =>
                     newAssertions += EquivalenceAssertion(
                       attrType,
-                      table.attributes(attrName).addSubstitutionLists(ac.substitutions)
+                      table.attributes(attrName).`type`.addSubstitutionLists(ac.substitutions)
                     )
                   // attribute can be added to a missing type
                   case None =>
@@ -392,9 +402,16 @@ case class Configuration(
               for t <- fixedMethodContainers do
                 // get all relevant methods
                 val decl = getFixedDeclaration(t).get // definitely ok
-                val relevantMethods =
-                  decl.methods(methodName).toVector.filter(x => x._1._2.size == paramTypes.size)
-                for ((realTypeParams, realParamTypes), realRt) <- relevantMethods do
+                val relevantMethods = decl
+                  .methods(methodName)
+                  .filter((k, v) => k.size == paramTypes.size)
+                  .values
+                for relevantMethod <- relevantMethods do
+                  val (realTypeParams, realParamTypes, realRt) = (
+                    relevantMethod.typeParameterBounds.keys,
+                    relevantMethod.signature.formalParameters,
+                    relevantMethod.returnType
+                  )
                   // create the assertions
                   val tpMap: Map[TTypeParameter, Type] =
                     realTypeParams
@@ -445,7 +462,7 @@ case class Configuration(
                       case Some(table) =>
                         newAssertions += EquivalenceAssertion(
                           attrType,
-                          table.attributes(attrName).addSubstitutionLists(ac.substitutions)
+                          table.attributes(attrName).`type`.addSubstitutionLists(ac.substitutions)
                         )
                       // attribute can be added to a missing type
                       case None =>
@@ -485,9 +502,16 @@ case class Configuration(
                   for t <- fixedMethodContainers do
                     // get all relevant methods
                     val decl = getFixedDeclaration(t).get // definitely ok
-                    val relevantMethods =
-                      decl.methods(methodName).toVector.filter(x => x._1._2.size == paramTypes.size)
-                    for ((realTypeParams, realParamTypes), realRt) <- relevantMethods do
+                    val relevantMethods = decl
+                      .methods(methodName)
+                      .filter((k, v) => k.size == paramTypes.size)
+                      .values
+                    for relevantMethod <- relevantMethods do
+                      val (realTypeParams, realParamTypes, realRt) = (
+                        relevantMethod.typeParameterBounds.keys,
+                        relevantMethod.signature.formalParameters,
+                        relevantMethod.returnType
+                      )
                       // create the assertions
                       val tpMap: Map[TTypeParameter, Type] =
                         realTypeParams
@@ -561,7 +585,7 @@ case class Configuration(
       case Some(x) =>
         val current =
           if x.methods.contains(methodName) &&
-            x.methods(methodName).exists(x => x._1._2.size == arity)
+            x.methods(methodName).exists(x => x._2.signature.formalParameters.size == arity)
           then Set(t)
           else Set()
         if x.identifier == "java.lang.Object" then current
@@ -653,15 +677,20 @@ case class Configuration(
     val declAttempt = rts.tryToSolveType(t.identifier)
     if !declAttempt.isSolved then None
     else
-      val rtd                   = declAttempt.getCorrespondingDeclaration.asReferenceType
-      val identifier            = rtd.getQualifiedName
-      val c: java.lang.Class[?] = java.lang.Class.forName(identifier)
-      val modifiers             = c.getModifiers
-      val isAbstract            = Modifier.isAbstract(modifiers)
-      val isFinal               = Modifier.isFinal(modifiers)
-      Some(
-        convertResolvedReferenceTypeDeclarationToFixedDeclaration(rtd, isAbstract, isFinal).get
-      )
+      val rtd        = declAttempt.getCorrespondingDeclaration.asReferenceType
+      val identifier = rtd.getQualifiedName
+      if _cache.contains(identifier) then Some(_cache(identifier))
+      else
+        val c: java.lang.Class[?] = java.lang.Class.forName(identifier)
+        val modifiers             = c.getModifiers
+        val isAbstract            = Modifier.isAbstract(modifiers)
+        val isFinal               = Modifier.isFinal(modifiers)
+        val res =
+          convertResolvedReferenceTypeDeclarationToFixedDeclaration(rtd, isAbstract, isFinal).get
+        _cache(identifier) = res
+        Some(
+          res
+        )
 
   /** Upcasts a type into an instance of another type
     * @param t

@@ -31,7 +31,6 @@ object Main:
       else dirName + "/" + nameOfFile
     try
       val fw = FileWriter(fullFileName)
-      println(cu)
       fw.write(cu.toString)
       fw.close()
       return (log.addSuccess(s"successfully written $fullFileName"), ())

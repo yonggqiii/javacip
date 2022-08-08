@@ -154,7 +154,7 @@ private def visit(
     return LogWithNone(
       finalLog.addError(
         "The following methods have multiple declarations whose erasures conflict:",
-        conflictingMethods.keys.mkString(", ")
+        conflictingMethods.map(x => "\t" + x.toString).mkString("\n")
       )
     )
 

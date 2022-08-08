@@ -2,6 +2,7 @@ package configuration.declaration
 
 import configuration.types.*
 import scala.annotation.tailrec
+import scala.collection.mutable.{Set as MutableSet, ArrayBuffer}
 
 private type MethodTable = Map[(Vector[TypeParameterName], Vector[Type]), Type]
 
@@ -14,8 +15,9 @@ class FixedDeclaration(
     val extendedTypes: Vector[Type],
     val implementedTypes: Vector[Type],
     val methodTypeParameterBounds: Map[String, Vector[Type]],
-    val attributes: Map[String, Type],
-    val methods: Map[String, MethodTable]
+    val attributes: Map[String, Attribute],
+    val methods: Map[String, Map[Vector[Type], Method]],
+    val constructors: Set[(Vector[TypeParameterName], Vector[Type])]
 ):
   override def toString =
     val numArgs = typeParameters.size
@@ -40,8 +42,9 @@ class FixedDeclaration(
     val implementsClause =
       if implementedTypes.size == 0 then ""
       else " implements " + implementedTypes.map(_.substituted).mkString(", ")
-    val attrString = attributes.map(x => s"${x._2} ${x._1}").mkString("\n")
-    s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nAttributes:\n$attrString\nMethods:\n$methods"
+    val attrString   = attributes.map(x => s"\t${x._2}").mkString("\n")
+    val methodString = methods.values.map(_.values.mkString("\n")).mkString("\n")
+    s"$finalOrAbstract$classOrInterface$identifier$args$extendsClause$implementsClause\nType parameter bounds:\n$methodTypeParameterBounds\nConstructors:\n$constructors\nAttributes:\n$attrString\nMethods:\n$methodString"
 
   def getDirectAncestors =
     if identifier == "java.lang.Object" || identifier == "Object" then Vector()
@@ -93,26 +96,40 @@ class FixedDeclaration(
           else getErasure(bounds(0), exclusions + typet)
         case _ => typet
 
+  def getRawErasure(typet: Type): Type =
+    getErasure(typet).substituted match
+      case x: SubstitutedReferenceType => NormalType(x.identifier, 0)
+      case x                           => x
+
   def conflictingMethods =
-    methods
-      .map((name, table) =>
-        val erasedTable = table.toVector
-          .map(x => (x._1._2, x._2))
-          .map(x => (x._1.map(param => getErasure(param).identifier), x._2))
-        val conflictingSignatures = erasedTable
-          .foldLeft(Map[Vector[String], Type](), Vector[Vector[String]]()) {
-            case ((m, v), (p, t)) =>
-              if !m.contains(p) then (m + (p -> t), v)
-              else (m, v :+ p)
-          }
-          ._2
-          .toSet
-        (
-          name,
-          table.filter((x, y) =>
-            val paramTypes = x._2.map(param => getErasure(param).identifier)
-            conflictingSignatures.contains(paramTypes)
-          )
-        )
-      )
-      .filter((x, y) => y.size > 0)
+    val s   = MutableSet[MethodSignature]()
+    val res = ArrayBuffer[Method]()
+    for table <- methods.values do
+      for method <- table.values do
+        val erasedSig = method.signature.erased(this)
+        if s.contains(erasedSig) then res += method
+        else s += erasedSig
+    res.toVector
+
+// methods
+//   .map((name, table) =>
+//     val erasedTable = table.toVector
+//       .map(x => (x._1._2, x._2))
+//       .map(x => (x._1.map(param => getErasure(param).identifier), x._2))
+//     val conflictingSignatures = erasedTable
+//       .foldLeft(Map[Vector[String], Type](), Vector[Vector[String]]()) {
+//         case ((m, v), (p, t)) =>
+//           if !m.contains(p) then (m + (p -> t), v)
+//           else (m, v :+ p)
+//       }
+//       ._2
+//       .toSet
+//     (
+//       name,
+//       table.filter((x, y) =>
+//         val paramTypes = x._2.map(param => getErasure(param).identifier)
+//         conflictingSignatures.contains(paramTypes)
+//       )
+//     )
+//   )
+//   .filter((x, y) => y.size > 0)
