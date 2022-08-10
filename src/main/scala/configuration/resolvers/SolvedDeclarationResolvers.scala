@@ -161,18 +161,23 @@ def getMethods(
         case _ =>
           val c: java.lang.Class[?] = java.lang.Class.forName(identifier)
           val ab                    = scala.collection.mutable.ArrayBuffer[String]()
-          for i <- methodDeclaration.getQualifiedSignature.split(",") do
-            val j = i.strip
-            ab += "<.*>".r.replaceAllIn(j, "")
+          for i <- (0 until numParams) do
+            val p = methodDeclaration.getParam(i).getType
+            ab += "<.*>".r.replaceAllIn(p.describe, "")
           val targetToFind =
-            raw"\.\.\.".r.replaceAllIn(ab.mkString(", "), "[]")
+            raw"\.\.\.".r
+              .replaceAllIn(c.getName + "." + methodName + "(" + ab.mkString(", ") + ")", "[]")
+          // println(s"\n$targetToFind")
           val reflectMethod =
             c.getDeclaredMethods
               .filter(x =>
                 val methodName = x.getName
-                val params =
-                  x.getGenericParameterTypes.map(y => "<.*>".r.replaceAllIn(y.getTypeName, ""))
+                val params = x.getGenericParameterTypes
+                  .map(_.getTypeName)
+                  .map(y => "<.*>".r.replaceAllIn(y, ""))
+                  .map(y => "\\$".r.replaceAllIn(y, "."))
                 val res = c.getName + "." + methodName + "(" + params.mkString(", ") + ")"
+                // println(s"$res: ${res == targetToFind}")
                 res == targetToFind
               )(0)
           java.lang.reflect.Modifier.isFinal(reflectMethod.getModifiers)
