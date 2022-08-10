@@ -304,12 +304,9 @@ case class Configuration(
                   for t <- fixedMethodContainers do
                     // get all relevant methods
                     val decl = getFixedDeclaration(t).get // definitely ok
-                    // val relevantMethods =
-                    //   decl.methods(methodName).toVector.filter(x => x._1._2.size == paramTypes.size)
                     val relevantMethods = decl
                       .methods(methodName)
-                      .filter((k, v) => k.size == paramTypes.size)
-                      .values
+                      .filter(m => m.callableWithNArgs(paramTypes.size))
                     for relevantMethod <- relevantMethods do
                       val (realTypeParams, realParamTypes, realRt) = (
                         relevantMethod.typeParameterBounds.keys,
@@ -404,8 +401,7 @@ case class Configuration(
                 val decl = getFixedDeclaration(t).get // definitely ok
                 val relevantMethods = decl
                   .methods(methodName)
-                  .filter((k, v) => k.size == paramTypes.size)
-                  .values
+                  .filter(m => m.callableWithNArgs(paramTypes.size))
                 for relevantMethod <- relevantMethods do
                   val (realTypeParams, realParamTypes, realRt) = (
                     relevantMethod.typeParameterBounds.keys,
@@ -504,8 +500,7 @@ case class Configuration(
                     val decl = getFixedDeclaration(t).get // definitely ok
                     val relevantMethods = decl
                       .methods(methodName)
-                      .filter((k, v) => k.size == paramTypes.size)
-                      .values
+                      .filter(m => m.callableWithNArgs(paramTypes.size))
                     for relevantMethod <- relevantMethods do
                       val (realTypeParams, realParamTypes, realRt) = (
                         relevantMethod.typeParameterBounds.keys,
@@ -585,7 +580,7 @@ case class Configuration(
       case Some(x) =>
         val current =
           if x.methods.contains(methodName) &&
-            x.methods(methodName).exists(x => x._2.signature.formalParameters.size == arity)
+            x.methods(methodName).exists(x => x.callableWithNArgs(arity))
           then Set(t)
           else Set()
         if x.identifier == "java.lang.Object" then current
@@ -688,9 +683,7 @@ case class Configuration(
         val res =
           convertResolvedReferenceTypeDeclarationToFixedDeclaration(rtd, isAbstract, isFinal).get
         _cache(identifier) = res
-        Some(
-          res
-        )
+        Some(res)
 
   /** Upcasts a type into an instance of another type
     * @param t

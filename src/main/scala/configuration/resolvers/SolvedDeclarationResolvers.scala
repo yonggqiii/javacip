@@ -2,7 +2,13 @@ package configuration.resolvers
 
 import java.lang.reflect.Modifier
 import com.github.javaparser.resolution.declarations.*
-import configuration.declaration.{FixedDeclaration, Attribute, Modifier as ConfigModifier, Method}
+import configuration.declaration.{
+  FixedDeclaration,
+  Attribute,
+  Modifier as ConfigModifier,
+  Method,
+  Constructor
+}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 import scala.util.{Try, Success, Failure}
@@ -44,37 +50,18 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
   // collect the type parameter bounds
   val mmethodTypeParameterBounds = MutableMap[String, Vector[Type]]()
 
+  // get the methods
   val methods = getMethods(decl, identifier, mmethodTypeParameterBounds) match
     case Success(x) => x
     case Failure(x) => return Failure(x)
 
-  // get constructors
-  val constructorDeclarations = decl.getConstructors.asScala
-  val mconstructors           = MutableSet[(Vector[TypeParameterName], Vector[Type])]()
-  for constructorDeclaration <- constructorDeclarations do
-    val typeParamDecls = constructorDeclaration.getTypeParameters.asScala.toVector
-    val typeParams =
-      typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
-    val typeParamBounds = typeParams
-      .zip(
-        typeParamDecls.map(tp =>
-          tp.getBounds.asScala.toVector
-            .map(x => resolveSolvedType(x.getType))
-        )
-      )
-      .map(x => (x._1.identifier -> x._2))
-    val numParams = constructorDeclaration.getNumberOfParams
-    val args = (0 until numParams)
-      .map(x => resolveSolvedType(constructorDeclaration.getParam(x).getType))
-      .toVector
-    if mconstructors.contains((typeParams, args)) then
-      return Failure(
-        Exception(s"${constructorDeclaration.getQualifiedSignature} contains duplicates!")
-      )
-    mconstructors += ((typeParams, args))
-    mmethodTypeParameterBounds ++= typeParamBounds
-  val constructors              = mconstructors.toSet
+  // get the constructors
+  val constructors = getConstructors(decl, identifier, mmethodTypeParameterBounds) match
+    case Success(x) => x
+    case Failure(x) => return Failure(x)
+
   val methodTypeParameterBounds = mmethodTypeParameterBounds.toMap
+
   // get supertypes
   val (extendedTypes, implementedTypes) =
     if isInterface then
@@ -136,15 +123,13 @@ def getMethods(
     decl: ResolvedReferenceTypeDeclaration,
     identifier: String,
     methodTypeParameterBounds: MutableMap[String, Vector[Type]]
-): Try[Map[String, Map[Vector[Type], Method]]] =
+): Try[Map[String, Set[Method]]] =
   val methodDeclarations = decl.getDeclaredMethods.asScala.toVector
   // create a mutable map to store the methods
-  val mmethods = MutableMap[String, MutableMap[Vector[Type], Method]]()
+  val mmethods = MutableMap[String, MutableSet[Method]]()
   // collect each method using a while loop, skipping over non public
   // methods of reflection types
-  var i = 0
-  while i < methodDeclarations.size do
-    val methodDeclaration = methodDeclarations(i)
+  for methodDeclaration <- methodDeclarations do
     // name of method
     val methodName = methodDeclaration.getName
     // get type parameters
@@ -169,103 +154,72 @@ def getMethods(
     val isAbstract     = methodDeclaration.isAbstract
     val isStatic       = methodDeclaration.isStatic
     val accessModifier = ConfigModifier(methodDeclaration.accessSpecifier)
-    try
-      val isFinal =
-        Try(methodDeclaration.toAst.toScala) match
-          case Success(Some(x)) =>
-            x.getModifiers.asScala.contains(com.github.javaparser.ast.Modifier.finalModifier)
-          case _ =>
-            val c: java.lang.Class[?] = java.lang.Class.forName(identifier)
-            val targetToFind          = methodDeclaration.getQualifiedSignature.replaceAll(" ", "")
-            val reflectMethod =
-              c.getMethods.filter(x => x.toGenericString.split(" ").contains(targetToFind))(0)
-            java.lang.reflect.Modifier.isFinal(reflectMethod.getModifiers)
-      // add to table
-      if !mmethods.contains(methodName) then mmethods(methodName) = MutableMap()
-      val table = mmethods(methodName)
-      if table.contains(args) then
-        return Failure(Exception(s"$identifier contains duplicate method $methodName"))
-      table(args) = Method(
-        methodName,
-        args,
-        returnType,
-        typeParamBounds.toMap,
-        accessModifier,
-        isAbstract,
-        isStatic,
-        isFinal
+    val isFinal =
+      Try(methodDeclaration.toAst.toScala) match
+        case Success(Some(x)) =>
+          x.getModifiers.asScala.contains(com.github.javaparser.ast.Modifier.finalModifier)
+        case _ =>
+          val c: java.lang.Class[?] = java.lang.Class.forName(identifier)
+          val ab                    = scala.collection.mutable.ArrayBuffer[String]()
+          for i <- methodDeclaration.getQualifiedSignature.split(",") do
+            val j = i.strip
+            ab += "<.*>".r.replaceAllIn(j, "")
+          val targetToFind =
+            raw"\.\.\.".r.replaceAllIn(ab.mkString(", "), "[]")
+          val reflectMethod =
+            c.getDeclaredMethods
+              .filter(x =>
+                val methodName = x.getName
+                val params =
+                  x.getGenericParameterTypes.map(y => "<.*>".r.replaceAllIn(y.getTypeName, ""))
+                val res = c.getName + "." + methodName + "(" + params.mkString(", ") + ")"
+                res == targetToFind
+              )(0)
+          java.lang.reflect.Modifier.isFinal(reflectMethod.getModifiers)
+    val hasVarArgs = methodDeclaration.hasVariadicParameter
+    // add to table
+    if !mmethods.contains(methodName) then mmethods(methodName) = MutableSet()
+    val table = mmethods(methodName)
+    table += Method(
+      methodName,
+      args,
+      returnType,
+      typeParamBounds.toMap,
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      hasVarArgs
+    )
+    methodTypeParameterBounds ++= typeParamBounds.map(x => (x._1.identifier -> x._2))
+  Success(mmethods.map((k, v) => (k, v.toSet)).toMap)
+
+def getConstructors(
+    decl: ResolvedReferenceTypeDeclaration,
+    identifier: String,
+    methodTypeParameterBounds: MutableMap[String, Vector[Type]]
+): Try[Set[Constructor]] =
+  // get constructors
+  val constructorDeclarations = decl.getConstructors.asScala
+  val mconstructors           = MutableSet[Constructor]()
+  for constructorDeclaration <- constructorDeclarations do
+    val typeParamDecls = constructorDeclaration.getTypeParameters.asScala.toVector
+    val typeParams =
+      typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
+    val typeParamBounds: Map[TTypeParameter, Vector[Type]] = typeParams
+      .zip(
+        typeParamDecls.map(tp =>
+          tp.getBounds.asScala.toVector
+            .map(x => resolveSolvedType(x.getType))
+        )
       )
-      methodTypeParameterBounds ++= typeParamBounds.map(x => (x._1.identifier -> x._2))
-    catch case e: Throwable => ()
-    finally i += 1
-
-  // case Success(None) =>
-  //   return Failure(Exception(s"cannot determine if $methodName in $identifier is final?"))
-  // store in table
-  //   if table.contains(args) then
-  //     return Failure(Exception(s"$identifier contains duplicate method $methodName"))
-
-  // for methodDeclaration <- methodDeclarations do
-  //   // name of method
-  //   val methodName = methodDeclaration.getName
-  //   // add to table
-  //   if !mmethods.contains(methodName) then mmethods(methodName) = MutableMap()
-  //   val table = mmethods(methodName)
-  //   // get type parameters
-  //   val typeParamDecls = methodDeclaration.getTypeParameters.asScala.toVector
-  //   val typeParams =
-  //     typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
-  //   // get return type
-  //   val returnType = resolveSolvedType(methodDeclaration.getReturnType)
-  //   // create a map of TypeParameter -> Bounds
-  //   val typeParamBounds = typeParams
-  //     .zip(
-  //       typeParamDecls.map(tp =>
-  //         tp.getBounds.asScala.toVector.map(x => resolveSolvedType(x.getType))
-  //       )
-  //     )
-  //   // get formal parameters
-  //   val numParams = methodDeclaration.getNumberOfParams
-  //   val args = (0 until numParams)
-  //     .map(x => resolveSolvedType(methodDeclaration.getParam(x).getType))
-  //     .toVector
-  //   // get modifiers
-  //   val isAbstract     = methodDeclaration.isAbstract
-  //   val isStatic       = methodDeclaration.isStatic
-  //   val accessModifier = ConfigModifier(methodDeclaration.accessSpecifier)
-  //   val isFinal =
-  //     if accessModifier == PRIVATE then false
-  //     else
-  //       Try(methodDeclaration.toAst.toScala) match
-  //         case Success(Some(x)) =>
-  //           x.getModifiers.asScala.contains(com.github.javaparser.ast.Modifier.finalModifier)
-  //         case _ =>
-  //           val c: java.lang.Class[?] = java.lang.Class.forName(identifier)
-  //           val targetToFind          = methodDeclaration.getQualifiedSignature.replaceAll(" ", "")
-  //           println(
-  //             "\n" + accessModifier.toString + " " + identifier + " " + methodDeclaration.getQualifiedSignature
-  //               .replaceAll(" ", "")
-  //           )
-  //           val reflectMethod = c.getMethods.filter(x =>
-  //             println(x.toGenericString.split(" ").mkString(", "))
-  //             x.toGenericString.split(" ").contains(targetToFind)
-  //           )(0) //risky
-  //           java.lang.reflect.Modifier.isFinal(reflectMethod.getModifiers)
-  //   // case Success(None) =>
-  //   //   return Failure(Exception(s"cannot determine if $methodName in $identifier is final?"))
-  //   // store in table
-  //   if table.contains(args) then
-  //     return Failure(Exception(s"$identifier contains duplicate method $methodName"))
-  //   table(args) = Method(
-  //     methodName,
-  //     args,
-  //     returnType,
-  //     typeParamBounds.toMap,
-  //     accessModifier,
-  //     isAbstract,
-  //     isStatic,
-  //     isFinal
-  //   )
-  //   methodTypeParameterBounds ++= typeParamBounds.map(x => (x._1.identifier -> x._2))
-
-  Success(mmethods.map((k, v) => (k, v.toMap)).toMap)
+      .toMap
+    val numParams = constructorDeclaration.getNumberOfParams
+    val args = (0 until numParams)
+      .map(x => resolveSolvedType(constructorDeclaration.getParam(x).getType))
+      .toVector
+    val accessModifier = ConfigModifier(constructorDeclaration.accessSpecifier)
+    val hasVarArgs     = constructorDeclaration.hasVariadicParameter
+    mconstructors += Constructor(identifier, args, typeParamBounds, accessModifier, hasVarArgs)
+    methodTypeParameterBounds ++= typeParamBounds.map(x => (x._1.identifier -> x._2))
+  Success(mconstructors.toSet)
