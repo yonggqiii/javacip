@@ -11,7 +11,7 @@ class MissingTypeDeclaration(
     val identifier: String,
     val numParams: Int = 0,
     val supertypes: Vector[Type] = Vector(),
-    val attributes: Map[String, Type] = Map(),
+    val attributes: Map[String, Attribute] = Map(),
     val methods: Map[String, MissingMethodTable] = Map().withDefaultValue(Map()),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false

@@ -2,19 +2,12 @@ package configuration.resolvers
 
 import java.lang.reflect.Modifier
 import com.github.javaparser.resolution.declarations.*
-import configuration.declaration.{
-  FixedDeclaration,
-  Attribute,
-  Modifier as ConfigModifier,
-  Method,
-  Constructor
-}
+import configuration.declaration.{FixedDeclaration, Attribute, AccessModifier, Method, Constructor}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 import scala.util.{Try, Success, Failure}
 import scala.collection.mutable.{Map as MutableMap, Set as MutableSet}
 import configuration.types.*
-import configuration.declaration.PRIVATE
 
 /** Converts a resolved reference type declaration into a FixedDeclaration
   * @param decl
@@ -106,7 +99,7 @@ def getAttributes(
     if attributes.contains(attrName) then
       return Failure(Exception(s"$identifier contains duplicate attribute $attrName"))
     val isStatic = a.isStatic
-    val m        = ConfigModifier(a.accessSpecifier)
+    val m        = AccessModifier(a.accessSpecifier)
     // dumbass library won't tell me if attr is final
     val isFinal = Try(a.toAst.toScala) match
       case Success(Some(x)) =>
@@ -153,7 +146,7 @@ def getMethods(
     // get modifiers
     val isAbstract     = methodDeclaration.isAbstract
     val isStatic       = methodDeclaration.isStatic
-    val accessModifier = ConfigModifier(methodDeclaration.accessSpecifier)
+    val accessModifier = AccessModifier(methodDeclaration.accessSpecifier)
     val isFinal =
       Try(methodDeclaration.toAst.toScala) match
         case Success(Some(x)) =>
@@ -223,7 +216,7 @@ def getConstructors(
     val args = (0 until numParams)
       .map(x => resolveSolvedType(constructorDeclaration.getParam(x).getType))
       .toVector
-    val accessModifier = ConfigModifier(constructorDeclaration.accessSpecifier)
+    val accessModifier = AccessModifier(constructorDeclaration.accessSpecifier)
     val hasVarArgs     = constructorDeclaration.hasVariadicParameter
     mconstructors += Constructor(identifier, args, typeParamBounds, accessModifier, hasVarArgs)
     methodTypeParameterBounds ++= typeParamBounds.map(x => (x._1.identifier -> x._2))

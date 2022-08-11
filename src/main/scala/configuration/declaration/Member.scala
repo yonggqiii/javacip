@@ -5,27 +5,27 @@ import com.github.javaparser.ast.AccessSpecifier
 
 import configuration.types.*
 
-sealed trait Modifier
-case object Modifier:
+sealed trait AccessModifier
+case object AccessModifier:
   def apply(a: AccessSpecifier) = a match
     case AccessSpecifier.PACKAGE_PRIVATE => DEFAULT
     case AccessSpecifier.PRIVATE         => PRIVATE
     case AccessSpecifier.PROTECTED       => PROTECTED
     case AccessSpecifier.PUBLIC          => PUBLIC
 
-case object PUBLIC extends Modifier:
+case object PUBLIC extends AccessModifier:
   override def toString = "public"
-case object DEFAULT extends Modifier:
+case object DEFAULT extends AccessModifier:
   override def toString = ""
-case object PROTECTED extends Modifier:
+case object PROTECTED extends AccessModifier:
   override def toString = "protected"
-case object PRIVATE extends Modifier:
+case object PRIVATE extends AccessModifier:
   override def toString = "private"
 
 final case class Attribute(
     identifier: String,
     `type`: Type,
-    accessModifier: Modifier,
+    accessModifier: AccessModifier,
     isStatic: Boolean,
     isFinal: Boolean
 ):
@@ -64,14 +64,14 @@ final case class MethodSignature(
 sealed trait MethodLike:
   val signature: MethodSignature
   val typeParameterBounds: Map[TTypeParameter, Vector[Type]]
-  val accessModifier: Modifier
+  val accessModifier: AccessModifier
   def callableWithNArgs(n: Int): Boolean = signature.callableWithNArgs(n)
 
 final case class Method(
     signature: MethodSignature,
     returnType: Type,
     typeParameterBounds: Map[TTypeParameter, Vector[Type]],
-    accessModifier: Modifier,
+    accessModifier: AccessModifier,
     isAbstract: Boolean,
     isStatic: Boolean,
     isFinal: Boolean
@@ -113,7 +113,7 @@ object Method:
       formalParameters: Vector[Type],
       returnType: Type,
       typeParameterBounds: Map[TTypeParameter, Vector[Type]],
-      accessModifier: Modifier,
+      accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
       isFinal: Boolean,
@@ -132,7 +132,7 @@ object Method:
 final case class Constructor(
     signature: MethodSignature,
     typeParameterBounds: Map[TTypeParameter, Vector[Type]],
-    accessModifier: Modifier
+    accessModifier: AccessModifier
 ) extends MethodLike:
   override def toString =
     val ab = ArrayBuffer[String]()
@@ -155,7 +155,7 @@ object Constructor:
       containingTypeIdentifier: String,
       formalParameters: Vector[Type],
       typeParameterBounds: Map[TTypeParameter, Vector[Type]],
-      accessModifier: Modifier,
+      accessModifier: AccessModifier,
       hasVarArgs: Boolean
   ): Constructor =
     Constructor(
