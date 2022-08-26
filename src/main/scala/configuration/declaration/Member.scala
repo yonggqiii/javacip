@@ -5,23 +5,51 @@ import com.github.javaparser.ast.AccessSpecifier
 
 import configuration.types.*
 
+/** An access modifier in a Java program */
 sealed trait AccessModifier
+
+/** Companion class to [[configuration.declaration.AccessModifier]] */
 case object AccessModifier:
+  /** Gives the correct AccessModifier given a JavaParser AccessSpecifier
+    * @param a
+    *   the JavaParser access specifier
+    * @return
+    *   the corresponding AccessModifier
+    */
   def apply(a: AccessSpecifier) = a match
     case AccessSpecifier.PACKAGE_PRIVATE => DEFAULT
     case AccessSpecifier.PRIVATE         => PRIVATE
     case AccessSpecifier.PROTECTED       => PROTECTED
     case AccessSpecifier.PUBLIC          => PUBLIC
 
+/** The public access modifier */
 case object PUBLIC extends AccessModifier:
   override def toString = "public"
+
+/** The package-private (default) access modifier */
 case object DEFAULT extends AccessModifier:
   override def toString = ""
+
+/** The protected access modifier */
 case object PROTECTED extends AccessModifier:
   override def toString = "protected"
+
+/** The private access modifier */
 case object PRIVATE extends AccessModifier:
   override def toString = "private"
 
+/** An attribute in a class/interface
+  * @param identifier
+  *   the name of the attribute
+  * @param type
+  *   the type of the attribute
+  * @param accessModifier
+  *   the access modifier to the attribute
+  * @param isStatic
+  *   whether the attribute is static
+  * @param isFinal
+  *   whether the attribute is final
+  */
 final case class Attribute(
     identifier: String,
     `type`: Type,
@@ -29,6 +57,14 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
+  /** Replaces the type of this attribute with another type
+    * @param i
+    *   the type to replace
+    * @param t
+    *   the type after replacement
+    * @return
+    *   the attribute object after replacement
+    */
   def replace(i: InferenceVariable, t: Type): Attribute =
     copy(`type` = `type`.replace(i, t))
 
@@ -67,24 +103,28 @@ sealed trait MethodLike:
   val accessModifier: AccessModifier
   def callableWithNArgs(n: Int): Boolean = signature.callableWithNArgs(n)
 
-final case class Method(
-    signature: MethodSignature,
-    returnType: Type,
-    typeParameterBounds: Map[TTypeParameter, Vector[Type]],
-    accessModifier: AccessModifier,
-    isAbstract: Boolean,
-    isStatic: Boolean,
-    isFinal: Boolean
+class Method(
+    val signature: MethodSignature,
+    val returnType: Type,
+    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    val accessModifier: AccessModifier,
+    val isAbstract: Boolean,
+    val isStatic: Boolean,
+    val isFinal: Boolean
 ) extends MethodLike:
   if isAbstract && (isStatic || isFinal) then
     throw new java.lang.IllegalArgumentException(
       s"$signature cannot be abstract and (static or final) at the same time!"
     )
   def replace(i: InferenceVariable, t: Type): Method =
-    copy(
-      signature = signature.replace(i, t),
-      returnType = returnType.replace(i, t),
-      typeParameterBounds = typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t))))
+    new Method(
+      signature.replace(i, t),
+      returnType.replace(i, t),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t)))),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal
     )
 
   override def toString =
@@ -119,7 +159,7 @@ object Method:
       isFinal: Boolean,
       hasVarArgs: Boolean
   ): Method =
-    Method(
+    new Method(
       MethodSignature(identifier, formalParameters, hasVarArgs),
       returnType,
       typeParameterBounds,
@@ -129,10 +169,72 @@ object Method:
       isFinal
     )
 
-final case class Constructor(
-    signature: MethodSignature,
-    typeParameterBounds: Map[TTypeParameter, Vector[Type]],
-    accessModifier: AccessModifier
+class MethodWithContext(
+    _signature: MethodSignature,
+    _returnType: Type,
+    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _accessModifier: AccessModifier,
+    _isAbstract: Boolean,
+    _isStatic: Boolean,
+    _isFinal: Boolean,
+    val context: List[Map[TTypeParameter, Type]]
+) extends Method(
+      _signature,
+      _returnType,
+      _typeParameterBounds,
+      _accessModifier,
+      _isAbstract,
+      _isStatic,
+      _isFinal
+    ):
+
+  def replace(i: InferenceVariable, t: Type): MethodWithContext =
+    new MethodWithContext(
+      signature.replace(i, t),
+      returnType.replace(i, t),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t)))),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      context.map(mp => mp.map((tp, tt) => (tp -> tt.replace(i, t))))
+    )
+
+class MethodWithCallSiteParameterChoices(
+    _signature: MethodSignature,
+    _returnType: Type,
+    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _accessModifier: AccessModifier,
+    _isAbstract: Boolean,
+    _isStatic: Boolean,
+    _isFinal: Boolean,
+    val callSiteParameterChoices: Set[TTypeParameter]
+) extends Method(
+      _signature,
+      _returnType,
+      _typeParameterBounds,
+      _accessModifier,
+      _isAbstract,
+      _isStatic,
+      _isFinal
+    ):
+
+  def replace(i: InferenceVariable, t: Type): MethodWithCallSiteParameterChoices =
+    new MethodWithCallSiteParameterChoices(
+      signature.replace(i, t),
+      returnType.replace(i, t),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t)))),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      callSiteParameterChoices
+    )
+
+class Constructor(
+    val signature: MethodSignature,
+    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    val accessModifier: AccessModifier
 ) extends MethodLike:
   override def toString =
     val ab = ArrayBuffer[String]()
@@ -150,6 +252,13 @@ final case class Constructor(
     ab += signature.toString
     ab.filter(_.length > 0).mkString(" ")
 
+class ConstructorWithContext(
+    _signature: MethodSignature,
+    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _accessModifier: AccessModifier,
+    val context: List[Map[TTypeParameter, Type]]
+) extends Constructor(_signature, _typeParameterBounds, _accessModifier)
+
 object Constructor:
   def apply(
       containingTypeIdentifier: String,
@@ -158,7 +267,7 @@ object Constructor:
       accessModifier: AccessModifier,
       hasVarArgs: Boolean
   ): Constructor =
-    Constructor(
+    new Constructor(
       MethodSignature(containingTypeIdentifier, formalParameters, hasVarArgs),
       typeParameterBounds,
       accessModifier

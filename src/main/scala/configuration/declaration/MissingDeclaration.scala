@@ -3,19 +3,22 @@ package configuration.declaration
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
-import scala.collection.mutable.ArrayBuffer
-
-private type MissingMethodTable = Map[(Vector[Type], List[Map[TTypeParameter, Type]]), Type]
+import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
 
 class MissingTypeDeclaration(
     val identifier: String,
     val numParams: Int = 0,
     val supertypes: Vector[Type] = Vector(),
     val attributes: Map[String, Attribute] = Map(),
-    val methods: Map[String, MissingMethodTable] = Map().withDefaultValue(Map()),
+    val methods: Map[String, Set[MethodWithContext]] = Map().withDefaultValue(Set()),
+    val constructors: Set[ConstructorWithContext],
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false
 ):
+  /** Removes a supertype from this missing type declaration
+    * @param t
+    *   the type to extend
+    */
   def removeSupertype(t: NormalType | SubstitutedReferenceType) =
     MissingTypeDeclaration(
       identifier,
@@ -23,10 +26,15 @@ class MissingTypeDeclaration(
       supertypes.filter(x => x.identifier != t.identifier),
       attributes,
       methods,
+      constructors,
       mustBeClass,
       mustBeInterface
     )
 
+  /** Make this type extend another type
+    * @param t
+    *   the type to extend
+    */
   def greedilyExtends(t: Type) =
     MissingTypeDeclaration(
       identifier,
@@ -34,16 +42,46 @@ class MissingTypeDeclaration(
       supertypes :+ t,
       attributes,
       methods,
+      constructors,
       mustBeClass,
       mustBeInterface
     )
 
+  /** Force this type to be a class */
   def asClass =
-    MissingTypeDeclaration(identifier, numParams, supertypes, attributes, methods, true, false)
+    MissingTypeDeclaration(
+      identifier,
+      numParams,
+      supertypes,
+      attributes,
+      methods,
+      constructors,
+      true,
+      false
+    )
 
+  /** Force this type to be an interface */
   def asInterface =
-    MissingTypeDeclaration(identifier, numParams, supertypes, attributes, methods, false, true)
+    MissingTypeDeclaration(
+      identifier,
+      numParams,
+      supertypes,
+      attributes,
+      methods,
+      constructors,
+      false,
+      true
+    )
 
+  /** "Absorbs" an inference variable member table into this type declaration, producing assertions
+    * whenever necessary
+    * @param other
+    *   the inference variable member table
+    * @param newType
+    *   the type which is the result the merger
+    * @return
+    *   the resulting declaration and assertions
+    */
   def merge(
       other: InferenceVariableMemberTable,
       newType: SubstitutedReferenceType
@@ -53,14 +91,9 @@ class MissingTypeDeclaration(
     if other.mustBeClass then newAssertions += IsClassAssertion(newType)
     if other.mustBeInterface then newAssertions += IsInterfaceAssertion(newType)
     // handle the attributes
-    for (attrName, attrType) <- other.attributes do
-      if mttable.attributes.contains(attrName) then
-        // List<t>.x = List<T>.x[T -> t]
-        newAssertions += EquivalenceAssertion(
-          attrType,
-          mttable.attributes(attrName).addSubstitutionLists(newType.substitutions)
-        )
-      else
+    for (attrName, otherAttr) <- other.attributes do
+      if !mttable.attributes.contains(attrName) then
+        // create the attribute
         val createdAttrType = InferenceVariableFactory
           .createDisjunctiveType(
             Left(this.identifier),
@@ -71,65 +104,91 @@ class MissingTypeDeclaration(
           )
         mttable = mttable.addAttribute(
           attrName,
-          createdAttrType
+          createdAttrType,
+          otherAttr.isStatic,
+          otherAttr.accessModifier,
+          otherAttr.isFinal
         )
+      // create the equivalence
+      newAssertions += EquivalenceAssertion(
+        otherAttr.`type`,
+        mttable
+          .attributes(attrName)
+          .`type`
+          .addSubstitutionLists(newType.substitutions)
+      )
 
-        newAssertions += EquivalenceAssertion(
-          attrType,
-          createdAttrType.addSubstitutionLists(newType.substitutions)
-        )
     // handle the methods
-    for (methodName, mmt) <- other.methods do
-      for ((params, context), rt) <- mmt do
-        val realContext = newType.substitutions ::: context
-        if !mttable.methods(methodName).contains((params, realContext)) then
-          // don't need the call site method param choices since
-          // the return type should encode for that already
-          mttable = mttable.addMethod(methodName, params, rt, realContext)
-        else
-          newAssertions += EquivalenceAssertion(
-            rt,
-            mttable.methods(methodName)((params, realContext))
-          )
+    for (methodName, otherMethods) <- other.methods do
+      val ctx = newType.substitutions
+      for otherMethod <- otherMethods do
+        mttable
+          .methods(methodName)
+          .find(x => x.signature == otherMethod.signature && x.context == ctx) match
+          case Some(m) =>
+            newAssertions += m.returnType ~=~ otherMethod.returnType
+          case None =>
+            mttable = mttable.addMethod(
+              methodName,
+              otherMethod.signature.formalParameters,
+              otherMethod.returnType,
+              otherMethod.typeParameterBounds,
+              otherMethod.accessModifier,
+              otherMethod.isAbstract,
+              otherMethod.isStatic,
+              otherMethod.isFinal,
+              ctx
+            )
     (mttable, newAssertions.toList)
+
   def replace(
       oldType: InferenceVariable,
       newType: Type
   ): (MissingTypeDeclaration, List[Assertion]) =
-    val (newMethods, assertions) =
-      methods.foldLeft(Map(): Map[String, MissingMethodTable], List(): List[Assertion]) {
-        case ((newMethods, newAssts), (str, mt)) =>
-          val (newMt, assts) = replaceMissingMethodTable(mt, oldType, newType)
-          (newMethods + (str -> newMt), assts ::: newAssts)
-      }
+    val newAssertions                                          = ArrayBuffer[Assertion]()
+    val newMethods: MutableMap[String, Set[MethodWithContext]] = MutableMap()
+    for (identifier, methods) <- methods do
+      val newMethodSet = ArrayBuffer[MethodWithContext]()
+      for method <- methods do
+        val replacedMethod = method.replace(oldType, newType)
+        newMethodSet.find(x =>
+          x.context == replacedMethod.context && x.signature == replacedMethod.signature
+        ) match
+          case Some(m) =>
+            newAssertions += m.returnType ~=~ replacedMethod.returnType
+          case None =>
+            newMethodSet += replacedMethod
+      newMethods(identifier) = newMethodSet.toSet
+
     (
       MissingTypeDeclaration(
         identifier,
         numParams,
         supertypes.map(_.replace(oldType, newType)),
-        attributes.map(_ -> _.replace(oldType, newType)),
-        newMethods,
+        attributes.map((id, x) => id -> x.replace(oldType, newType)),
+        newMethods.toMap,
+        constructors,
         mustBeClass,
         mustBeInterface
       ),
-      assertions
+      newAssertions.toList
     )
 
-  def replaceMissingMethodTable(
-      mt: MissingMethodTable,
-      oldType: InferenceVariable,
-      newType: Type
-  ): (MissingMethodTable, List[Assertion]) =
-    mt.foldLeft((Map(): MissingMethodTable, List[Assertion]())) {
-      case ((newMT, assts), ((args, ctx), rt)) =>
-        val newArgs       = args.map(_.replace(oldType, newType))
-        val newCtx        = ctx.map(_.map((x, y) => x -> y.replace(oldType, newType)))
-        val newReturnType = rt.replace(oldType, newType)
-        if newMT.contains((newArgs, newCtx)) then
-          val oldReturnType = newMT((newArgs, newCtx))
-          (newMT, EquivalenceAssertion(oldReturnType, newReturnType) :: assts)
-        else (newMT + ((newArgs, newCtx) -> newReturnType), assts)
-    }
+  // def replaceMissingMethodTable(
+  //     mt: MissingMethodTable,
+  //     oldType: InferenceVariable,
+  //     newType: Type
+  // ): (MissingMethodTable, List[Assertion]) =
+  //   mt.foldLeft((Map(): MissingMethodTable, List[Assertion]())) {
+  //     case ((newMT, assts), ((args, ctx), rt)) =>
+  //       val newArgs       = args.map(_.replace(oldType, newType))
+  //       val newCtx        = ctx.map(_.map((x, y) => x -> y.replace(oldType, newType)))
+  //       val newReturnType = rt.replace(oldType, newType)
+  //       if newMT.contains((newArgs, newCtx)) then
+  //         val oldReturnType = newMT((newArgs, newCtx))
+  //         (newMT, EquivalenceAssertion(oldReturnType, newReturnType) :: assts)
+  //       else (newMT + ((newArgs, newCtx) -> newReturnType), assts)
+  //   }
 
   def ofParameters(i: Int) =
     // TODO make sure you can go from raw to generic type of a particular
@@ -140,31 +199,58 @@ class MissingTypeDeclaration(
       supertypes,
       attributes,
       methods,
+      constructors,
       mustBeClass,
       mustBeInterface
     )
 
-  def addSupertype(supertype: Type) =
-    MissingTypeDeclaration(
-      identifier,
-      numParams,
-      supertypes :+ supertype,
-      attributes,
-      methods,
-      mustBeClass,
-      mustBeInterface
-    )
+  // where is this used!?
+  // def addSupertype(supertype: Type) =
+  //   MissingTypeDeclaration(
+  //     identifier,
+  //     numParams,
+  //     supertypes :+ supertype,
+  //     attributes,
+  //     methods,
+  //     mustBeClass,
+  //     mustBeInterface
+  //   )
 
-  def getAttribute(
+  /** Gets the type of an attribute
+    * @param the
+    *   attribute's identifier
+    * @param the
+    *   context in which the attribute is referenced
+    * @return
+    *   the type of the attribute
+    */
+  def getAttributeType(
       identifier: String,
       context: List[Map[TTypeParameter, Type]]
   ) =
     if !attributes.contains(identifier) then None
-    else Some(attributes(identifier).addSubstitutionLists(context))
+    else Some(attributes(identifier).`type`.addSubstitutionLists(context))
 
+  /** Adds an attribute to this declaration
+    * @param identifier
+    *   the name of the attribute
+    * @param attributeType
+    *   the type of the attribute
+    * @param isStatic
+    *   whether the attribute is static
+    * @param accessModifier
+    *   the access modifier of the attribute
+    * @param isFinal
+    *   whether the attribute is final
+    * @return
+    *   the resulting declaration after adding the attribute
+    */
   def addAttribute(
       identifier: String,
-      attributeType: Type
+      attributeType: Type,
+      isStatic: Boolean,
+      accessModifier: AccessModifier = PUBLIC,
+      isFinal: Boolean = false
   ): MissingTypeDeclaration =
     if attributes.contains(identifier) then ???
     else
@@ -173,32 +259,92 @@ class MissingTypeDeclaration(
         this.identifier,
         numParams,
         supertypes,
-        attributes + (identifier -> attributeType),
+        attributes + (identifier -> Attribute(
+          identifier,
+          attributeType,
+          accessModifier,
+          isStatic,
+          isFinal
+        )),
         methods,
+        constructors,
         mustBeClass,
         mustBeInterface
       )
+
+  /** Gets the type of a method call expression
+    * @param identifier
+    *   the method being called
+    * @param argTypes
+    *   the types passed into the method
+    * @param context
+    *   the context of which the method was called
+    * @return
+    *   the type of the expression, or none
+    */
   def getMethodReturnType(
       identifier: String,
       argTypes: Vector[Type],
       context: List[Map[TTypeParameter, Type]]
   ): Option[Type] =
-    val methodTable = methods(identifier)
-    if methodTable.contains((argTypes, context)) then Some(methodTable((argTypes, context)))
-    else None
+    val methodSet = methods(identifier)
+    methodSet
+      .find(x =>
+        x.signature.formalParameters == argTypes &&
+          x.context == context
+      )
+      .map(_.returnType)
 
+  /** Adds a method to this declaration
+    * @param identifier
+    *   the name of the method
+    * @param paramTypes
+    *   the types of the arguments to this method
+    * @param returnType
+    *   the return type of the method
+    * @param typeParameterBounds
+    *   the bounds of the type parameters to this method
+    * @param accessModifier
+    *   the access modifier of this method
+    * @param isAbstract
+    *   whether the method is an abstract method
+    * @param isStatic
+    *   whether the method is static
+    * @param isFinal
+    *   whether the method is final
+    * @param context
+    *   the context of which this method is called
+    * @return
+    *   the declaration after adding this method
+    */
   def addMethod(
       identifier: String,
       paramTypes: Vector[Type],
       returnType: Type,
+      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      accessModifier: AccessModifier,
+      isAbstract: Boolean,
+      isStatic: Boolean,
+      isFinal: Boolean,
       context: List[Map[TTypeParameter, Type]]
   ): MissingTypeDeclaration =
+    val newMethod = MethodWithContext(
+      MethodSignature(identifier, paramTypes, false),
+      returnType,
+      typeParameterBounds,
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      context
+    )
     MissingTypeDeclaration(
       this.identifier,
       numParams,
       supertypes,
       attributes,
-      methods + (identifier -> (methods(identifier) + ((paramTypes, context) -> returnType))),
+      methods + (identifier -> (methods(identifier) + newMethod)),
+      constructors,
       mustBeClass,
       mustBeInterface
     )
@@ -215,8 +361,9 @@ class MissingTypeDeclaration(
 
 class InferenceVariableMemberTable(
     val typet: Type,
-    val attributes: Map[String, Type] = Map(),
-    val methods: Map[String, MissingMethodTable] = Map().withDefaultValue(Map()),
+    val attributes: Map[String, Attribute] = Map(),
+    val methods: Map[String, Set[MethodWithCallSiteParameterChoices]] =
+      Map().withDefaultValue(Set()),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false,
     val constraintStore: Vector[Assertion] = Vector(),
@@ -245,58 +392,62 @@ class InferenceVariableMemberTable(
     )
 
   def merge(other: InferenceVariableMemberTable): (InferenceVariableMemberTable, List[Assertion]) =
-    val (newAttributes, assertions) = other.attributes.foldLeft(attributes, List[Assertion]()) {
-      case ((a, ls), (otherName, otherType)) =>
-        if !a.contains(otherName) then (a + (otherName -> otherType), ls)
-        else (a, EquivalenceAssertion(otherType, a(otherName)) :: ls)
-    }
-    val (newMethods, moreAssertions) = other.methods.foldLeft(methods, List[Assertion]()) {
-      case ((m, ls), (otherName, otherTable)) =>
-        if !m.contains(otherName) then (m + (otherName -> otherTable), ls)
-        else
-          val thisTable = m(otherName)
-          val (resultingTable, assts) = otherTable.foldLeft(thisTable, List[Assertion]()) {
-            case ((t, ls), ((args, ctx), result)) =>
-              if !t.contains((args, ctx)) then (t + ((args, ctx) -> result), ls)
-              else
-                val thisResult = t((args, ctx))
-                (t, EquivalenceAssertion(result, thisResult) :: ls)
-          }
-          (
-            m + (otherName -> resultingTable),
-            assts ::: ls
-          )
-    }
+    val newAssertions = ArrayBuffer[Assertion]()
+    val newAttributes = MutableMap[String, Attribute]()
+    val newMethods =
+      MutableMap[String, Set[MethodWithCallSiteParameterChoices]]().withDefaultValue(Set())
+    if other.mustBeClass then newAssertions += typet.isClass
+    if other.mustBeInterface then newAssertions += typet.isInterface
+    // add all current attributes
+    for (id, attr) <- attributes do newAttributes(id) = attr
+    // handle attributes
+    for (attrName, otherAttr) <- other.attributes do
+      if !newAttributes.contains(attrName) then newAttributes(attrName) = otherAttr
+      else newAssertions += newAttributes(attrName).`type` ~=~ otherAttr.`type`
+
+    // add all methods, can be unsophisticated I guess?
+    for (id, s) <- methods do newMethods(id) = newMethods(id).union(s)
+    for (id, s) <- other.methods do newMethods(id) = newMethods(id).union(s)
+
     (
       InferenceVariableMemberTable(
         typet,
-        newAttributes,
-        newMethods,
+        newAttributes.toMap,
+        newMethods.toMap,
         mustBeClass,
         mustBeInterface,
         constraintStore ++ other.constraintStore,
         exclusions ++ other.exclusions
       ),
-      assertions ::: moreAssertions
+      newAssertions.toList
     )
 
-  def getAttribute(
+  def getAttributeType(
       identifier: String,
       context: List[Map[TTypeParameter, Type]]
   ) =
     if !attributes.contains(identifier) then None
-    else Some(attributes(identifier).addSubstitutionLists(context))
+    else Some(attributes(identifier).`type`.addSubstitutionLists(context))
 
   def addAttribute(
       identifier: String,
-      attributeType: Type
+      attributeType: Type,
+      isStatic: Boolean = false,
+      accessModifier: AccessModifier = PUBLIC,
+      isFinal: Boolean = false
   ): InferenceVariableMemberTable =
     if attributes.contains(identifier) then ???
     else
       // TODO make sure the attribute isn't overriden
       InferenceVariableMemberTable(
         typet,
-        attributes + (identifier -> attributeType),
+        attributes + (identifier -> Attribute(
+          identifier,
+          attributeType,
+          accessModifier,
+          isStatic,
+          isFinal
+        )),
         methods,
         mustBeClass,
         mustBeInterface,
@@ -308,12 +459,27 @@ class InferenceVariableMemberTable(
       identifier: String,
       paramTypes: Vector[Type],
       returnType: Type,
-      context: List[Map[TTypeParameter, Type]]
+      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      accessModifier: AccessModifier,
+      isAbstract: Boolean,
+      isStatic: Boolean,
+      isFinal: Boolean,
+      callSiteParameterChoices: Set[TTypeParameter]
   ): InferenceVariableMemberTable =
     InferenceVariableMemberTable(
       typet,
       attributes,
-      methods + (identifier -> (methods(identifier) + ((paramTypes, context) -> returnType))),
+      methods + (identifier -> (methods(identifier) +
+        MethodWithCallSiteParameterChoices(
+          MethodSignature(identifier, paramTypes, false),
+          returnType,
+          typeParameterBounds,
+          accessModifier,
+          isAbstract,
+          isStatic,
+          isFinal,
+          callSiteParameterChoices
+        ))),
       mustBeClass,
       mustBeInterface,
       constraintStore,
@@ -322,12 +488,12 @@ class InferenceVariableMemberTable(
 
   def getMethodReturnType(
       identifier: String,
-      argTypes: Vector[Type],
-      context: List[Map[TTypeParameter, Type]]
+      argTypes: Vector[Type]
   ): Option[Type] =
-    val methodTable = methods(identifier)
-    if methodTable.contains((argTypes, context)) then Some(methodTable((argTypes, context)))
-    else None
+    methods(identifier)
+      .find(x => x.signature.formalParameters == argTypes)
+      .map(_.returnType)
+
   override def toString =
     s"type $typet\nattributes:${attributes}\nmethods:$methods\nconstraints:$constraintStore"
 
@@ -335,6 +501,34 @@ class InferenceVariableMemberTable(
       oldType: InferenceVariable,
       newType: Type
   ): (InferenceVariableMemberTable, List[Assertion]) =
+    val newAssertions = ArrayBuffer[Assertion]()
+    val newMethods    = MutableMap[String, Set[MethodWithCallSiteParameterChoices]]()
+    for (identifier, methods) <- methods do
+      val newMethodSet = ArrayBuffer[MethodWithCallSiteParameterChoices]()
+      for method <- methods do
+        val replacedMethod = method.replace(oldType, newType)
+        newMethodSet.find(x =>
+          x.context == replacedMethod.context && x.signature == replacedMethod.signature
+        ) match
+          case Some(m) =>
+            newAssertions += m.returnType ~=~ replacedMethod.returnType
+          case None =>
+            newMethodSet += replacedMethod
+      newMethods(identifier) = newMethodSet.toSet
+
+    (
+      MissingTypeDeclaration(
+        identifier,
+        numParams,
+        supertypes.map(_.replace(oldType, newType)),
+        attributes.map((id, x) => id -> x.replace(oldType, newType)),
+        newMethods.toMap,
+        constructors,
+        mustBeClass,
+        mustBeInterface
+      ),
+      newAssertions.toList
+    )
     val (newMethods, assertions) =
       methods.foldLeft(Map(): Map[String, MissingMethodTable], List(): List[Assertion]) {
         case ((newMethods, newAssts), (str, mt)) =>
