@@ -117,9 +117,13 @@ def buildType(
       )
     )
   // add fields
-  decl.attributes.foreach((identifier, t) =>
+  decl.attributes.foreach((identifier, attr) =>
     classOrInterfaceDeclaration.addMember(
-      FieldDeclaration(NodeList[Modifier](), typeToASTType(t, prohibitedNames), identifier)
+      FieldDeclaration(
+        attr.getNodeListModifiers,
+        typeToASTType(attr.`type`, prohibitedNames),
+        identifier
+      )
     )
   )
 

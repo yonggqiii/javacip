@@ -101,7 +101,8 @@ private def concretizeToUnknown(
   val newArities = Vector(0, 1, 2, 3, maxArity)
   val newTypes =
     newArities.map(arity => realAlpha.concretizeToReference(s"UNKNOWN_TYPE_${realAlpha.id}", arity))
-  val newDecls = newTypes.map(x => (x, MissingTypeDeclaration(x.identifier, x.numArgs)))
+  val newDecls =
+    newTypes.map(x => (x, MissingTypeDeclaration(x.identifier).ofParameters(x.numArgs)))
   val newConfigs = newDecls.map { case (t, d) =>
     config
       .copy(phi1 = config.phi1 + (t.identifier -> d))

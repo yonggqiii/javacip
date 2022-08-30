@@ -2,6 +2,8 @@ package configuration.declaration
 
 import scala.collection.mutable.ArrayBuffer
 import com.github.javaparser.ast.AccessSpecifier
+import com.github.javaparser.ast.Modifier
+import com.github.javaparser.ast.NodeList
 
 import configuration.types.*
 
@@ -57,6 +59,17 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
+  def getNodeListModifiers: NodeList[Modifier] =
+    val res: NodeList[Modifier] = NodeList()
+    accessModifier match
+      case DEFAULT   => ()
+      case PUBLIC    => res.add(Modifier.publicModifier())
+      case PROTECTED => res.add(Modifier.protectedModifier())
+      case PRIVATE   => res.add(Modifier.privateModifier())
+    if isStatic then res.add(Modifier.staticModifier())
+    if isFinal then res.add(Modifier.finalModifier())
+    res
+
   /** Replaces the type of this attribute with another type
     * @param i
     *   the type to replace
@@ -188,7 +201,7 @@ class MethodWithContext(
       _isFinal
     ):
 
-  def replace(i: InferenceVariable, t: Type): MethodWithContext =
+  override def replace(i: InferenceVariable, t: Type): MethodWithContext =
     new MethodWithContext(
       signature.replace(i, t),
       returnType.replace(i, t),
@@ -219,7 +232,7 @@ class MethodWithCallSiteParameterChoices(
       _isFinal
     ):
 
-  def replace(i: InferenceVariable, t: Type): MethodWithCallSiteParameterChoices =
+  override def replace(i: InferenceVariable, t: Type): MethodWithCallSiteParameterChoices =
     new MethodWithCallSiteParameterChoices(
       signature.replace(i, t),
       returnType.replace(i, t),

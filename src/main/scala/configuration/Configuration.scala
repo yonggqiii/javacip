@@ -238,8 +238,6 @@ case class Configuration(
       val newSource            = t.replace(oldType, newType).substituted.upwardProjection
       val (newTable, newAssts) = ivmt.replace(oldType, newType)
       newAssertions ++= newAssts
-      // add the assertions in the constraint stores
-      // newAssertions ++= newTable.constraintStore
       newSource.substituted match
         case x: SubstitutedReferenceType =>
           newAssertions ++= newTable.constraintStore
@@ -249,10 +247,10 @@ case class Configuration(
               newAssertions ++= newA
               newPhi1(x.identifier) = newT
             case Some(decl) =>
-              if newTable.mustBeClass || !newTable.attributes.isEmpty then
-                newAssertions += IsClassAssertion(x)
-              if newTable.mustBeInterface then newAssertions += IsInterfaceAssertion(x)
-              for (attrName, attrType) <- newTable.attributes do
+              if newTable.mustBeClass then newAssertions += x.isClass
+              if newTable.mustBeInterface then newAssertions += x.isInterface
+              for (attrName, attribute) <- newTable.attributes do
+                val attrType      = attribute.`type`
                 val attrContainer = upcastToAttributeContainer(x, attrName)
                 attrContainer match
                   // there is no way the attribute can exist
@@ -262,18 +260,18 @@ case class Configuration(
                     getFixedDeclaration(ac) match
                       // attribute belongs to some declared type
                       case Some(table) =>
-                        newAssertions += EquivalenceAssertion(
-                          attrType,
-                          table.attributes(attrName).`type`.addSubstitutionLists(ac.substitutions)
-                        )
+                        newAssertions += attrType ~=~ table
+                          .attributes(attrName)
+                          .`type`
+                          .addSubstitutionLists(ac.substitutions)
                       // attribute can be added to a missing type
                       case None =>
                         val mttable = newPhi1(ac.identifier)
                         if mttable.attributes.contains(attrName) then
-                          newAssertions += EquivalenceAssertion(
-                            attrType,
-                            mttable.attributes(attrName).addSubstitutionLists(ac.substitutions)
-                          )
+                          newAssertions += attrType ~=~ mttable
+                            .attributes(attrName)
+                            .`type`
+                            .addSubstitutionLists(ac.substitutions)
                         else
                           val createdAttrType = InferenceVariableFactory.createDisjunctiveType(
                             Left(ac.identifier),
@@ -284,14 +282,22 @@ case class Configuration(
                               .toSet,
                             false
                           )
-                          newPhi1(ac.identifier) = mttable.addAttribute(attrName, createdAttrType)
-                          newAssertions += EquivalenceAssertion(
-                            attrType,
-                            createdAttrType.addSubstitutionLists(newType.substitutions)
+                          newPhi1(ac.identifier) = mttable.addAttribute(
+                            attrName,
+                            createdAttrType,
+                            attribute.isStatic,
+                            attribute.accessModifier,
+                            attribute.isFinal
                           )
-              for (methodName, methodTable) <- newTable.methods do
+                          newAssertions += attrType ~=~ createdAttrType.addSubstitutionLists(
+                            newType.substitutions
+                          )
+
+              for (methodName, methodSet) <- newTable.methods do
                 // each row in the methodTable is actually a method definition
-                for ((paramTypes, context), returnType) <- methodTable do
+                for method <- methodSet do
+                  val paramTypes = method.signature.formalParameters
+                  val returnType = method.returnType
                   // find the types that may actually contain the methods
                   val methodContainers =
                     upcastAllToMethodContainer(Set(x), methodName, paramTypes.size)
@@ -316,19 +322,22 @@ case class Configuration(
                       // create the assertions
                       val tpMap: Map[TTypeParameter, Type] =
                         realTypeParams
-                          .map(x => x -> InferenceVariableFactory.createPlaceholderType())
+                          .map(x =>
+                            x -> InferenceVariableFactory.createDisjunctiveType(
+                              scala.util.Left(decl.identifier),
+                              Nil,
+                              true,
+                              method.callSiteParameterChoices,
+                              true
+                            )
+                          )
                           .toMap
                       val conjAssertion = ArrayBuffer[Assertion]()
                       val subs          = (tpMap :: t.substitutions).filter(!_.isEmpty)
                       for i <- (0 until paramTypes.size) do
-                        conjAssertion += SubtypeAssertion(
-                          paramTypes(i),
-                          realParamTypes(i).addSubstitutionLists(subs)
-                        )
-                      conjAssertion += EquivalenceAssertion(
-                        returnType,
-                        realRt.addSubstitutionLists(subs)
-                      )
+                        conjAssertion += paramTypes(i) <:~ realParamTypes(i)
+                          .addSubstitutionLists(subs)
+                      conjAssertion += returnType ~=~ realRt.addSubstitutionLists(subs)
                       disjassts += ConjunctiveAssertion(conjAssertion.toVector)
                   for t <- missingMethodContainers do
                     disjassts += HasMethodAssertion(t, methodName, paramTypes, returnType)
@@ -344,10 +353,10 @@ case class Configuration(
               (OBJECT, Set(OBJECT))
             case Some(d) =>
               (d.getErasure(x), d.getAllBounds(x))
-          if newTable.mustBeClass || !newTable.attributes.isEmpty then
-            newAssertions += IsClassAssertion(erasure)
-          if newTable.mustBeInterface then newAssertions += IsInterfaceAssertion(erasure)
-          for (attrName, attrType) <- newTable.attributes do
+          if newTable.mustBeClass then newAssertions += erasure.isClass
+          if newTable.mustBeInterface then newAssertions += erasure.isInterface
+          for (attrName, attribute) <- newTable.attributes do
+            val attrType      = attribute.`type`
             val attrContainer = upcastToAttributeContainer(erasure, attrName)
             attrContainer match
               // there is no way the attribute can exist
@@ -357,18 +366,18 @@ case class Configuration(
                 getFixedDeclaration(ac) match
                   // attribute belongs to some declared type
                   case Some(table) =>
-                    newAssertions += EquivalenceAssertion(
-                      attrType,
-                      table.attributes(attrName).`type`.addSubstitutionLists(ac.substitutions)
-                    )
+                    newAssertions += attrType ~=~ table
+                      .attributes(attrName)
+                      .`type`
+                      .addSubstitutionLists(ac.substitutions)
                   // attribute can be added to a missing type
                   case None =>
                     val mttable = newPhi1(ac.identifier)
                     if mttable.attributes.contains(attrName) then
-                      newAssertions += EquivalenceAssertion(
-                        attrType,
-                        mttable.attributes(attrName).addSubstitutionLists(ac.substitutions)
-                      )
+                      newAssertions += attrType ~=~ mttable
+                        .attributes(attrName)
+                        .`type`
+                        .addSubstitutionLists(ac.substitutions)
                     else
                       val createdAttrType = InferenceVariableFactory.createDisjunctiveType(
                         Left(ac.identifier),
@@ -379,14 +388,21 @@ case class Configuration(
                           .toSet,
                         false
                       )
-                      newPhi1(ac.identifier) = mttable.addAttribute(attrName, createdAttrType)
-                      newAssertions += EquivalenceAssertion(
-                        attrType,
-                        createdAttrType.addSubstitutionLists(newType.substitutions)
+                      newPhi1(ac.identifier) = mttable.addAttribute(
+                        attrName,
+                        createdAttrType,
+                        attribute.isStatic,
+                        attribute.accessModifier,
+                        attribute.isFinal
                       )
-          for (methodName, methodTable) <- newTable.methods do
+                      newAssertions += attrType ~=~ createdAttrType.addSubstitutionLists(
+                        newType.substitutions
+                      )
+          for (methodName, methodSet) <- newTable.methods do
             // each row in the methodTable is actually a method definition
-            for ((paramTypes, context), returnType) <- methodTable do
+            for method <- methodSet do
+              val paramTypes = method.signature.formalParameters
+              val returnType = method.returnType
               // find the types that may actually contain the methods
               val methodContainers =
                 upcastAllToMethodContainer(allBounds, methodName, paramTypes.size)
@@ -411,23 +427,27 @@ case class Configuration(
                   // create the assertions
                   val tpMap: Map[TTypeParameter, Type] =
                     realTypeParams
-                      .map(x => x -> InferenceVariableFactory.createPlaceholderType())
+                      .map(x =>
+                        x -> InferenceVariableFactory.createDisjunctiveType(
+                          scala.util.Left(decl.identifier),
+                          Nil,
+                          true,
+                          method.callSiteParameterChoices,
+                          true
+                        )
+                      )
                       .toMap
                   val conjAssertion = ArrayBuffer[Assertion]()
                   val subs          = (tpMap :: t.substitutions).filter(!_.isEmpty)
                   for i <- (0 until paramTypes.size) do
-                    conjAssertion += SubtypeAssertion(
-                      paramTypes(i),
-                      realParamTypes(i).addSubstitutionLists(subs)
-                    )
-                  conjAssertion += EquivalenceAssertion(
-                    returnType,
-                    realRt.addSubstitutionLists(subs)
-                  )
+                    conjAssertion += paramTypes(i) <:~ realParamTypes(i)
+                      .addSubstitutionLists(subs)
+                  conjAssertion += returnType ~=~ realRt.addSubstitutionLists(subs)
                   disjassts += ConjunctiveAssertion(conjAssertion.toVector)
               for t <- missingMethodContainers do
                 disjassts += HasMethodAssertion(t, methodName, paramTypes, returnType)
               newAssertions += DisjunctiveAssertion(disjassts.toVector)
+
         case x: InferenceVariable =>
           if !newPhi2.contains(x) then newPhi2(newSource) = newTable
           else
@@ -443,10 +463,10 @@ case class Configuration(
               newAssertions ++= newA
               newPhi1(x.identifier) = newT
             case Some(decl) =>
-              if newTable.mustBeClass || !newTable.attributes.isEmpty then
-                newAssertions += IsClassAssertion(x)
-              if newTable.mustBeInterface then newAssertions += IsInterfaceAssertion(x)
-              for (attrName, attrType) <- newTable.attributes do
+              if newTable.mustBeClass then newAssertions += x.isClass
+              if newTable.mustBeInterface then newAssertions += x.isInterface
+              for (attrName, attribute) <- newTable.attributes do
+                val attrType      = attribute.`type`
                 val attrContainer = upcastToAttributeContainer(x, attrName)
                 attrContainer match
                   // there is no way the attribute can exist
@@ -456,18 +476,18 @@ case class Configuration(
                     getFixedDeclaration(ac) match
                       // attribute belongs to some declared type
                       case Some(table) =>
-                        newAssertions += EquivalenceAssertion(
-                          attrType,
-                          table.attributes(attrName).`type`.addSubstitutionLists(ac.substitutions)
-                        )
+                        newAssertions += attrType ~=~ table
+                          .attributes(attrName)
+                          .`type`
+                          .addSubstitutionLists(ac.substitutions)
                       // attribute can be added to a missing type
                       case None =>
                         val mttable = newPhi1(ac.identifier)
                         if mttable.attributes.contains(attrName) then
-                          newAssertions += EquivalenceAssertion(
-                            attrType,
-                            mttable.attributes(attrName).addSubstitutionLists(ac.substitutions)
-                          )
+                          newAssertions += attrType ~=~ mttable
+                            .attributes(attrName)
+                            .`type`
+                            .addSubstitutionLists(ac.substitutions)
                         else
                           val createdAttrType = InferenceVariableFactory.createDisjunctiveType(
                             Left(ac.identifier),
@@ -478,14 +498,22 @@ case class Configuration(
                               .toSet,
                             false
                           )
-                          newPhi1(ac.identifier) = mttable.addAttribute(attrName, createdAttrType)
-                          newAssertions += EquivalenceAssertion(
-                            attrType,
-                            createdAttrType.addSubstitutionLists(newType.substitutions)
+                          newPhi1(ac.identifier) = mttable.addAttribute(
+                            attrName,
+                            createdAttrType,
+                            attribute.isStatic,
+                            attribute.accessModifier,
+                            attribute.isFinal
                           )
-              for (methodName, methodTable) <- newTable.methods do
+                          newAssertions += attrType ~=~ createdAttrType.addSubstitutionLists(
+                            newType.substitutions
+                          )
+
+              for (methodName, methodSet) <- newTable.methods do
                 // each row in the methodTable is actually a method definition
-                for ((paramTypes, context), returnType) <- methodTable do
+                for method <- methodSet do
+                  val paramTypes = method.signature.formalParameters
+                  val returnType = method.returnType
                   // find the types that may actually contain the methods
                   val methodContainers =
                     upcastAllToMethodContainer(Set(x), methodName, paramTypes.size)
@@ -510,19 +538,22 @@ case class Configuration(
                       // create the assertions
                       val tpMap: Map[TTypeParameter, Type] =
                         realTypeParams
-                          .map(x => x -> InferenceVariableFactory.createPlaceholderType())
+                          .map(x =>
+                            x -> InferenceVariableFactory.createDisjunctiveType(
+                              scala.util.Left(decl.identifier),
+                              Nil,
+                              true,
+                              method.callSiteParameterChoices,
+                              true
+                            )
+                          )
                           .toMap
                       val conjAssertion = ArrayBuffer[Assertion]()
                       val subs          = (tpMap :: t.substitutions).filter(!_.isEmpty)
                       for i <- (0 until paramTypes.size) do
-                        conjAssertion += SubtypeAssertion(
-                          paramTypes(i),
-                          realParamTypes(i).addSubstitutionLists(subs)
-                        )
-                      conjAssertion += EquivalenceAssertion(
-                        returnType,
-                        realRt.addSubstitutionLists(subs)
-                      )
+                        conjAssertion += paramTypes(i) <:~ realParamTypes(i)
+                          .addSubstitutionLists(subs)
+                      conjAssertion += returnType ~=~ realRt.addSubstitutionLists(subs)
                       disjassts += ConjunctiveAssertion(conjAssertion.toVector)
                   for t <- missingMethodContainers do
                     disjassts += HasMethodAssertion(t, methodName, paramTypes, returnType)
@@ -541,14 +572,6 @@ case class Configuration(
         cu
       )
     )
-  // Some(
-  //   Configuration(
-  //     delta,
-  //     newPhi1.toMap,
-  //     newPhi2.toMap,
-  //     omega.enqueueAll(newAssertions).map(_.replace(oldType, newType))
-  //   )
-  // )
 
   /** Upcasts a bunch of types into its supertypes that contains the method with some arity
     * @param bounds

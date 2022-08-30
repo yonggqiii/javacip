@@ -123,7 +123,7 @@ private def resolveClassOrInterfaceType(
       newInterface.setTypeParameters(newInterfaceTypeParameters)
 
       // Add to Phi
-      config._2._1(identifier) = MissingTypeDeclaration(identifier, arguments.size)
+      config._2._1(identifier) = MissingTypeDeclaration(identifier).ofParameters(arguments.size)
 
       // Add to logs and return type
       (

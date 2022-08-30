@@ -161,8 +161,8 @@ private def getAttrTypeFromMissingScope(
       else scala.util.Right(config._2._2(scope))
     // attempt to get the attribute from the declaration
     val attrAttempt: Option[Type] = declaredType match
-      case scala.util.Left(x)  => x.getAttribute(attributeIdentifier, context)
-      case scala.util.Right(x) => x.getAttribute(attributeIdentifier, context)
+      case scala.util.Left(x)  => x.getAttributeType(attributeIdentifier, context)
+      case scala.util.Right(x) => x.getAttributeType(attributeIdentifier, context)
 
     attrAttempt
       .map((log, _))
@@ -186,7 +186,7 @@ private def getAttrTypeFromMissingScope(
         // add attribute to the type declaration and add to phi
         declaredType match
           case scala.util.Left(dt) =>
-            val newDT = dt.addAttribute(attributeIdentifier, newIV)
+            val newDT = dt.addAttribute(attributeIdentifier, newIV, false)
             config._2._1(scope.identifier) = newDT
           case scala.util.Right(it) =>
             val newDT = it.addAttribute(attributeIdentifier, newIV)
@@ -631,7 +631,17 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
           val returnType = createDisjunctiveTypeFromContext(expr, config)
           // create the new declaration by adding the method
           config._2._1 += (missingDeclaration.identifier -> missingDeclaration
-            .addMethod(nameOfMethod, args, returnType, context))
+            .addMethod(
+              nameOfMethod,
+              args,
+              returnType,
+              Map(),
+              PUBLIC,
+              false,
+              false,
+              false,
+              context
+            ))
           returnType
         )
   else
