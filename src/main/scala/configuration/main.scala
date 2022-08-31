@@ -230,7 +230,7 @@ private def addAssertionsOnBoundsAndSupertypes(
     for t <- decl.extendedTypes do config._3 += IsClassAssertion(t)
     for t <- decl.implementedTypes do config._3 += IsInterfaceAssertion(t)
 
-  for tp <- decl.typeParameters do
+  for tp <- decl.typeParameterBounds do
     if tp.isEmpty then ()
     else
       for bound <- tp.tail do

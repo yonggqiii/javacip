@@ -59,6 +59,15 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
+  /** Appends some substitution lists to the type of this attribute
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting attribute after adding the substitution lists to its type
+    */
+  def addSubstitutionLists(subs: SubstitutionList) =
+    copy(`type` = `type`.addSubstitutionLists(subs))
+
   /** Get all the modifiers of the attribute as a `NodeList[Modifier]`
     * @return
     *   a [[com.github.javaparser.ast.NodeList]] of all the modifiers
@@ -110,6 +119,15 @@ final case class MethodSignature(
   // make sure the values are passed in to the constructor properly
   if hasVarArgs && formalParameters.size == 0 then
     throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
+
+  /** Appends some substitution lists to the types in this method signature
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting method signature after adding the substitution lists to its types
+    */
+  def addSubstitutionLists(subs: SubstitutionList) =
+    copy(formalParameters = formalParameters.map(_.addSubstitutionLists(subs)))
 
   /** Determines if this signature is callable with n arguments
     * @param n
@@ -168,6 +186,24 @@ sealed trait MethodLike:
     */
   def replace(i: InferenceVariable, t: Type): MethodLike
 
+  /** Appends some substitution lists to the types of this method-like
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting method-like after adding the substitution lists to its types
+    */
+  def addSubstitutionLists(subs: SubstitutionList): MethodLike
+
+  /** Determines if the access level of this method is at least some other access level, based on
+    * the following ordering--private, package-private, protected, public
+    * @param accessLevel
+    * @return
+    *   true if the method-like is at least as accessible as the provided access level
+    */
+  def accessLevelAtLeast(accessLevel: AccessModifier): Boolean =
+    val vec = Vector(PRIVATE, DEFAULT, PROTECTED, PUBLIC)
+    vec.indexOf(accessLevel) <= vec.indexOf(accessModifier)
+
 /** A method
   * @param signature
   *   the method's signature
@@ -197,6 +233,23 @@ class Method(
   if isAbstract && (isStatic || isFinal) then
     throw new java.lang.IllegalArgumentException(
       s"$signature cannot be abstract and (static or final) at the same time!"
+    )
+
+  /** Appends some substitution lists to the types of this method
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting method after adding the substitution lists to its types
+    */
+  def addSubstitutionLists(subs: SubstitutionList): Method =
+    new Method(
+      signature.addSubstitutionLists(subs),
+      returnType.addSubstitutionLists(subs),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal
     )
 
   /** Replaces all the occurrences of some inference variable with another type
@@ -302,6 +355,24 @@ class MethodWithContext(
       _isFinal
     ):
 
+  /** Appends some substitution lists to the types of this method
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting method after adding the substitution lists to its types
+    */
+  override def addSubstitutionLists(subs: SubstitutionList): MethodWithContext =
+    new MethodWithContext(
+      signature.addSubstitutionLists(subs),
+      returnType.addSubstitutionLists(subs),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      context ::: subs
+    )
+
   override def replace(i: InferenceVariable, t: Type): MethodWithContext =
     new MethodWithContext(
       signature.replace(i, t),
@@ -333,6 +404,24 @@ class MethodWithCallSiteParameterChoices(
       _isFinal
     ):
 
+  /** Appends some substitution lists to the types of this method
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting method after adding the substitution lists to its types
+    */
+  override def addSubstitutionLists(subs: SubstitutionList): MethodWithCallSiteParameterChoices =
+    new MethodWithCallSiteParameterChoices(
+      signature.addSubstitutionLists(subs),
+      returnType.addSubstitutionLists(subs),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      callSiteParameterChoices
+    )
+
   override def replace(i: InferenceVariable, t: Type): MethodWithCallSiteParameterChoices =
     new MethodWithCallSiteParameterChoices(
       signature.replace(i, t),
@@ -350,6 +439,19 @@ class Constructor(
     val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     val accessModifier: AccessModifier
 ) extends MethodLike:
+  /** Appends some substitution lists to the types of this constructor
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting constructor after adding the substitution lists to its types
+    */
+  def addSubstitutionLists(subs: SubstitutionList): Constructor =
+    new Constructor(
+      signature.addSubstitutionLists(subs),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+      accessModifier
+    )
+
   /** Replaces all the occurrences of some inference variable with another type
     * @param i
     *   the inference variable to replace
@@ -386,6 +488,21 @@ class ConstructorWithContext(
     _accessModifier: AccessModifier,
     val context: List[Map[TTypeParameter, Type]]
 ) extends Constructor(_signature, _typeParameterBounds, _accessModifier):
+
+  /** Appends some substitution lists to the types of this constructor
+    * @param substitutionList
+    *   the lists of substitutions to add
+    * @return
+    *   the resulting constructor after adding the substitution lists to its types
+    */
+  override def addSubstitutionLists(subs: SubstitutionList): ConstructorWithContext =
+    new ConstructorWithContext(
+      signature.addSubstitutionLists(subs),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+      accessModifier,
+      context ::: subs
+    )
+
   override def replace(i: InferenceVariable, t: Type): ConstructorWithContext =
     new ConstructorWithContext(
       signature.replace(i, t),

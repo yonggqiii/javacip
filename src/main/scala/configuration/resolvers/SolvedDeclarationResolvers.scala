@@ -33,6 +33,7 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
     .map(
       _.getBounds.asScala.toVector
         .map(x => resolveSolvedType(x.getType))
+        .map[TypeBound](x => x.asInstanceOf[TypeBound]) // safe
     )
     .toVector
 
@@ -41,7 +42,7 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
     case Failure(x) => return Failure(x)
 
   // collect the type parameter bounds
-  val mmethodTypeParameterBounds = MutableMap[String, Vector[Type]]()
+  val mmethodTypeParameterBounds = MutableMap[String, Vector[TypeBound]]()
 
   // get the methods
   val methods = getMethods(decl, identifier, mmethodTypeParameterBounds) match
@@ -78,8 +79,8 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
       isFinal,
       isAbstract,
       isInterface,
-      extendedTypes,
-      implementedTypes,
+      extendedTypes.map(_.asInstanceOf[ReferenceType]),    // safe
+      implementedTypes.map(_.asInstanceOf[ReferenceType]), // safe
       methodTypeParameterBounds,
       attributes.toMap,
       methods,
@@ -115,7 +116,7 @@ def getAttributes(
 def getMethods(
     decl: ResolvedReferenceTypeDeclaration,
     identifier: String,
-    methodTypeParameterBounds: MutableMap[String, Vector[Type]]
+    methodTypeParameterBounds: MutableMap[String, Vector[TypeBound]]
 ): Try[Map[String, Set[Method]]] =
   val methodDeclarations = decl.getDeclaredMethods.asScala.toVector
   // create a mutable map to store the methods
@@ -135,7 +136,9 @@ def getMethods(
     val typeParamBounds = typeParams
       .zip(
         typeParamDecls.map(tp =>
-          tp.getBounds.asScala.toVector.map(x => resolveSolvedType(x.getType))
+          tp.getBounds.asScala.toVector.map[TypeBound](x =>
+            resolveSolvedType(x.getType).asInstanceOf[TypeBound]
+          )
         )
       )
     // get formal parameters
@@ -160,7 +163,6 @@ def getMethods(
           val targetToFind =
             raw"\.\.\.".r
               .replaceAllIn(c.getName + "." + methodName + "(" + ab.mkString(", ") + ")", "[]")
-          // println(s"\n$targetToFind")
           val reflectMethod =
             c.getDeclaredMethods
               .filter(x =>
@@ -170,7 +172,6 @@ def getMethods(
                   .map(y => "<.*>".r.replaceAllIn(y, ""))
                   .map(y => "\\$".r.replaceAllIn(y, "."))
                 val res = c.getName + "." + methodName + "(" + params.mkString(", ") + ")"
-                // println(s"$res: ${res == targetToFind}")
                 res == targetToFind
               )(0)
           java.lang.reflect.Modifier.isFinal(reflectMethod.getModifiers)
@@ -195,7 +196,7 @@ def getMethods(
 def getConstructors(
     decl: ResolvedReferenceTypeDeclaration,
     identifier: String,
-    methodTypeParameterBounds: MutableMap[String, Vector[Type]]
+    methodTypeParameterBounds: MutableMap[String, Vector[TypeBound]]
 ): Try[Set[Constructor]] =
   // get constructors
   val constructorDeclarations = decl.getConstructors.asScala
@@ -204,11 +205,11 @@ def getConstructors(
     val typeParamDecls = constructorDeclaration.getTypeParameters.asScala.toVector
     val typeParams =
       typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
-    val typeParamBounds: Map[TTypeParameter, Vector[Type]] = typeParams
+    val typeParamBounds: Map[TTypeParameter, Vector[TypeBound]] = typeParams
       .zip(
         typeParamDecls.map(tp =>
           tp.getBounds.asScala.toVector
-            .map(x => resolveSolvedType(x.getType))
+            .map[TypeBound](x => resolveSolvedType(x.getType).asInstanceOf[TypeBound]) // safe
         )
       )
       .toMap

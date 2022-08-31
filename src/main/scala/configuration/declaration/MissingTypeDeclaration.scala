@@ -25,15 +25,23 @@ import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
   */
 class MissingTypeDeclaration(
     val identifier: String,
-    val typeParameterBounds: Vector[Vector[Type]] = Vector(),
+    val typeParameterBounds: Vector[Vector[TypeBound]] = Vector(),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false,
-    val supertypes: Vector[Type] = Vector(),
-    val methodTypeParameterBounds: Map[String, Vector[Type]] = Map(),
+    val supertypes: Vector[ReferenceType] = Vector(),
+    val methodTypeParameterBounds: Map[String, Vector[TypeBound]] = Map(),
     val attributes: Map[String, Attribute] = Map(),
     val methods: Map[String, Set[MethodWithContext]] = Map().withDefaultValue(Set()),
     val constructors: Set[ConstructorWithContext] = Set()
-):
+) extends Declaration[MethodWithContext, ConstructorWithContext]:
+  def getDirectAncestors: Vector[ReferenceType] = supertypes
+  //  if it mustn't be an interface then best not to assume that it is
+  val isInterface = mustBeInterface
+  // if it musn't be an interface then there is no reason for it to be abstract
+  val isAbstract = mustBeInterface
+  // there is never a reason for this type declaration to be false
+  val isFinal = false
+
   /** The number of parameters of this type */
   val numParams: Int = typeParameterBounds.size
 
@@ -58,7 +66,7 @@ class MissingTypeDeclaration(
     * @param t
     *   the type to extend
     */
-  def greedilyExtends(t: Type) =
+  def greedilyExtends(t: ReferenceType) =
     MissingTypeDeclaration(
       identifier,
       typeParameterBounds,
@@ -232,10 +240,10 @@ class MissingTypeDeclaration(
     )
 
   /** Gets the type of an attribute
-    * @param the
-    *   attribute's identifier
-    * @param the
-    *   context in which the attribute is referenced
+    * @param identifier
+    *   the attribute's identifier
+    * @param context
+    *   the context in which the attribute is referenced
     * @return
     *   the type of the attribute
     */

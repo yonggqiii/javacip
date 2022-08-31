@@ -274,7 +274,7 @@ private def `resolve Ref <: Alpha`(
       declaration.getDirectAncestors.map(_.addSubstitutionLists(subtype.substitutions))
     // case where alpha is an instance of subtype
     val newAlpha =
-      supertype.concretizeToReference(subtype.identifier, declaration.typeParameters.size)
+      supertype.concretizeToReference(subtype.identifier, declaration.numParams)
     val newConfig =
       if config.excludes(supertype.id, subtype.identifier) then Nil
       else
@@ -326,11 +326,8 @@ private def `resolve Alpha <: Ref`(
     log: Log,
     config: Configuration
 ) =
-  val numParams = config
-    .getFixedDeclaration(supertype)
-    .map(_.typeParameters.size)
-    .getOrElse(config.phi1(supertype.identifier).numParams)
-  val newAlpha = subtype.concretizeToReference(supertype.identifier, numParams)
+  val numParams = config.getDeclaration(supertype).numParams
+  val newAlpha  = subtype.concretizeToReference(supertype.identifier, numParams)
   val concretizedConfig = config
     .asserts(subtype <:~ supertype)
     .replace(subtype.copy(substitutions = Nil), newAlpha)

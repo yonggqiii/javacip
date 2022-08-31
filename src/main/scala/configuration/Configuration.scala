@@ -2,9 +2,12 @@ package configuration
 
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
 import com.github.javaparser.resolution.declarations.*
-import configuration.declaration.FixedDeclaration
-import configuration.declaration.MissingTypeDeclaration
-import configuration.declaration.InferenceVariableMemberTable
+import configuration.declaration.{
+  Declaration,
+  FixedDeclaration,
+  MissingTypeDeclaration,
+  InferenceVariableMemberTable
+}
 import configuration.assertions.*
 import configuration.assertions.given
 import configuration.types.*
@@ -62,10 +65,8 @@ case class Configuration(
     newOmega.addAll(a)
     copy(omega = newOmega)
 
-  def getArity(t: NormalType | SubstitutedReferenceType): Int =
-    getFixedDeclaration(t) match
-      case Some(decl) => decl.typeParameters.size
-      case None       => phi1(t.identifier).numParams
+  def getArity(t: ReferenceType): Int =
+    getDeclaration(t).numParams
 
   /** Pops an assertion from the configuration
     * @return
@@ -89,6 +90,15 @@ case class Configuration(
       getFixedDeclaration(t.substituted).get.getDirectAncestors
         .map(x => x.addSubstitutionLists(t.substitutions))
         .flatMap(x => upcastToMissingAncestors(x))
+
+  /** Attempts to prove an assertion. Returns true if it cannot be proven (or the negation can be
+    * proven), false otherwise.
+    * @param a
+    *   the assertion to prove
+    * @return
+    *   true if it cannot be proven or its negation can be proven, false otherwise
+    */
+  def !|-(a: Assertion): Boolean = !(this |- a)
 
   /** Attempts to prove an assertion. Returns true if it can be proven, false if it either proves to
     * be false or does not have enough information to prove it
@@ -676,6 +686,17 @@ case class Configuration(
       case None =>
         Some(typet)
 
+  /** Gets the declaration of some type t
+    * @param t
+    *   the type whose declaration is to be obtained
+    * @return
+    *   the declaration of the type
+    */
+  def getDeclaration(t: ReferenceType): Declaration[?, ?] =
+    getFixedDeclaration(t) match
+      case Some(x) => x
+      case None    => phi1(t.identifier)
+
   /** Obtains the declaration of some declared type
     * @param t
     *   the type whose declaration is to be obtained
@@ -724,7 +745,7 @@ case class Configuration(
           case Some(decl) =>
             (
               (decl.extendedTypes ++ decl.implementedTypes),
-              decl.typeParameters.size > 0 && x.numArgs == 0
+              decl.numParams > 0 && x.numArgs == 0
             )
           case None =>
             (phi1(x.identifier).supertypes, phi1(x.identifier).numParams > 0 && x.numArgs == 0)
@@ -757,7 +778,7 @@ case class Configuration(
       .map((x, y) => y.exclusions.contains(exclusion))
       .foldLeft(false)(_ || _)
 
-  def getAllKnownSupertypes(t: NormalType | SubstitutedReferenceType): Set[NormalType] =
+  def getAllKnownSupertypes(t: ReferenceType): Set[NormalType] =
     val allSupertypes = (getFixedDeclaration(t) match
       case Some(decl) =>
         (decl.extendedTypes ++ decl.implementedTypes)
@@ -766,7 +787,7 @@ case class Configuration(
     ).map(_.addSubstitutionLists(t.substitutions).asInstanceOf[NormalType])
     allSupertypes.toSet.flatMap(x => getAllKnownSupertypes(x)) ++ allSupertypes + OBJECT
 
-  def getDirectSupertypes(t: NormalType | SubstitutedReferenceType): Set[NormalType] =
+  def getDirectSupertypes(t: ReferenceType): Set[NormalType] =
     val allSupertypes = (getFixedDeclaration(t) match
       case Some(decl) => decl.getDirectAncestors
       case None =>
@@ -774,7 +795,7 @@ case class Configuration(
     ).map(_.addSubstitutionLists(t.substitutions).asInstanceOf[NormalType])
     if allSupertypes.isEmpty then Set(OBJECT) else allSupertypes.toSet
 
-  def isFullyDeclared(t: NormalType | SubstitutedReferenceType): Boolean =
+  def isFullyDeclared(t: ReferenceType): Boolean =
     getFixedDeclaration(t) match
       case None => false
       case Some(decl) =>

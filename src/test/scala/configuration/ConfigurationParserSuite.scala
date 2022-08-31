@@ -32,7 +32,7 @@ class ConfigurationParserSuite extends AnyFunSuite:
     val cls = config.delta("A")
     // check the members of the class
     assert(cls.identifier == "A")
-    assert(cls.typeParameters.isEmpty)
+    assert(cls.typeParameterBounds.isEmpty)
     assert(!cls.isFinal)
     assert(!cls.isAbstract)
     assert(!cls.isInterface)
@@ -59,7 +59,7 @@ class ConfigurationParserSuite extends AnyFunSuite:
     val iface = config.delta("A")
     // check the members of the class
     assert(iface.identifier == "A")
-    assert(iface.typeParameters.isEmpty)
+    assert(iface.typeParameterBounds.isEmpty)
     assert(!iface.isFinal)
     assert(iface.isAbstract)
     assert(iface.isInterface)

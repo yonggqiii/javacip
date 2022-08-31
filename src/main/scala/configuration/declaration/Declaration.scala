@@ -1,120 +1,128 @@
 package configuration.declaration
 
 import configuration.types.*
-import scala.annotation.tailrec
-import scala.collection.mutable.{Set as MutableSet, ArrayBuffer}
+import configuration.Configuration
+import scala.collection.mutable.{Map as MutableMap}
 
-class FixedDeclaration(
-    val identifier: String,
-    val typeParameters: Vector[Vector[Type]],
-    val isFinal: Boolean,
-    val isAbstract: Boolean,
-    val isInterface: Boolean,
-    val extendedTypes: Vector[Type],
-    val implementedTypes: Vector[Type],
-    val methodTypeParameterBounds: Map[String, Vector[Type]],
-    val attributes: Map[String, Attribute],
-    val methods: Map[String, Set[Method]],
-    val constructors: Set[Constructor]
-):
-  override def toString =
-    val ab      = ArrayBuffer[String]()
-    val numArgs = typeParameters.size
-    if isFinal then ab += "final"
-    if isAbstract then ab += "abstract"
-    if isInterface then ab += "interface"
-    else ab += "class"
-    val args =
-      if numArgs == 0 then ""
-      else
-        "<" + (0 until numArgs)
-          .map(i =>
-            TypeParameterIndex(identifier, i).toString +
-              (if typeParameters(i).size == 0 then ""
-               else " extends " + typeParameters(i).map(_.substituted).mkString(" & "))
-          )
-          .mkString(", ") + ">"
-    ab += identifier + args
-    if extendedTypes.size > 0 then
-      ab += "extends"
-      ab += extendedTypes.map(_.substituted).mkString(", ")
-    if implementedTypes.size > 0 then
-      ab += "implements"
-      ab += implementedTypes.map(_.substituted).mkString(", ")
-    val header = ab.mkString(" ")
-    val res    = ArrayBuffer[String](header)
-    if attributes.size > 0 then
-      res += "Attributes:"
-      for (k, v) <- attributes do res += s"\t$v"
-    if methods.size > 0 then
-      res += "Methods:"
-      for (k, v) <- methods do for m <- v do res += s"\t$m"
-    if constructors.size > 0 then
-      res += "Constructors:"
-      for c <- constructors do res += s"\t$c"
-    res.mkString("\n")
+/** A declaration of a type in the program.
+  */
+trait Declaration[T <: Method, U <: Constructor]:
+  /** The name of the type
+    */
+  val identifier: String
 
-  def getDirectAncestors =
-    if identifier == "java.lang.Object" || identifier == "Object" then Vector()
-    else
-      val a = extendedTypes ++ implementedTypes
-      if a.isEmpty then Vector(OBJECT)
-      else a
+  /** The bounds of the type parameters of this type
+    */
+  val typeParameterBounds: Vector[Vector[TypeBound]]
 
-  def getAllBounds(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
-    if exclusions.contains(t) then Set(OBJECT)
-    else
-      t match
-        case _: TTypeParameter =>
-          val bounds = getBounds(t)
-          if bounds.isEmpty then Set(OBJECT)
-          else bounds.flatMap(getAllBounds(_, exclusions + t)).toSet
-        case _ => Set(t)
+  /** Whether the type is final
+    */
+  val isFinal: Boolean
 
-  def getBoundsAsTypeParameters(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
-    if exclusions.contains(t) then Set()
-    else
-      val b = getBounds(t).filter(x =>
-        x match
-          case y: TTypeParameter => true
-          case _                 => false
-      )
-      b.toSet.flatMap(x => getBoundsAsTypeParameters(x, exclusions + t) + x)
+  /** Whether the type is abstract
+    */
+  val isAbstract: Boolean
 
-  def getBounds(typet: Type): Vector[Type] =
-    typet match
-      case TypeParameterIndex(source, index, subs) =>
-        if source != identifier then ??? // TODO
-        else typeParameters(index).map(_.addSubstitutionLists(subs))
-      case TypeParameterName(sourceType, source, qualifiedName, subs) =>
-        if sourceType != identifier then ??? // TODO
-        else
-          val index = source + "#" + qualifiedName
-          if !methodTypeParameterBounds.contains(index) then ??? // TODO
-          else methodTypeParameterBounds(index).map(_.addSubstitutionLists(subs))
-      case _ => ??? // TODO
+  /** Whether the type is an interface
+    */
+  val isInterface: Boolean
 
-  def getErasure(typet: Type, exclusions: Set[Type] = Set()): Type =
-    if exclusions.contains(typet) then OBJECT
-    else
-      typet match
-        case _: TypeParameterIndex | _: TypeParameterName =>
-          val bounds = getBounds(typet)
-          if bounds.isEmpty then OBJECT
-          else getErasure(bounds(0), exclusions + typet)
-        case _ => typet
+  /** The bounds on any of the method type parameters
+    */
+  val methodTypeParameterBounds: Map[String, Vector[TypeBound]]
 
-  def getRawErasure(typet: Type): Type =
-    getErasure(typet).substituted match
-      case x: SubstitutedReferenceType => NormalType(x.identifier, 0)
-      case x                           => x
+  /** The attributes of this declaration
+    */
+  val attributes: Map[String, Attribute]
 
-  def conflictingMethods =
-    val s   = MutableSet[MethodSignature]()
-    val res = ArrayBuffer[Method]()
-    for table <- methods.values do
-      for method <- table do
-        val erasedSig = method.signature.erased(this)
-        if s.contains(erasedSig) then res += method
-        else s += erasedSig
-    res.toVector
+  /** The methods of this declaration
+    */
+  val methods: Map[String, Set[T]]
+
+  /** The constructors of this declaration
+    */
+  val constructors: Set[U]
+
+  /** Gets the direct ancestors of this type
+    * @return
+    *   the direct ancestors of this type
+    */
+  def getDirectAncestors: Vector[ReferenceType]
+
+  /** The number of type parameters this type receives, i.e. the arity of the type constructor of
+    * this type
+    */
+  val numParams: Int
+
+  /** Gets all inherited attributes from all its supertypes
+    * @param config
+    *   the configuration to obtain the declaration of its supertypes from
+    * @return
+    *   the inherited attributes from all its supertypes
+    */
+  def getInheritedAttributes(config: Configuration): Map[String, Attribute] =
+    val x = getDirectAncestors
+      .filter(x => config !|- x.isInterface)
+      .map(config.getDeclaration(_).getAccessibleAttributes(config, PROTECTED))
+    ???
+
+  /** Gets all inherited methods from all its supertypes, whether they are abstract or otherwise
+    * @param config
+    *   the configuration to obtain the declaration of its supertypes from
+    * @return
+    *   the inherited methods from all its supertypes
+    */
+  def getInheritedMethodUsages(config: Configuration): Map[String, Set[Method]] =
+    val x = getDirectAncestors.map(x =>
+      config
+        .getDeclaration(x)
+        .getMethodUsagesFromInstance(x)
+        .map((k, v) => k -> v.filter(m => m.accessLevelAtLeast(PROTECTED)))
+    ) :+ methods
+    val res = MutableMap[String, Set[Method]]().withDefaultValue(Set())
+    for m <- x do for (k, v) <- m do res(k) = res(k) ++ v
+    res.toMap
+
+  /** Gets all the attributes (including inherited ones) that are accessible and/or inheritable
+    * based on a minimum access level
+    * @param config
+    *   the configuration to obtain the declaration of its supertypes from
+    * @param minAccessLevel
+    *   the minimum access level of the attributes to obtain
+    * @return
+    *   all attributes of this declaration that meet the access level
+    */
+  def getAccessibleAttributes(
+      config: Configuration,
+      accessLevel: AccessModifier
+  ): Map[String, Attribute] = ???
+
+  /** Gets all the methods (including inherited ones) that are accessible and/or inheritable based
+    * on a minimum access level
+    * @param config
+    *   the configuration to obtain the declaration of its supertypes from
+    * @param minAccessLevel
+    *   the minimum access level of the methods to obtain
+    * @return
+    *   all methods of this declaration that meet the access level
+    */
+  def getAccessibleMethods: Map[String, Set[T]] = ???
+
+  /** Gets an attribute from one of its instances
+    * @param t
+    *   the type of the instance
+    * @param identifier
+    *   the identifier of the attribute
+    * @return
+    *   an optional attribute if it is found and `t` is a valid instance
+    */
+  def getAttributeFromInstance(
+      t: Type,
+      identifier: String
+  ) =
+    if !attributes.contains(identifier) then None
+    else if t.identifier != this.identifier then None
+    else Some(attributes(identifier).addSubstitutionLists(t.substitutions))
+
+  def getMethodUsagesFromInstance(t: Type): Map[String, Set[Method]] =
+    methods.map((k, v) => (k -> v.map(m => m.addSubstitutionLists(t.substitutions))))
