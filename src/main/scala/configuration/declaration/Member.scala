@@ -59,6 +59,10 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
+  /** Get all the modifiers of the attribute as a `NodeList[Modifier]`
+    * @return
+    *   a [[com.github.javaparser.ast.NodeList]] of all the modifiers
+    */
   def getNodeListModifiers: NodeList[Modifier] =
     val res: NodeList[Modifier] = NodeList()
     accessModifier match
@@ -90,15 +94,40 @@ final case class Attribute(
     ab += identifier
     ab.filter(_.length > 0).mkString(" ")
 
+/** The signature of a method
+  * @param identifier
+  *   the name of the method
+  * @param formalParameters
+  *   the formal parameters of the method
+  * @param hasVarArgs
+  *   whether the last parameter is a VarArg
+  */
 final case class MethodSignature(
     identifier: String,
     formalParameters: Vector[Type],
     hasVarArgs: Boolean
 ):
+  // make sure the values are passed in to the constructor properly
   if hasVarArgs && formalParameters.size == 0 then
     throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
+
+  /** Determines if this signature is callable with n arguments
+    * @param n
+    *   n
+    * @returns
+    *   true if it is callable, false otherwise
+    */
   def callableWithNArgs(n: Int) =
     formalParameters.size == n || (formalParameters.size < n && hasVarArgs)
+
+  /** Replaces all the occurrences of some inference variable with another type
+    * @param i
+    *   the inference variable to replace
+    * @param t
+    *   the type after replacement
+    * @return
+    *   the resulting method signature from replacement
+    */
   def replace(i: InferenceVariable, t: Type): MethodSignature =
     copy(formalParameters = formalParameters.map(_.replace(i, t)))
   override def toString =
@@ -110,12 +139,51 @@ final case class MethodSignature(
   def erased(decl: FixedDeclaration) =
     MethodSignature(identifier, formalParameters.map(decl.getRawErasure(_)), hasVarArgs)
 
+/** A method or constructor */
 sealed trait MethodLike:
+  /** The signature of the method */
   val signature: MethodSignature
+
+  /** The type parameter bounds of the method */
   val typeParameterBounds: Map[TTypeParameter, Vector[Type]]
+
+  /** The access modifier tied to the method */
   val accessModifier: AccessModifier
+
+  /** Determines if this signature is callable with n arguments
+    * @param n
+    *   n
+    * @returns
+    *   true if it is callable, false otherwise
+    */
   def callableWithNArgs(n: Int): Boolean = signature.callableWithNArgs(n)
 
+  /** Replaces all the occurrences of some inference variable with another type
+    * @param i
+    *   the inference variable to replace
+    * @param t
+    *   the type after replacement
+    * @return
+    *   the resulting method-like from replacement
+    */
+  def replace(i: InferenceVariable, t: Type): MethodLike
+
+/** A method
+  * @param signature
+  *   the method's signature
+  * @param returnType
+  *   the method's return type
+  * @param typeParameterBounds
+  *   the bounds of the type parameters of the methods, if any
+  * @param accessModifier
+  *   the access modifier tied to the method
+  * @param isAbstract
+  *   whether the method is abstract
+  * @param isStatic
+  *   whether the method is static
+  * @param isFinal
+  *   whether the method is final
+  */
 class Method(
     val signature: MethodSignature,
     val returnType: Type,
@@ -125,10 +193,20 @@ class Method(
     val isStatic: Boolean,
     val isFinal: Boolean
 ) extends MethodLike:
+  // make sure the modifiers make sense
   if isAbstract && (isStatic || isFinal) then
     throw new java.lang.IllegalArgumentException(
       s"$signature cannot be abstract and (static or final) at the same time!"
     )
+
+  /** Replaces all the occurrences of some inference variable with another type
+    * @param i
+    *   the inference variable to replace
+    * @param t
+    *   the type after replacement
+    * @return
+    *   the resulting method from replacement
+    */
   def replace(i: InferenceVariable, t: Type): Method =
     new Method(
       signature.replace(i, t),
@@ -160,7 +238,30 @@ class Method(
     ab += signature.toString
     ab.filter(_.length > 0).mkString(" ")
 
+/** Companion object to [[configuration.declaration.Method]] */
 object Method:
+  /** Alternative constructor for [[configuration.declaration.Method]] objects
+    * @param identifier
+    *   the name of the method
+    * @param formalParameters
+    *   the formal parameters of the method
+    * @param returnType
+    *   the method's return type
+    * @param typeParameterBounds
+    *   the bounds of the type parameters of the methods, if any
+    * @param accessModifier
+    *   the access modifier tied to the method
+    * @param isAbstract
+    *   whether the method is abstract
+    * @param isStatic
+    *   whether the method is static
+    * @param isFinal
+    *   whether the method is final
+    * @param hasVarArgs
+    *   whether the method has vas variadic arguments
+    * @return
+    *   the new method
+    */
   def apply(
       identifier: String,
       formalParameters: Vector[Type],
@@ -249,6 +350,20 @@ class Constructor(
     val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     val accessModifier: AccessModifier
 ) extends MethodLike:
+  /** Replaces all the occurrences of some inference variable with another type
+    * @param i
+    *   the inference variable to replace
+    * @param t
+    *   the type after replacement
+    * @return
+    *   the resulting method from replacement
+    */
+  def replace(i: InferenceVariable, t: Type): Constructor =
+    new Constructor(
+      signature.replace(i, t),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t)))),
+      accessModifier
+    )
   override def toString =
     val ab = ArrayBuffer[String]()
     ab += accessModifier.toString
@@ -270,7 +385,14 @@ class ConstructorWithContext(
     _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     _accessModifier: AccessModifier,
     val context: List[Map[TTypeParameter, Type]]
-) extends Constructor(_signature, _typeParameterBounds, _accessModifier)
+) extends Constructor(_signature, _typeParameterBounds, _accessModifier):
+  override def replace(i: InferenceVariable, t: Type): ConstructorWithContext =
+    new ConstructorWithContext(
+      signature.replace(i, t),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t)))),
+      accessModifier,
+      context.map(mp => mp.map((tp, tt) => (tp -> tt.replace(i, t))))
+    )
 
 object Constructor:
   def apply(

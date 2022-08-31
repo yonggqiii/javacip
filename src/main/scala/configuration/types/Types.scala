@@ -680,17 +680,11 @@ object InferenceVariableFactory:
           parameterChoices
         )
       else
-        //val boundedParams = parameterChoices.flatMap(x => Set(x, SuperWildcardType(x), ExtendsWildcardType(x)))
         val alpha       = createAlpha(source, Nil, true, parameterChoices)
         val baseChoices = parameterChoices.toVector :+ alpha
         val supers      = baseChoices.map(SuperWildcardType(_))
         val extend      = baseChoices.map(ExtendsWildcardType(_))
         (baseChoices :+ Wildcard) ++ supers ++ extend
-    // boundedParams ++ Set(Wildcard,
-    //   alpha,
-    //   SuperWildcardType(alpha),
-    //   ExtendsWildcardType(alpha)
-    // )
     DisjunctiveType(id, source, substitutions, canBeSubsequentlyBounded, parameterChoices, choices)
 
   def createAlpha(
