@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Modifier
 import com.github.javaparser.ast.NodeList
 
 import configuration.types.*
+import scala.annotation.constructorOnly
 
 /** An access modifier in a Java program */
 sealed trait AccessModifier
@@ -103,6 +104,22 @@ final case class Attribute(
     ab += identifier
     ab.filter(_.length > 0).mkString(" ")
 
+  /** Reorders the type parameters in this attribute by replacing all the type parameters given a
+    * scheme
+    * @param scheme
+    *   the scheme of reordering type parameters
+    * @return
+    *   the resulting attribute
+    */
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Attribute =
+    Attribute(
+      identifier,
+      `type`.reorderTypeParameters(scheme),
+      accessModifier,
+      isStatic,
+      isFinal
+    )
+
 /** The signature of a method
   * @param identifier
   *   the name of the method
@@ -119,6 +136,16 @@ final case class MethodSignature(
   // make sure the values are passed in to the constructor properly
   if hasVarArgs && formalParameters.size == 0 then
     throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
+
+  /** Reorders the type parameters in this method signature by replacing all the type parameters
+    * given a scheme
+    * @param scheme
+    *   the scheme of reordering type parameters
+    * @return
+    *   the resulting method signature
+    */
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodSignature =
+    copy(formalParameters = formalParameters.map(_.reorderTypeParameters(scheme)))
 
   /** Appends some substitution lists to the types in this method signature
     * @param substitutionList
@@ -154,6 +181,13 @@ final case class MethodSignature(
       formalParameters.mkString(", ") +
       (if hasVarArgs then "..." else "") +
       ")"
+
+  /** Erase the signature into its raw types
+    * @param decl
+    *   the declaration to obtain any type bounds from
+    * @return
+    *   the resulting method signature
+    */
   def erased(decl: FixedDeclaration) =
     MethodSignature(identifier, formalParameters.map(decl.getRawErasure(_)), hasVarArgs)
 
@@ -163,7 +197,7 @@ sealed trait MethodLike:
   val signature: MethodSignature
 
   /** The type parameter bounds of the method */
-  val typeParameterBounds: Map[TTypeParameter, Vector[Type]]
+  val typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]]
 
   /** The access modifier tied to the method */
   val accessModifier: AccessModifier
@@ -204,6 +238,15 @@ sealed trait MethodLike:
     val vec = Vector(PRIVATE, DEFAULT, PROTECTED, PUBLIC)
     vec.indexOf(accessLevel) <= vec.indexOf(accessModifier)
 
+  /** Reorders the type parameters of this method-like given a scheme by replacing the type
+    * parameters
+    * @param scheme
+    *   the reordering scheme
+    * @return
+    *   the resulting method-like
+    */
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodLike
+
 /** A method
   * @param signature
   *   the method's signature
@@ -223,7 +266,7 @@ sealed trait MethodLike:
 class Method(
     val signature: MethodSignature,
     val returnType: Type,
-    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    val typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
     val accessModifier: AccessModifier,
     val isAbstract: Boolean,
     val isStatic: Boolean,
@@ -233,6 +276,19 @@ class Method(
   if isAbstract && (isStatic || isFinal) then
     throw new java.lang.IllegalArgumentException(
       s"$signature cannot be abstract and (static or final) at the same time!"
+    )
+
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Method =
+    new Method(
+      signature.reorderTypeParameters(scheme),
+      returnType.reorderTypeParameters(scheme),
+      typeParameterBounds.map((k, v) =>
+        (k.reorderTypeParameters(scheme) -> v.map(t => t.reorderTypeParameters(scheme)))
+      ),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal
     )
 
   /** Appends some substitution lists to the types of this method
@@ -319,7 +375,7 @@ object Method:
       identifier: String,
       formalParameters: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
@@ -336,10 +392,24 @@ object Method:
       isFinal
     )
 
+/** A method with some context
+  * @param _signature
+  *   the signature of the method
+  * @param _returnType
+  *   the return type of the method
+  * @param _typeParameterBounds
+  *   the bounds of the type parameters
+  * @param _accessModifier
+  *   the access modifier of the method
+  * @param _isStatic
+  *   whether the method is static
+  * @param _isFinal
+  *   whether the method is final
+  */
 class MethodWithContext(
     _signature: MethodSignature,
     _returnType: Type,
-    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
     _accessModifier: AccessModifier,
     _isAbstract: Boolean,
     _isStatic: Boolean,
@@ -385,10 +455,44 @@ class MethodWithContext(
       context.map(mp => mp.map((tp, tt) => (tp -> tt.replace(i, t))))
     )
 
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): MethodWithContext =
+    new MethodWithContext(
+      signature.reorderTypeParameters(scheme),
+      returnType.reorderTypeParameters(scheme),
+      typeParameterBounds.map((k, v) =>
+        (k.reorderTypeParameters(scheme) -> v.map(t => t.reorderTypeParameters(scheme)))
+      ),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      context.map(m =>
+        m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
+      )
+    )
+
+/** A method containing the parameter choices at the site of the call
+  * @param _signature
+  *   the signature of the method
+  * @param _returnType
+  *   the return type of the method
+  * @param _typeParameterBounds
+  *   the bounds of the type parameters attached to the method
+  * @param _accessModifier
+  *   the access modifier of the method
+  * @param _isAbstract
+  *   whether the method is abstract
+  * @param _isFinal
+  *   whether the method is final
+  * @param callSiteParameterChoices
+  *   the parameter choices available at the call site
+  */
 class MethodWithCallSiteParameterChoices(
     _signature: MethodSignature,
     _returnType: Type,
-    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
     _accessModifier: AccessModifier,
     _isAbstract: Boolean,
     _isStatic: Boolean,
@@ -434,9 +538,33 @@ class MethodWithCallSiteParameterChoices(
       callSiteParameterChoices
     )
 
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): MethodWithCallSiteParameterChoices =
+    new MethodWithCallSiteParameterChoices(
+      signature.reorderTypeParameters(scheme),
+      returnType.reorderTypeParameters(scheme),
+      typeParameterBounds.map((k, v) =>
+        (k.reorderTypeParameters(scheme) -> v.map(t => t.reorderTypeParameters(scheme)))
+      ),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      callSiteParameterChoices.map(_.reorderTypeParameters(scheme))
+    )
+
+/** A constructor of a type
+  * @param signature
+  *   the signature of the constructor
+  * @param typeParameterBounds
+  *   the bounds of the type parameters attached to the constructor
+  * @param accessModifier
+  *   the access modifier attached to the constructor
+  */
 class Constructor(
     val signature: MethodSignature,
-    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    val typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
     val accessModifier: AccessModifier
 ) extends MethodLike:
   /** Appends some substitution lists to the types of this constructor
@@ -466,6 +594,18 @@ class Constructor(
       typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t)))),
       accessModifier
     )
+
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): Constructor =
+    new Constructor(
+      signature.reorderTypeParameters(scheme),
+      typeParameterBounds.map((k, v) =>
+        (k.reorderTypeParameters(scheme) -> v.map(t => t.reorderTypeParameters(scheme)))
+      ),
+      accessModifier
+    )
+
   override def toString =
     val ab = ArrayBuffer[String]()
     ab += accessModifier.toString
@@ -482,9 +622,19 @@ class Constructor(
     ab += signature.toString
     ab.filter(_.length > 0).mkString(" ")
 
+/** A constructor with context
+  * @param _signature
+  *   the signature of the constructor
+  * @param _typeParameterBounds
+  *   the bounds of the type parameters attached to the constructor
+  * @param _accessModifier
+  *   the access modifier of the constructor
+  * @param context
+  *   the context of the constructor
+  */
 class ConstructorWithContext(
     _signature: MethodSignature,
-    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
     _accessModifier: AccessModifier,
     val context: List[Map[TTypeParameter, Type]]
 ) extends Constructor(_signature, _typeParameterBounds, _accessModifier):
@@ -511,11 +661,38 @@ class ConstructorWithContext(
       context.map(mp => mp.map((tp, tt) => (tp -> tt.replace(i, t))))
     )
 
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): ConstructorWithContext =
+    new ConstructorWithContext(
+      signature.reorderTypeParameters(scheme),
+      typeParameterBounds.map((k, v) =>
+        (k.reorderTypeParameters(scheme) -> v.map(t => t.reorderTypeParameters(scheme)))
+      ),
+      accessModifier,
+      context.map(m =>
+        m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
+      )
+    )
+
+/** Companion object to [[configuration.declaration.Constructor]] */
 object Constructor:
+  /** Creates a new constructor
+    * @param containingTypeIdentifier
+    *   the name of the type containing this constructor
+    * @param formalParameters
+    *   the formal parameters of the constructor
+    * @param typeParameterBounds
+    *   the bounds of the type parameters attached to the constructor
+    * @param hasVarArgs
+    *   whether the constructor has variadic arguments
+    * @return
+    *   the resulting constructor
+    */
   def apply(
       containingTypeIdentifier: String,
       formalParameters: Vector[Type],
-      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
       accessModifier: AccessModifier,
       hasVarArgs: Boolean
   ): Constructor =

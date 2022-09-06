@@ -76,7 +76,7 @@ trait Declaration[T <: Method, U <: Constructor]:
     val x = getDirectAncestors.map(x =>
       config
         .getDeclaration(x)
-        .getMethodUsagesFromInstance(x)
+        .getAllAccessibleMethodUsagesFromInstance(x, config)
         .map((k, v) => k -> v.filter(m => m.accessLevelAtLeast(PROTECTED)))
     ) :+ methods
     val res = MutableMap[String, Set[Method]]().withDefaultValue(Set())
@@ -124,5 +124,31 @@ trait Declaration[T <: Method, U <: Constructor]:
     else if t.identifier != this.identifier then None
     else Some(attributes(identifier).addSubstitutionLists(t.substitutions))
 
-  def getMethodUsagesFromInstance(t: Type): Map[String, Set[Method]] =
-    methods.map((k, v) => (k -> v.map(m => m.addSubstitutionLists(t.substitutions))))
+  /** Get the all method usages (including inherited ones) from an instance of this declaration
+    * @param t
+    *   the instance
+    * @param config
+    *   the configuration to obtain the declaration of the supertypes from
+    * @return
+    *   the method usages of this instance
+    */
+  def getAllAccessibleMethodUsagesFromInstance(
+      t: Type,
+      config: Configuration
+  ): Map[String, Set[Method]] =
+    getAllAccessibleMethodUsages(config).map((k, v) =>
+      (k -> v.map(m => m.addSubstitutionLists(t.substitutions)))
+    )
+
+  /** Get all the accessible method usages (including inherited ones) from this declaration
+    * @param the
+    *   configuration to obtain declarations of the supertypes from
+    * @return
+    *   the method usages
+    */
+  def getAllAccessibleMethodUsages(config: Configuration): Map[String, Set[Method]] =
+    val x   = getInheritedMethodUsages(config)
+    val res = MutableMap[String, Set[Method]]().withDefaultValue(Set())
+    for (k, v) <- x do res(k) = res(k) ++ v
+    for (k, v) <- methods do res(k) = res(k) ++ v
+    res.toMap

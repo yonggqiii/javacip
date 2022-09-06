@@ -189,9 +189,9 @@ class MissingTypeDeclaration(
   ): (MissingTypeDeclaration, List[Assertion]) =
     val newAssertions = ArrayBuffer[Assertion]()
     val newMethods    = MutableMap[String, Set[MethodWithContext]]()
-    for (identifier, methods) <- methods do
+    for (identifier, mmethods) <- methods do
       val newMethodSet = ArrayBuffer[MethodWithContext]()
-      for method <- methods do
+      for method <- mmethods do
         val replacedMethod = method.replace(oldType, newType)
         newMethodSet.find(x =>
           x.context == replacedMethod.context && x.signature == replacedMethod.signature
@@ -201,8 +201,6 @@ class MissingTypeDeclaration(
           case None =>
             newMethodSet += replacedMethod
       newMethods(identifier) = newMethodSet.toSet
-
-    // TODO handle the constructors
     (
       MissingTypeDeclaration(
         identifier,
@@ -213,7 +211,7 @@ class MissingTypeDeclaration(
         methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.replace(oldType, newType)))),
         attributes.map((id, x) => id -> x.replace(oldType, newType)),
         newMethods.toMap,
-        constructors
+        constructors.map(c => c.replace(oldType, newType))
       ),
       newAssertions.toList
     )
@@ -345,7 +343,7 @@ class MissingTypeDeclaration(
       identifier: String,
       paramTypes: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
