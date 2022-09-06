@@ -292,6 +292,7 @@ trait ReferenceType extends TypeBound:
   def addSubstitutionLists(substitutionList: SubstitutionList): ReferenceType
   def replace(oldType: InferenceVariable, newType: Type): ReferenceType
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ReferenceType
+  def substituted: SubstitutedReferenceType
 
 /** Just your regular reference type
   * @param identifier

@@ -24,7 +24,7 @@ given assertionOrdering: Ordering[Assertion] with
         case y: DisjunctiveAssertion        => false
         case IsClassAssertion(x)            => x.isInstanceOf[PlaceholderType]
         case IsInterfaceAssertion(x)        => x.isInstanceOf[PlaceholderType]
-        case HasMethodAssertion(x, _, _, _) => x.isInstanceOf[PlaceholderType]
+        case HasMethodAssertion(x, _, _, _) => false
         case IsDeclaredAssertion(x)         => false
         case IsMissingAssertion(x)          => false
         case IsUnknownAssertion(x)          => false
@@ -155,7 +155,7 @@ case class IsInterfaceAssertion(t: Type) extends Assertion:
   *   the return type of the method
   */
 case class HasMethodAssertion(
-    source: Type,
+    source: ReferenceType,
     methodName: String,
     args: Vector[Type],
     returnType: Type

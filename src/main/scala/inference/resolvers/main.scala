@@ -47,6 +47,8 @@ private[inference] def resolve(
           resolveIntegralAssertion(newLog, newConfig, x)
         case x: IsNumericAssertion =>
           resolveNumericAssertion(newLog, newConfig, x)
+        case x: HasMethodAssertion =>
+          resolveHasMethodAssertion(newLog, newConfig, x)
         case _ =>
           ???
       LogWithLeft(res._1, res._2)

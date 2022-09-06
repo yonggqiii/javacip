@@ -180,7 +180,10 @@ case class Configuration(
         t == BOXED_INT ||
         t == BOXED_LONG ||
         t == BOXED_SHORT
-    case _ => ???
+    case x: HasMethodAssertion => false
+    case x =>
+      println(x)
+      ???
   private def proveSubtype(sub: Type, sup: Type): Boolean =
     if sup == OBJECT.substituted then true
     else if sub == Bottom.substituted then true
@@ -358,7 +361,9 @@ case class Configuration(
           val sourceType = x match
             case y: TypeParameterIndex => y.source
             case y: TypeParameterName  => y.sourceType
-          val (erasure, allBounds) = getFixedDeclaration(NormalType(sourceType, 0, Nil)) match
+          val (erasure, allBounds): (ReferenceType, Set[ReferenceType]) = getFixedDeclaration(
+            NormalType(sourceType, 0, Nil)
+          ) match
             case None =>
               (OBJECT, Set(OBJECT))
             case Some(d) =>
@@ -593,7 +598,11 @@ case class Configuration(
     * @return
     *   the ancestors who contain said method
     */
-  def upcastAllToMethodContainer(bounds: Set[Type], methodName: String, arity: Int): Set[Type] =
+  def upcastAllToMethodContainer(
+      bounds: Set[ReferenceType],
+      methodName: String,
+      arity: Int
+  ): Set[ReferenceType] =
     bounds.flatMap(upcastOneToMethodContainer(_, methodName, arity))
 
   /** Upcasts a type into its supertypes that contains the method with some arity
@@ -606,7 +615,11 @@ case class Configuration(
     * @return
     *   the ancestors who contain said method
     */
-  def upcastOneToMethodContainer(t: Type, methodName: String, arity: Int): Set[Type] =
+  def upcastOneToMethodContainer(
+      t: ReferenceType,
+      methodName: String,
+      arity: Int
+  ): Set[ReferenceType] =
     // we can guarantee that the type is a concrete type
     getFixedDeclaration(t) match
       case None => Set(t) // missing type
@@ -644,7 +657,7 @@ case class Configuration(
         case y: DisjunctiveAssertion        => false
         case IsClassAssertion(x)            => x.isInstanceOf[PlaceholderType]
         case IsInterfaceAssertion(x)        => x.isInstanceOf[PlaceholderType]
-        case HasMethodAssertion(x, _, _, _) => x.isInstanceOf[PlaceholderType]
+        case HasMethodAssertion(_, _, _, _) => false
         case IsDeclaredAssertion(x)         => false
         case IsMissingAssertion(x)          => false
         case IsUnknownAssertion(x)          => false
@@ -779,12 +792,9 @@ case class Configuration(
       .foldLeft(false)(_ || _)
 
   def getAllKnownSupertypes(t: ReferenceType): Set[NormalType] =
-    val allSupertypes = (getFixedDeclaration(t) match
-      case Some(decl) =>
-        (decl.extendedTypes ++ decl.implementedTypes)
-      case None =>
-        phi1(t.identifier).supertypes
-    ).map(_.addSubstitutionLists(t.substitutions).asInstanceOf[NormalType])
+    val allSupertypes = getDeclaration(t).getDirectAncestors.map(
+      _.addSubstitutionLists(t.substitutions).asInstanceOf[NormalType]
+    )
     allSupertypes.toSet.flatMap(x => getAllKnownSupertypes(x)) ++ allSupertypes + OBJECT
 
   def getDirectSupertypes(t: ReferenceType): Set[NormalType] =
@@ -801,3 +811,7 @@ case class Configuration(
       case Some(decl) =>
         val a = decl.getDirectAncestors
         a.forall(x => isFullyDeclared(NormalType(x.identifier, 0)))
+
+  def getMissingDeclaration(t: ReferenceType): Option[MissingTypeDeclaration] =
+    if phi1.contains(t.identifier) then Some(phi1(t.identifier))
+    else None

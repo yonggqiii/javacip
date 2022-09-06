@@ -38,8 +38,8 @@ private[configuration] def resolveExpression(
     val res =
       if expr.isFieldAccessExpr then
         resolveFieldAccessExpr(log, expr.asFieldAccessExpr, config, memo)
-      // else if expr.isArrayAccessExpr then
-      //   resolveArrayAccessExpr(log, expr.asFieldAccessExpr, config, memo)
+      else if expr.isArrayAccessExpr then
+        resolveArrayAccessExpr(log, expr.asArrayAccessExpr, config, memo)
       // else if expr.isArrayInitializerExpr then
       //   resolveArrayInitializerExpr(config, expr.asArrayInitializerExpr, memo)
       else if expr.isAssignExpr then resolveAssignExpr(log, expr.asAssignExpr, config, memo)
@@ -205,11 +205,29 @@ private def getAttrTypeFromMissingScope(
   )
 
 private def resolveArrayAccessExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: ArrayAccessExpr,
-    memo: MutableMap[Expression, Type]
-): Type =
-  ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  val name  = expr.getName
+  val index = expr.getIndex
+  resolveExpression(log, name, config, memo).flatMap((log, name) =>
+    resolveExpression(log, index, config, memo).rightmap(index =>
+      // array indices must be an integer
+      config._3 += index <:~ PRIMITIVE_INT
+      name match
+        case ArrayType(base) => base
+        case _ =>
+          val rt = createDisjunctiveTypeFromContext(expr, config)
+          // nameexpr must be an instance of rt[]
+          config._3 += name <:~ ArrayType(rt)
+          rt
+    )
+  )
 
 private def resolveArrayInitializerExpr(
     config: MutableConfiguration,
@@ -482,8 +500,11 @@ private def resolveMethodCallExpr(
               )
             case scala.util.Failure(_) =>
               // scope cannot be fully resolved, likely an inference variable
-              resolveExpression(log, x, config, memo).flatMap(
-                resolveMethodFromDisjunctiveType(_, expr, config, memo, _)
+              resolveExpression(log, x, config, memo).flatMap((newLog, t) =>
+                t match
+                  case x: InferenceVariable =>
+                    resolveMethodFromDisjunctiveType(newLog, expr, config, memo, x)
+                  case _ => ???
               )
         case None =>
           // no scope.
@@ -498,12 +519,12 @@ private def resolveMethodCallExpr(
             case Some(decl) =>
               scala.util.Try(decl.resolve) match
                 case scala.util.Success(resolvedDecl) =>
-                  resolveMethodFromResolvedDeclaration(
+                  resolveMethodFromResolvedType(
                     log,
                     expr,
                     config,
                     memo,
-                    resolvedDecl
+                    new ReferenceTypeImpl(resolvedDecl, ReflectionTypeSolver()) // does this work?
                   )
                 case scala.util.Failure(_) =>
                   LogWithNone(log.addError(s"${decl.getFullyQualifiedName} cannot be resolved?"))
@@ -614,7 +635,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     // get and/or add the method to the declaration since we must be
     // umambiguously referring to this method
     // the type itself
-    val missingTType = resolveSolvedType(missingSupertypes(0))
+    val missingTType = resolveSolvedType(missingSupertypes(0)).asInstanceOf[ReferenceType]
     // the declaration of the type
     val missingDeclaration = config._2._1(missingSupertypes(0).getId)
     // the context (type arguments) of this type
@@ -660,7 +681,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     val ambiguousMissingTypes = originalArguments.rightmap(args =>
       // create conjunctive assertions
       missingSupertypes.map(rrt =>
-        val missingTType = resolveSolvedType(rrt)
+        val missingTType = resolveSolvedType(rrt).asInstanceOf[ReferenceType]
         HasMethodAssertion(missingTType, nameOfMethod, args, returnType)
       )
     )
@@ -771,16 +792,16 @@ private def getAllBoundsOfResolvedTypeParameterDeclaration(
     Vector(ReferenceTypeImpl(rts.getSolvedJavaLangObject, rts))
   else res.toVector
 
-private def resolveMethodFromResolvedDeclaration(
-    log: Log,
-    expr: MethodCallExpr,
-    config: MutableConfiguration,
-    memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
-      Option[Type]
-    ],
-    scope: ResolvedReferenceTypeDeclaration
-): LogWithOption[Type] = ???
+// private def resolveMethodFromResolvedDeclaration(
+//     log: Log,
+//     expr: MethodCallExpr,
+//     config: MutableConfiguration,
+//     memo: MutableMap[
+//       (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+//       Option[Type]
+//     ],
+//     scope: ResolvedReferenceTypeDeclaration
+// ): LogWithOption[Type] = ???
 
 private def resolveMethodFromDisjunctiveType(
     log: Log,
@@ -790,8 +811,35 @@ private def resolveMethodFromDisjunctiveType(
       (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
       Option[Type]
     ],
-    scope: Type
-): LogWithOption[Type] = ???
+    scope: InferenceVariable
+): LogWithOption[Type] =
+  val table =
+    if config._2._2.contains(scope) then config._2._2(scope)
+    else InferenceVariableMemberTable(scope)
+  val originalArguments =
+    flatMapWithLog(log, expr.getArguments.asScala.toVector)(resolveExpression(_, _, config, memo))
+  val methodName = expr.getNameAsString
+  originalArguments.rightmap(v =>
+    // case where method is actually found
+    table.methods(methodName).find(m => m.signature.formalParameters == originalArguments) match
+      case Some(m) => m.returnType
+      case None =>
+        val returnType               = createDisjunctiveTypeFromContext(expr, config)
+        val callSiteParameterChoices = getParamChoicesFromExpression(expr)
+        val newTable = table.addMethod(
+          methodName,
+          v,
+          returnType,
+          Map(),
+          PUBLIC,
+          false,
+          false,
+          false,
+          callSiteParameterChoices
+        )
+        config._2._2(scope) = newTable
+        returnType
+  )
 
 private def resolveMethodReferenceExpr(
     config: MutableConfiguration,

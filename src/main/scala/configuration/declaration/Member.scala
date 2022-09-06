@@ -425,11 +425,15 @@ class MethodWithContext(
       _isFinal
     ):
 
+  override def toString =
+    super.toString + " with context " + context
+      .map(m => "[" + m.map((k, v) => s"$k -> $v").mkString(", ") + "]")
+      .mkString("")
+
   /** Appends some substitution lists to the types of this method
     * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting method after adding the substitution lists to its types
+    *   the lists of substitutions to add * @return the resulting method after adding the
+    *   substitution lists to its types
     */
   override def addSubstitutionLists(subs: SubstitutionList): MethodWithContext =
     new MethodWithContext(

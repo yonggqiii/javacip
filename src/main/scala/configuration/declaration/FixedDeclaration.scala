@@ -103,7 +103,7 @@ class FixedDeclaration(
     * @return
     *   the set of all bounds of this type
     */
-  def getAllBounds(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
+  def getAllBounds(t: TypeBound, exclusions: Set[Type] = Set()): Set[ReferenceType] =
     if exclusions.contains(t) then Set(OBJECT)
     else
       t match
@@ -111,7 +111,7 @@ class FixedDeclaration(
           val bounds = getBounds(t)
           if bounds.isEmpty then Set(OBJECT)
           else bounds.flatMap(getAllBounds(_, exclusions + t)).toSet
-        case _ => Set(t)
+        case x: ReferenceType => Set(x)
 
   def getBoundsAsTypeParameters(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
     if exclusions.contains(t) then Set()
@@ -128,7 +128,7 @@ class FixedDeclaration(
     * @return
     *   the bounds of this type
     */
-  def getBounds(typet: Type): Vector[Type] =
+  def getBounds(typet: Type): Vector[TypeBound] =
     typet match
       case TypeParameterIndex(source, index, subs) =>
         if source != identifier then ??? // TODO
@@ -150,15 +150,15 @@ class FixedDeclaration(
     * @return
     *   the erasure of the type
     */
-  def getErasure(typet: Type, exclusions: Set[Type] = Set()): Type =
+  def getErasure(typet: Type, exclusions: Set[Type] = Set()): ReferenceType =
     if exclusions.contains(typet) then OBJECT
     else
       typet match
-        case _: TypeParameterIndex | _: TypeParameterName =>
+        case _: TTypeParameter =>
           val bounds = getBounds(typet)
           if bounds.isEmpty then OBJECT
           else getErasure(bounds(0), exclusions + typet)
-        case _ => typet
+        case x: ReferenceType => x
 
   /** Get the raw erasure of a type, which is the raw erasure of the leftmost bound, where the
     * erasure of a non-type parameter is its raw type
@@ -167,10 +167,8 @@ class FixedDeclaration(
     * @return
     *   the raw erasure of the type
     */
-  def getRawErasure(typet: Type): Type =
-    getErasure(typet).substituted match
-      case x: SubstitutedReferenceType => NormalType(x.identifier, 0)
-      case x                           => x
+  def getRawErasure(typet: Type): SubstitutedReferenceType =
+    getErasure(typet).substituted.raw
 
   /** Obtains the vector of methods that have conflicting signatures
     * @return
