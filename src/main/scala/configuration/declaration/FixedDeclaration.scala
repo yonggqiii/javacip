@@ -167,8 +167,13 @@ class FixedDeclaration(
     * @return
     *   the raw erasure of the type
     */
-  def getRawErasure(typet: Type): SubstitutedReferenceType =
-    getErasure(typet).substituted.raw
+  def getRawErasure(typet: Type): Type =
+    typet match
+      case _: ReferenceType | _: TTypeParameter =>
+        getErasure(typet).substituted.raw
+      case x: PrimitiveType => x
+      case ArrayType(base)  => ArrayType(getRawErasure(base))
+      case x                => ???
 
   /** Obtains the vector of methods that have conflicting signatures
     * @return

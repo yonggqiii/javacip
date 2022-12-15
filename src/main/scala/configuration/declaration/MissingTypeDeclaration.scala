@@ -156,23 +156,37 @@ class MissingTypeDeclaration(
     for (methodName, otherMethods) <- other.methods do
       val ctx = newType.substitutions
       for otherMethod <- otherMethods do
-        mttable
-          .methods(methodName)
-          .find(x => x.signature == otherMethod.signature && x.context == ctx) match
-          case Some(m) =>
-            newAssertions += m.returnType ~=~ otherMethod.returnType
-          case None =>
-            mttable = mttable.addMethod(
-              methodName,
-              otherMethod.signature.formalParameters,
-              otherMethod.returnType,
-              otherMethod.typeParameterBounds,
-              otherMethod.accessModifier,
-              otherMethod.isAbstract,
-              otherMethod.isStatic,
-              otherMethod.isFinal,
-              ctx
-            )
+        if mttable.methods.contains(methodName) then
+          mttable
+            .methods(methodName)
+            .find(x => x.signature == otherMethod.signature && x.context == ctx) match
+            case Some(m) =>
+              newAssertions += m.returnType ~=~ otherMethod.returnType
+            case None =>
+              mttable = mttable.addMethod(
+                methodName,
+                otherMethod.signature.formalParameters,
+                otherMethod.returnType,
+                otherMethod.typeParameterBounds,
+                otherMethod.accessModifier,
+                otherMethod.isAbstract,
+                otherMethod.isStatic,
+                otherMethod.isFinal,
+                ctx
+              )
+        else
+          mttable = mttable.addMethod(
+            methodName,
+            otherMethod.signature.formalParameters,
+            otherMethod.returnType,
+            otherMethod.typeParameterBounds,
+            otherMethod.accessModifier,
+            otherMethod.isAbstract,
+            otherMethod.isStatic,
+            otherMethod.isFinal,
+            ctx
+          )
+
     (mttable, newAssertions.toList)
 
   /** Replace all occurrences of an inference variable in this declaration with another type
@@ -361,6 +375,10 @@ class MissingTypeDeclaration(
       context
     )
 
+    val oldMethods =
+      if methods.contains(identifier) then methods(identifier) else Set[MethodWithContext]()
+    val newMethods = oldMethods + newMethod
+
     MissingTypeDeclaration(
       this.identifier,
       this.typeParameterBounds,
@@ -369,7 +387,7 @@ class MissingTypeDeclaration(
       supertypes,
       methodTypeParameterBounds,
       attributes,
-      methods + (identifier -> (methods(identifier) + newMethod)),
+      methods + (identifier -> newMethods),
       constructors
     )
 

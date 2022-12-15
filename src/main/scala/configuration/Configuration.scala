@@ -191,12 +191,14 @@ case class Configuration(
     else
       (sub, sup) match
         case (x: TTypeParameter, y: TTypeParameter) =>
-          val source = x.containingTypeIdentifier
-          getFixedDeclaration(NormalType(source, 0)) match
-            case None => false
-            case Some(decl) =>
-              val bounds = decl.getBoundsAsTypeParameters(x)
-              bounds.contains(y)
+          if x == y then true
+          else
+            val source = x.containingTypeIdentifier
+            getFixedDeclaration(NormalType(source, 0)) match
+              case None => false
+              case Some(decl) =>
+                val bounds = decl.getBoundsAsTypeParameters(x)
+                bounds.contains(y)
         case (x: TTypeParameter, y: SubstitutedReferenceType) =>
           val source = x.containingTypeIdentifier
           getFixedDeclaration(NormalType(source, 0)) match
