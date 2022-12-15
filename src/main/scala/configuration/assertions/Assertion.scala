@@ -82,6 +82,29 @@ case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
   def replace(oldType: InferenceVariable, newType: Type): SubtypeAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
+/** An assertion stating that one type must be compatible in an assignment/strict/loose invocation
+  * context with another
+  * @param target
+  *   the target type that the source type must be compatible with
+  * @param source
+  *   the source type that is compatible with the target type
+  */
+case class CompatibilityAssertion(target: Type, source: Type) extends Assertion:
+  override def toString = s"${target.substituted} := ${source.substituted}"
+  def replace(oldType: InferenceVariable, newType: Type): CompatibilityAssertion =
+    copy(target = target.replace(oldType, newType), source = source.replace(oldType, newType))
+
+/** An assertion stating that one type widens to another
+  * @param left
+  *   the left primitive type
+  * @param right
+  *   the right primitive type that the left can widen into
+  */
+case class WideningAssertion(left: Type, right: Type) extends Assertion:
+  override def toString = s"${left.substituted} <<~= ${right.substituted}"
+  def replace(oldType: InferenceVariable, newType: Type): WideningAssertion =
+    copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
+
 /** An assertion stating that two types are equivalent
   * @param left
   *   a type

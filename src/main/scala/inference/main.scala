@@ -26,7 +26,7 @@ private def infer(
   configs match
     case Nil => LogWithNone(log.addError(s"Terminating as type errors exist"))
     case x :: xs =>
-      val res = resolve(log, x).flatMap(deconflict).flatMap(concretize).flatMap(parameterizeMembers)
+      val res = resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers
       if res.isLeft then infer(res.log, res.left ::: xs, a + 1)
       else if !res.right.omega.isEmpty then infer(res.log, res.right :: xs, a + 1)
       else

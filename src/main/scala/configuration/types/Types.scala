@@ -35,6 +35,52 @@ val BOXED_BOOLEAN = NormalType("java.lang.Boolean", 0)
 /** The `java.lang.Void` type */
 val BOXED_VOID = NormalType("java.lang.Void", 0)
 
+/** The primitive types */
+val PRIMITIVES: Set[PrimitiveType] = Set(
+  PRIMITIVE_BYTE,
+  PRIMITIVE_SHORT,
+  PRIMITIVE_INT,
+  PRIMITIVE_LONG,
+  PRIMITIVE_CHAR,
+  PRIMITIVE_FLOAT,
+  PRIMITIVE_DOUBLE,
+  PRIMITIVE_BOOLEAN
+)
+
+/** The widening relation <<~= */
+val WIDENING_RELATION: Set[(Type, Type)] = Set(
+  (PRIMITIVE_BYTE, PRIMITIVE_SHORT),
+  (PRIMITIVE_BYTE, PRIMITIVE_INT),    // transitive
+  (PRIMITIVE_BYTE, PRIMITIVE_LONG),   // transitive
+  (PRIMITIVE_BYTE, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_BYTE, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_SHORT, PRIMITIVE_INT),
+  (PRIMITIVE_SHORT, PRIMITIVE_LONG),   // transitive
+  (PRIMITIVE_SHORT, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_SHORT, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_CHAR, PRIMITIVE_INT),
+  (PRIMITIVE_CHAR, PRIMITIVE_LONG),   // transitive
+  (PRIMITIVE_CHAR, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_CHAR, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_INT, PRIMITIVE_LONG),
+  (PRIMITIVE_INT, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_INT, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_LONG, PRIMITIVE_FLOAT),
+  (PRIMITIVE_LONG, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE),
+  (PRIMITIVE_BYTE, PRIMITIVE_BYTE),    // reflexive
+  (PRIMITIVE_SHORT, PRIMITIVE_SHORT),  // reflexive
+  (PRIMITIVE_CHAR, PRIMITIVE_CHAR),    // reflexive
+  (PRIMITIVE_INT, PRIMITIVE_INT),      // reflexive
+  (PRIMITIVE_LONG, PRIMITIVE_LONG),    // reflexive
+  (PRIMITIVE_FLOAT, PRIMITIVE_FLOAT),  // reflexive
+  (PRIMITIVE_DOUBLE, PRIMITIVE_DOUBLE) // reflexive
+)
+
+extension (t: (Type, Type))
+  def in(set: Set[(Type, Type)]): DisjunctiveAssertion =
+    DisjunctiveAssertion(set.toVector map { case (l, r) => (t._1 ~=~ l) && (t._2 ~=~ r) })
+
 // Type aliases
 /** Represents a list of subtitutions--maps from type parameters to types
   */
@@ -43,6 +89,38 @@ type SubstitutionList = List[Map[TTypeParameter, Type]]
 /** Represents some type in the program
   */
 sealed trait Type:
+  /** Asserts that some other type is compatible with this type
+    * @param that
+    *   the other type that is compatible with this type
+    * @return
+    *   the resulting CompatibilityAssertion
+    */
+  def ~:=(that: Type) = CompatibilityAssertion(this, that)
+
+  /** Asserts that this type is compatible with another type
+    * @param that
+    *   the other type that this type is compatible with
+    * @return
+    *   the resulting CompatibilityAssertion
+    */
+  def =:~(that: Type) = CompatibilityAssertion(that, this)
+
+  /** Asserts that this type widens to some other type
+    * @param that
+    *   the type that this type widens to
+    * @return
+    *   the resulting WideningAssertion
+    */
+  def <<~=(that: Type) = WideningAssertion(this, that)
+
+  /** Assertions that some other type widens to this type
+    * @param that
+    *   the type that widens to this type
+    * @return
+    *   the resulting WideningAssertion
+    */
+  def =~>>(that: Type) = WideningAssertion(that, this)
+
   /** The identifier of the type
     */
   val identifier: String
@@ -224,6 +302,15 @@ sealed trait Type:
     *   the resulting type after re-ordering
     */
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Type
+
+  /** Asserts that this type is a member of a set of types
+    * @param set
+    *   the set of types
+    * @return
+    *   the corresponding disjunction
+    */
+  def in(set: Set[Type]): DisjunctiveAssertion =
+    DisjunctiveAssertion(set.toVector.map(this ~=~ _))
 
 /** An array
   * @param base

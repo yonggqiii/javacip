@@ -23,6 +23,14 @@ sealed trait LogWithEither[+L, +R]:
     */
   def flatMap[A >: L, B](f: (Log, R) => LogWithEither[A, B]): LogWithEither[A, B]
 
+  /** Alias for flatMap
+    * @param f
+    *   the function to flatMap the right object
+    * @return
+    *   the resulting LogWithEither object
+    */
+  def >>=[A >: L, B](f: (Log, R) => LogWithEither[A, B]): LogWithEither[A, B] = flatMap(f)
+
   /** Determines if the either contains a Right */
   def isRight: Boolean
 
