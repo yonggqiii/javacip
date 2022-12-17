@@ -4,7 +4,7 @@ package configuration.resolvers
 import com.github.javaparser.ast.{CompilationUnit, NodeList}
 import com.github.javaparser.ast.`type`.{
   ArrayType as ASTArrayType,
-  ClassOrInterfaceType,
+  ClassOrInterfaceType as ASTClassOrInterfaceType,
   IntersectionType as ASTIntersectionType,
   PrimitiveType as ASTPrimitiveType,
   ReferenceType,
@@ -86,7 +86,7 @@ private def resolveArrayType(
 private def resolveClassOrInterfaceType(
     cu: CompilationUnit,
     config: MutableConfiguration,
-    typeToConvert: ClassOrInterfaceType,
+    typeToConvert: ASTClassOrInterfaceType,
     log: Log
 ): (Log, Type) =
   // First we obtain the name of the type
@@ -130,10 +130,9 @@ private def resolveClassOrInterfaceType(
         newLog.addInfo(
           s"type $identifier not found in source code; adding to Phi"
         ),
-        NormalType(
+        ClassOrInterfaceType(
           identifier,
-          arguments.size,
-          if arguments.size == 0 then Nil else List(substitutions)
+          arguments
         )
       )
 

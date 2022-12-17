@@ -6,7 +6,6 @@ import com.github.javaparser.ast.Modifier
 import com.github.javaparser.ast.NodeList
 
 import configuration.types.*
-import scala.annotation.constructorOnly
 
 /** An access modifier in a Java program */
 sealed trait AccessModifier
@@ -60,14 +59,8 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
-  /** Appends some substitution lists to the type of this attribute
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting attribute after adding the substitution lists to its type
-    */
-  def addSubstitutionLists(subs: SubstitutionList) =
-    copy(`type` = `type`.addSubstitutionLists(subs))
+  def substitute(function: Substitution): Attribute =
+    copy(`type` = `type`.substitute(function))
 
   /** Get all the modifiers of the attribute as a `NodeList[Modifier]`
     * @return
@@ -147,14 +140,7 @@ final case class MethodSignature(
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodSignature =
     copy(formalParameters = formalParameters.map(_.reorderTypeParameters(scheme)))
 
-  /** Appends some substitution lists to the types in this method signature
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting method signature after adding the substitution lists to its types
-    */
-  def addSubstitutionLists(subs: SubstitutionList) =
-    copy(formalParameters = formalParameters.map(_.addSubstitutionLists(subs)))
+  def substitute(function: Substitution): MethodSignature = copy(formalParameters = formalParameters.map(_.substitute(function)))
 
   /** Determines if this signature is callable with n arguments
     * @param n
@@ -189,7 +175,7 @@ final case class MethodSignature(
     *   the resulting method signature
     */
   def erased(decl: FixedDeclaration) =
-    MethodSignature(identifier, formalParameters.map(decl.getRawErasure(_)), hasVarArgs)
+    MethodSignature(identifier, formalParameters.map(decl.getErasure(_)), hasVarArgs)
 
 /** A method or constructor */
 sealed trait MethodLike:
@@ -197,7 +183,7 @@ sealed trait MethodLike:
   val signature: MethodSignature
 
   /** The type parameter bounds of the method */
-  val typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]]
+  val typeParameterBounds: Map[TTypeParameter, Vector[Type]]
 
   /** The access modifier tied to the method */
   val accessModifier: AccessModifier
@@ -220,13 +206,15 @@ sealed trait MethodLike:
     */
   def replace(i: InferenceVariable, t: Type): MethodLike
 
-  /** Appends some substitution lists to the types of this method-like
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting method-like after adding the substitution lists to its types
-    */
-  def addSubstitutionLists(subs: SubstitutionList): MethodLike
+  // /** Appends some substitution lists to the types of this method-like
+  //   * @param substitutionList
+  //   *   the lists of substitutions to add
+  //   * @return
+  //   *   the resulting method-like after adding the substitution lists to its types
+  //   */
+  // def addSubstitutionLists(subs: SubstitutionList): MethodLike
+
+  def substitute(function: Substitution): MethodLike
 
   /** Determines if the access level of this method is at least some other access level, based on
     * the following ordering--private, package-private, protected, public
@@ -266,7 +254,7 @@ sealed trait MethodLike:
 class Method(
     val signature: MethodSignature,
     val returnType: Type,
-    val typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     val accessModifier: AccessModifier,
     val isAbstract: Boolean,
     val isStatic: Boolean,
@@ -291,20 +279,14 @@ class Method(
       isFinal
     )
 
-  /** Appends some substitution lists to the types of this method
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting method after adding the substitution lists to its types
-    */
-  def addSubstitutionLists(subs: SubstitutionList): Method =
+  def substitute(function: Substitution): Method = 
     new Method(
-      signature.addSubstitutionLists(subs),
-      returnType.addSubstitutionLists(subs),
-      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-      accessModifier,
-      isAbstract,
-      isStatic,
+      signature.substitute(function), 
+      returnType.substitute(function), 
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.substitute(function)))), 
+      accessModifier, 
+      isAbstract, 
+      isStatic, 
       isFinal
     )
 
@@ -375,7 +357,7 @@ object Method:
       identifier: String,
       formalParameters: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
@@ -409,12 +391,12 @@ object Method:
 class MethodWithContext(
     _signature: MethodSignature,
     _returnType: Type,
-    _typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     _accessModifier: AccessModifier,
     _isAbstract: Boolean,
     _isStatic: Boolean,
     _isFinal: Boolean,
-    val context: List[Map[TTypeParameter, Type]]
+    val context: SubstitutionList
 ) extends Method(
       _signature,
       _returnType,
@@ -430,22 +412,24 @@ class MethodWithContext(
       .map(m => "[" + m.map((k, v) => s"$k -> $v").mkString(", ") + "]")
       .mkString("")
 
-  /** Appends some substitution lists to the types of this method
-    * @param substitutionList
-    *   the lists of substitutions to add * @return the resulting method after adding the
-    *   substitution lists to its types
-    */
-  override def addSubstitutionLists(subs: SubstitutionList): MethodWithContext =
-    new MethodWithContext(
-      signature.addSubstitutionLists(subs),
-      returnType.addSubstitutionLists(subs),
-      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-      accessModifier,
-      isAbstract,
-      isStatic,
-      isFinal,
-      context ::: subs
-    )
+  // /** Appends some substitution lists to the types of this method
+  //   * @param substitutionList
+  //   *   the lists of substitutions to add * @return the resulting method after adding the
+  //   *   substitution lists to its types
+  //   */
+  // override def addSubstitutionLists(subs: SubstitutionList): MethodWithContext =
+  //   new MethodWithContext(
+  //     signature.addSubstitutionLists(subs),
+  //     returnType.addSubstitutionLists(subs),
+  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+  //     accessModifier,
+  //     isAbstract,
+  //     isStatic,
+  //     isFinal,
+  //     context ::: subs
+  //   )
+
+
 
   override def replace(i: InferenceVariable, t: Type): MethodWithContext =
     new MethodWithContext(
@@ -496,7 +480,7 @@ class MethodWithContext(
 class MethodWithCallSiteParameterChoices(
     _signature: MethodSignature,
     _returnType: Type,
-    _typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     _accessModifier: AccessModifier,
     _isAbstract: Boolean,
     _isStatic: Boolean,
@@ -512,23 +496,23 @@ class MethodWithCallSiteParameterChoices(
       _isFinal
     ):
 
-  /** Appends some substitution lists to the types of this method
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting method after adding the substitution lists to its types
-    */
-  override def addSubstitutionLists(subs: SubstitutionList): MethodWithCallSiteParameterChoices =
-    new MethodWithCallSiteParameterChoices(
-      signature.addSubstitutionLists(subs),
-      returnType.addSubstitutionLists(subs),
-      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-      accessModifier,
-      isAbstract,
-      isStatic,
-      isFinal,
-      callSiteParameterChoices
-    )
+  // /** Appends some substitution lists to the types of this method
+  //   * @param substitutionList
+  //   *   the lists of substitutions to add
+  //   * @return
+  //   *   the resulting method after adding the substitution lists to its types
+  //   */
+  // override def addSubstitutionLists(subs: SubstitutionList): MethodWithCallSiteParameterChoices =
+  //   new MethodWithCallSiteParameterChoices(
+  //     signature.addSubstitutionLists(subs),
+  //     returnType.addSubstitutionLists(subs),
+  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+  //     accessModifier,
+  //     isAbstract,
+  //     isStatic,
+  //     isFinal,
+  //     callSiteParameterChoices
+  //   )
 
   override def replace(i: InferenceVariable, t: Type): MethodWithCallSiteParameterChoices =
     new MethodWithCallSiteParameterChoices(
@@ -568,19 +552,26 @@ class MethodWithCallSiteParameterChoices(
   */
 class Constructor(
     val signature: MethodSignature,
-    val typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     val accessModifier: AccessModifier
 ) extends MethodLike:
-  /** Appends some substitution lists to the types of this constructor
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting constructor after adding the substitution lists to its types
-    */
-  def addSubstitutionLists(subs: SubstitutionList): Constructor =
+  // /** Appends some substitution lists to the types of this constructor
+  //   * @param substitutionList
+  //   *   the lists of substitutions to add
+  //   * @return
+  //   *   the resulting constructor after adding the substitution lists to its types
+  //   */
+  // def addSubstitutionLists(subs: SubstitutionList): Constructor =
+  //   new Constructor(
+  //     signature.addSubstitutionLists(subs),
+  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+  //     accessModifier
+  //   )
+
+  def substitute(function: Substitution): MethodLike =
     new Constructor(
-      signature.addSubstitutionLists(subs),
-      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+      signature.substitute(function),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.substitute(function)))),
       accessModifier
     )
 
@@ -638,24 +629,24 @@ class Constructor(
   */
 class ConstructorWithContext(
     _signature: MethodSignature,
-    _typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     _accessModifier: AccessModifier,
     val context: List[Map[TTypeParameter, Type]]
 ) extends Constructor(_signature, _typeParameterBounds, _accessModifier):
 
-  /** Appends some substitution lists to the types of this constructor
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the resulting constructor after adding the substitution lists to its types
-    */
-  override def addSubstitutionLists(subs: SubstitutionList): ConstructorWithContext =
-    new ConstructorWithContext(
-      signature.addSubstitutionLists(subs),
-      typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-      accessModifier,
-      context ::: subs
-    )
+  // /** Appends some substitution lists to the types of this constructor
+  //   * @param substitutionList
+  //   *   the lists of substitutions to add
+  //   * @return
+  //   *   the resulting constructor after adding the substitution lists to its types
+  //   */
+  // override def addSubstitutionLists(subs: SubstitutionList): ConstructorWithContext =
+  //   new ConstructorWithContext(
+  //     signature.addSubstitutionLists(subs),
+  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
+  //     accessModifier,
+  //     context ::: subs
+  //   )
 
   override def replace(i: InferenceVariable, t: Type): ConstructorWithContext =
     new ConstructorWithContext(
@@ -696,7 +687,7 @@ object Constructor:
   def apply(
       containingTypeIdentifier: String,
       formalParameters: Vector[Type],
-      typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
       accessModifier: AccessModifier,
       hasVarArgs: Boolean
   ): Constructor =

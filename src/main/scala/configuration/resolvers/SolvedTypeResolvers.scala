@@ -24,22 +24,24 @@ private[configuration] def resolveSolvedType(
     val typeParams = typet.typeParametersValues
     // get the identifier
     val identifier = typet.getQualifiedName
-    // make type arguments to substitution list
-    val subs: List[Map[TTypeParameter, Type]] =
-      if typeParams.size == 0 then Nil
-      else
-        ((0 until typeParams.size)
-          .foldLeft(Map[TTypeParameter, Type]())((m, i) =>
-            m + (TypeParameterIndex(identifier, i) -> resolveSolvedType(
-              typeParams.asScala(i)
-            ))
-          )) :: Nil
-    // convert to a normaltype
-    NormalType(
-      identifier,
-      typeParams.size,
-      subs
-    )
+    val typeArguments = typet.typeParametersValues().asScala.toVector.map(resolveSolvedType)
+    ClassOrInterfaceType(identifier, typeArguments)
+    // // make type arguments to substitution list
+    // val subs: List[Map[TTypeParameter, Type]] =
+    //   if typeParams.size == 0 then Nil
+    //   else
+    //     ((0 until typeParams.size)
+    //       .foldLeft(Map[TTypeParameter, Type]())((m, i) =>
+    //         m + (TypeParameterIndex(identifier, i) -> resolveSolvedType(
+    //           typeParams.asScala(i)
+    //         ))
+    //       )) :: Nil
+    // // convert to a normaltype
+    // NormalType(
+    //   identifier,
+    //   typeParams.size,
+    //   subs
+    // )
   else if typeToConvert.isTypeVariable then resolveSolvedTypeVariable(typeToConvert.asTypeVariable)
   else if typeToConvert.isUnionType then ??? // TODO
   else if typeToConvert.isVoid then PRIMITIVE_VOID

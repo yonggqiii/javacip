@@ -78,7 +78,7 @@ sealed trait Assertion:
   *   the supertype
   */
 case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
-  override def toString = s"${left.substituted} <: ${right.substituted}"
+  override def toString = s"${left} <: ${right}"
   def replace(oldType: InferenceVariable, newType: Type): SubtypeAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
@@ -90,7 +90,7 @@ case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
   *   the source type that is compatible with the target type
   */
 case class CompatibilityAssertion(target: Type, source: Type) extends Assertion:
-  override def toString = s"${target.substituted} := ${source.substituted}"
+  override def toString = s"${target} := ${source}"
   def replace(oldType: InferenceVariable, newType: Type): CompatibilityAssertion =
     copy(target = target.replace(oldType, newType), source = source.replace(oldType, newType))
 
@@ -101,7 +101,7 @@ case class CompatibilityAssertion(target: Type, source: Type) extends Assertion:
   *   the right primitive type that the left can widen into
   */
 case class WideningAssertion(left: Type, right: Type) extends Assertion:
-  override def toString = s"${left.substituted} <<~= ${right.substituted}"
+  override def toString = s"${left} <<~= ${right}"
   def replace(oldType: InferenceVariable, newType: Type): WideningAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
@@ -112,7 +112,7 @@ case class WideningAssertion(left: Type, right: Type) extends Assertion:
   *   the other type
   */
 case class EquivalenceAssertion(left: Type, right: Type) extends Assertion:
-  override def toString = s"${left.substituted} = ${right.substituted}"
+  override def toString = s"${left} = ${right}"
   def replace(oldType: InferenceVariable, newType: Type): EquivalenceAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
@@ -123,7 +123,7 @@ case class EquivalenceAssertion(left: Type, right: Type) extends Assertion:
   *   the type that contains
   */
 case class ContainmentAssertion(left: Type, right: Type) extends Assertion:
-  override def toString = s"${left.substituted} <= ${right.substituted}"
+  override def toString = s"${left} <= ${right}"
   def replace(oldType: InferenceVariable, newType: Type): ContainmentAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
@@ -154,7 +154,7 @@ case class ConjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion
   *   the type who must be a class
   */
 case class IsClassAssertion(t: Type) extends Assertion:
-  override def toString = s"isClass(${t.substituted})"
+  override def toString = s"isClass($t)"
   def replace(oldType: InferenceVariable, newType: Type): IsClassAssertion =
     copy(t = t.replace(oldType, newType))
 
@@ -163,7 +163,7 @@ case class IsClassAssertion(t: Type) extends Assertion:
   *   the type who must be an interface
   */
 case class IsInterfaceAssertion(t: Type) extends Assertion:
-  override def toString = s"isInterface(${t.substituted})"
+  override def toString = s"isInterface($t)"
   def replace(oldType: InferenceVariable, newType: Type): IsInterfaceAssertion =
     copy(t = t.replace(oldType, newType))
 
@@ -178,7 +178,7 @@ case class IsInterfaceAssertion(t: Type) extends Assertion:
   *   the return type of the method
   */
 case class HasMethodAssertion(
-    source: ReferenceType,
+    source: Type,
     methodName: String,
     args: Vector[Type],
     returnType: Type

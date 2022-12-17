@@ -3,37 +3,37 @@ import configuration.assertions.*
 import scala.Console.{RED, RESET}
 
 /** The `java.lang.Object` type */
-val OBJECT = NormalType("java.lang.Object", 0)
+val OBJECT = ClassOrInterfaceType("java.lang.Object")
 
 /** The `java.lang.String` type */
-val STRING = NormalType("java.lang.String", 0)
+val STRING = ClassOrInterfaceType("java.lang.String")
 
 /** The `java.lang.Integer` type */
-val BOXED_INT = NormalType("java.lang.Integer", 0)
+val BOXED_INT = ClassOrInterfaceType("java.lang.Integer")
 
 /** The `java.lang.Short` type */
-val BOXED_SHORT = NormalType("java.lang.Short", 0)
+val BOXED_SHORT = ClassOrInterfaceType("java.lang.Short")
 
 /** The `java.lang.Long` type */
-val BOXED_LONG = NormalType("java.lang.Long", 0)
+val BOXED_LONG = ClassOrInterfaceType("java.lang.Long")
 
 /** The `java.lang.Byte` type */
-val BOXED_BYTE = NormalType("java.lang.Byte", 0)
+val BOXED_BYTE = ClassOrInterfaceType("java.lang.Byte")
 
 /** The `java.lang.Character` type */
-val BOXED_CHAR = NormalType("java.lang.Character", 0)
+val BOXED_CHAR = ClassOrInterfaceType("java.lang.Character")
 
 /** The `java.lang.Float` type */
-val BOXED_FLOAT = NormalType("java.lang.Float", 0)
+val BOXED_FLOAT = ClassOrInterfaceType("java.lang.Float")
 
 /** The `java.lang.Double` type */
-val BOXED_DOUBLE = NormalType("java.lang.Double", 0)
+val BOXED_DOUBLE = ClassOrInterfaceType("java.lang.Double")
 
 /** The `java.lang.Boolean` type */
-val BOXED_BOOLEAN = NormalType("java.lang.Boolean", 0)
+val BOXED_BOOLEAN = ClassOrInterfaceType("java.lang.Boolean")
 
 /** The `java.lang.Void` type */
-val BOXED_VOID = NormalType("java.lang.Void", 0)
+val BOXED_VOID = ClassOrInterfaceType("java.lang.Void")
 
 /** The primitive types */
 val PRIMITIVES: Set[PrimitiveType] = Set(
@@ -82,12 +82,11 @@ extension (t: (Type, Type))
     DisjunctiveAssertion(set.toVector map { case (l, r) => (t._1 ~=~ l) && (t._2 ~=~ r) })
 
 // Type aliases
-/** Represents a list of subtitutions--maps from type parameters to types
-  */
-type SubstitutionList = List[Map[TTypeParameter, Type]]
+/** Represents a list of subtitutions--maps from type parameters to types */
+type SubstitutionList = List[Substitution]
+type Substitution = Map[TTypeParameter, Type]
 
-/** Represents some type in the program
-  */
+/** Represents some type in the program */
 sealed trait Type:
   /** Asserts that some other type is compatible with this type
     * @param that
@@ -124,10 +123,6 @@ sealed trait Type:
   /** The identifier of the type
     */
   val identifier: String
-
-  /** The substitutions this type has
-    */
-  val substitutions: SubstitutionList
 
   /** The number of type arguments this type needs to have
     */
@@ -223,14 +218,6 @@ sealed trait Type:
   /** Determines if this type contains any inference variables, alphas or placeholder types */
   def isSomehowUnknown: Boolean
 
-  /** Appends some substitution lists to this type
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the type after adding the substitution lists
-    */
-  def addSubstitutionLists(substitutionList: SubstitutionList): Type
-
   /** Replace any occurrences of an old type in this type and all its substitutions/members with a
     * new type
     * @param oldType
@@ -241,11 +228,6 @@ sealed trait Type:
     *   the resulting type
     */
   def replace(oldType: InferenceVariable, newType: Type): Type
-
-  /** Returns the equivalent type after substituting as much as possible; for example, `List<T>[T ->
-    * Integer]` will become `List<Integer>`. Replaceable types will not be substituted
-    */
-  def substituted: Type
 
   /** Returns the equivalent type after removing all type arguments, a.k.a. the raw type.
     *
@@ -260,16 +242,15 @@ sealed trait Type:
     * @return
     *   true if this strictly occurs in that, false otherwise
     */
-  def ⊂(that: Type): Boolean = that.substituted match
-    case ArrayType(x)                => this.substituted ⊆ x
+  def ⊂(that: Type): Boolean = that match
+    case ArrayType(x)                => this ⊆ x
     case x: PrimitiveType            => false
     case Bottom | Wildcard           => false
-    case x: ExtendsWildcardType      => this.substituted ⊆ x.upper
-    case x: SuperWildcardType        => this.substituted ⊆ x.lower
+    case x: ExtendsWildcardType      => this ⊆ x.upper
+    case x: SuperWildcardType        => this ⊆ x.lower
     case x: TTypeParameter           => false
     case x: InferenceVariable        => false
-    case x: SubstitutedReferenceType => x.args.exists(this.substituted ⊆ _)
-    case x: NormalType => ??? // not possible
+    case x: ClassOrInterfaceType => ??? // not possible
 
   /** Checks if this type occurs in or is equal to another type
     * @param that
@@ -278,7 +259,7 @@ sealed trait Type:
     *   true if this occurs in or is equal to that, false otherwise
     */
   def ⊆(that: Type): Boolean =
-    this.substituted == that.substituted || this.substituted ⊂ that.substituted
+    this == that || this ⊂ that
 
   override def toString: String =
     val start =
@@ -291,9 +272,9 @@ sealed trait Type:
         "<" + (0 until numArgs)
           .map(TypeParameterIndex(identifier, _))
           .mkString(", ") + ">"
-    val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
-    val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
-    s"$start$argumentList$subsstring"
+    // val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
+    // val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
+    s"$start$argumentList"
 
   /** Reorders type parameters by replaces all type parameters given a scheme
     * @param scheme
@@ -312,6 +293,37 @@ sealed trait Type:
   def in(set: Set[Type]): DisjunctiveAssertion =
     DisjunctiveAssertion(set.toVector.map(this ~=~ _))
 
+  /** Add a substitution function to this type
+    * @param function the function that maps type parameters to types
+    * @return the type after substitution
+    */
+  def substitute(function: Substitution): Type
+
+  def expansion: (Type, Substitution)
+
+/** The primitive types */
+sealed trait PrimitiveType extends Type:
+  val boxed: ClassOrInterfaceType
+  val numArgs                                                                           = 0
+  val substitutions                                                                     = Nil
+  def addSubstitutionLists(substitutions: SubstitutionList): PrimitiveType              = this
+  val upwardProjection: PrimitiveType                                                   = this
+  val downwardProjection: PrimitiveType                                                 = this
+  def replace(oldType: InferenceVariable, newType: Type): PrimitiveType                 = this
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PrimitiveType = this
+  def substituted                                                                       = this
+  val args                                                                              = Vector()
+  def isSomehowUnknown                                                                  = false
+  def raw: PrimitiveType                                                                = this
+  /** the types which this primitive type can widen to */
+  def widened: Set[PrimitiveType]
+  /** the types which can be assigned into this type */
+  def isAssignableBy: Set[Type]
+  /** Substitutions on a primitive type do not change it */
+  def substitute(function: Substitution): PrimitiveType = this
+  /** The expansion of any primitive type is just itself and an empty function */  
+  def expansion: (PrimitiveType, Substitution) = (this, Map())
+
 /** An array
   * @param base
   *   the type of the elements of this array
@@ -325,25 +337,12 @@ final case class ArrayType(
   val numArgs                       = 0
   val upwardProjection: ArrayType   = this
   val downwardProjection: ArrayType = this
-  val substitutions                 = Nil
-
-  /** Appends some substitution lists to this type. This method effectively adds the substitutions
-    * to its base
-    * @param substitutionList
-    *   the lists of substitutions to add
-    * @return
-    *   the type after adding the substitution lists
-    */
-  def addSubstitutionLists(substitutions: SubstitutionList): ArrayType =
-    copy(base = base.addSubstitutionLists(substitutions))
   def replace(oldType: InferenceVariable, newType: Type): ArrayType =
     copy(base = base.replace(oldType, newType))
-  def substituted      = copy(base = base.substituted)
   val args             = Vector()
   def isSomehowUnknown = base.isSomehowUnknown
 
   /** Returns the type after making its base raw
-    *
     * @return
     *   the resulting raw type
     */
@@ -352,69 +351,67 @@ final case class ArrayType(
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]) =
     copy(base = base.reorderTypeParameters(scheme))
 
-trait TypeBound extends Type:
-  val upwardProjection: TypeBound
-  val downwardProjection: TypeBound
-  def addSubstitutionLists(substitutionList: SubstitutionList): TypeBound
-  def replace(oldType: InferenceVariable, newType: Type): TypeBound
+  def substitute(function: Substitution): ArrayType = copy(base = base.substitute(function))
+  /** Nothing */
+  def expansion: (ArrayType, Substitution) = (this, Map())
 
-  /** Returns the equivalent type after substituting as much as possible; for example, `List<T>[T ->
-    * Integer]` will become `List<Integer>`. Replaceable types will not be substituted
-    */
-  def substituted: Type
+final case class ClassOrInterfaceType(
+  identifier: String,
+  args: Vector[Type]
+) extends Type:
+  val numArgs = args.size
+  override def toString =
+    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
+    s"$identifier$a"
+  def isSomehowUnknown = args.exists(_.isSomehowUnknown)
+  def raw: ClassOrInterfaceType = copy(args = Vector())
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ClassOrInterfaceType =
+    copy(args = args.map(_.reorderTypeParameters(scheme)))
+  val upwardProjection: ClassOrInterfaceType = this
+  val downwardProjection: ClassOrInterfaceType = this
+  def replace(oldType: InferenceVariable, newType: Type): ClassOrInterfaceType = copy(args = args.map(_.replace(oldType, newType)))
+  def substitute(function: Substitution): ClassOrInterfaceType = copy(args = args.map(_.substitute(function)))
+  def expansion: (ClassOrInterfaceType, Substitution) = 
+    val base = copy(args = (0 until numArgs).map(TypeParameterIndex(identifier, _)).toVector)
+    val subs = (0 until numArgs).map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i))).toMap
+    (base, subs)
 
-  /** Returns the equivalent type after removing all type arguments, a.k.a. the raw type.
-    *
-    * @return
-    *   the raw type of this type
-    */
-  def raw: TypeBound
-
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TypeBound
-
-trait ReferenceType extends TypeBound:
-  val numArgs: Int
-  val upwardProjection: ReferenceType
-  val downwardProjection: ReferenceType
-  def addSubstitutionLists(substitutionList: SubstitutionList): ReferenceType
-  def replace(oldType: InferenceVariable, newType: Type): ReferenceType
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ReferenceType
-  def substituted: SubstitutedReferenceType
-
-/** Just your regular reference type
-  * @param identifier
-  *   the name of the type
-  * @param numArgs
-  *   the number of arguments of this type
-  * @param substitutions
-  *   the list of substitutions of this type
-  */
-final case class NormalType(
-    identifier: String,
-    numArgs: Int,
-    substitutions: SubstitutionList = Nil
-) extends ReferenceType:
-  val upwardProjection: NormalType   = this
-  val downwardProjection: NormalType = this
-  def addSubstitutionLists(substitutions: SubstitutionList): NormalType =
-    if numArgs > 0 then
-      copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
-    else this
-  def replace(oldType: InferenceVariable, newType: Type): NormalType =
-    copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  def substituted = SubstitutedReferenceType(identifier, args.map(_.substituted))
-  val args = (0 until numArgs)
-    .map(TypeParameterIndex(identifier, _))
-    .map(_.addSubstitutionLists(substitutions))
-    .toVector
-  def isSomehowUnknown = substituted.isSomehowUnknown
-  def raw: NormalType  = copy(numArgs = 0, substitutions = Nil)
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): NormalType =
-    copy(substitutions =
-      substitutions.map(m =>
-        m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
-      )
-    )
+object ClassOrInterfaceType:
+  def apply(identifier: String): ClassOrInterfaceType = new ClassOrInterfaceType(identifier, Vector())
+// /** Just your regular reference type
+//   * @param identifier
+//   *   the name of the type
+//   * @param numArgs
+//   *   the number of arguments of this type
+//   * @param substitutions
+//   *   the list of substitutions of this type
+//   */
+// final case class NormalType(
+//     identifier: String,
+//     numArgs: Int,
+//     substitutions: SubstitutionList = Nil
+// ) extends ReferenceType:
+//   val upwardProjection: NormalType   = this
+//   val downwardProjection: NormalType = this
+//   def addSubstitutionLists(substitutions: SubstitutionList): NormalType =
+//     if numArgs > 0 then
+//       copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
+//     else this
+//   def replace(oldType: InferenceVariable, newType: Type): NormalType =
+//     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
+//   def substituted = SubstitutedReferenceType(identifier, args.map(_.substituted))
+//   val args = (0 until numArgs)
+//     .map(TypeParameterIndex(identifier, _))
+//     .map(_.addSubstitutionLists(substitutions))
+//     .toVector
+//   def isSomehowUnknown = substituted.isSomehowUnknown
+//   def raw: NormalType  = copy(numArgs = 0, substitutions = Nil)
+//   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): NormalType =
+//     copy(substitutions =
+//       substitutions.map(m =>
+//         m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
+//       )
+//     )
 
 /** Companion object to [[configuration.types.PrimitiveType]]. */
 object PrimitiveType:
@@ -435,27 +432,6 @@ object PrimitiveType:
     case "boolean" => PRIMITIVE_BOOLEAN
     case "void"    => PRIMITIVE_VOID
     case _ => ??? // definitely fails
-
-/** The primitive types */
-sealed trait PrimitiveType extends Type:
-  val boxed: NormalType
-  val numArgs                                                                           = 0
-  val substitutions                                                                     = Nil
-  def addSubstitutionLists(substitutions: SubstitutionList): PrimitiveType              = this
-  val upwardProjection: PrimitiveType                                                   = this
-  val downwardProjection: PrimitiveType                                                 = this
-  def replace(oldType: InferenceVariable, newType: Type): PrimitiveType                 = this
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PrimitiveType = this
-  def substituted                                                                       = this
-  val args                                                                              = Vector()
-  def isSomehowUnknown                                                                  = false
-  def raw: PrimitiveType                                                                = this
-
-  /** the types which this primitive type can widen to */
-  def widened: Set[PrimitiveType]
-
-  /** the types which can be assigned into this type */
-  def isAssignableBy: Set[Type]
 
 /** the `int` type */
 case object PRIMITIVE_INT extends PrimitiveType:
@@ -560,51 +536,47 @@ case object Bottom extends Type:
   val upwardProjection: Bottom.type                                                   = this
   val downwardProjection: Bottom.type                                                 = this
   val identifier                                                                      = "⊥"
-  val substitutions: SubstitutionList                                                 = Nil
-  def addSubstitutionLists(substitutions: SubstitutionList): Bottom.type              = this
   val numArgs                                                                         = 0
   def replace(oldType: InferenceVariable, newType: Type): Bottom.type                 = this
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Bottom.type = this
-  def substituted                                                                     = this
   val args                                                                            = Vector()
   def isSomehowUnknown                                                                = false
   def raw: Bottom.type                                                                = this
+  def expansion: (Bottom.type, Substitution) = (this, Map())
+  def substitute(function: Substitution): Bottom.type = this
 
 /** the `?` type */
 case object Wildcard extends Type:
-  val upwardProjection: NormalType                                                      = OBJECT
+  val upwardProjection: ClassOrInterfaceType                                                      = OBJECT
   val downwardProjection: Bottom.type                                                   = Bottom
   val identifier                                                                        = "?"
   val numArgs                                                                           = 0
-  val substitutions: SubstitutionList                                                   = Nil
-  def addSubstitutionLists(substitutions: SubstitutionList): Wildcard.type              = this
   def replace(oldType: InferenceVariable, newType: Type): Wildcard.type                 = this
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Wildcard.type = this
-  def substituted                                                                       = this
   val args                                                                              = Vector()
   def isSomehowUnknown                                                                  = false
   override def toString                                                                 = identifier
   def raw: Wildcard.type                                                                = this
+  def substitute(function: Substitution): Wildcard.type = this
+  def expansion:(Wildcard.type, Substitution) = (this, Map())
 
 /** the `? extends Foo` type */
 final case class ExtendsWildcardType(
     upper: Type
 ) extends Type:
   val identifier                      = ""
-  val substitutions: SubstitutionList = Nil
   val numArgs                         = 0
   val upwardProjection                = upper.upwardProjection
   val downwardProjection: Bottom.type = Bottom
-  def addSubstitutionLists(substitutions: SubstitutionList): ExtendsWildcardType =
-    ExtendsWildcardType(upper.addSubstitutionLists(substitutions))
   def replace(oldType: InferenceVariable, newType: Type): ExtendsWildcardType =
     copy(upper = upper.replace(oldType, newType))
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ExtendsWildcardType =
     copy(upper = upper.reorderTypeParameters(scheme))
-  def substituted       = copy(upper = upper.substituted)
   val args              = Vector()
-  def isSomehowUnknown  = upper.substituted.isSomehowUnknown
+  def isSomehowUnknown  = upper.isSomehowUnknown
   override def toString = s"? extends $upper"
+  def substitute(function: Substitution): ExtendsWildcardType = copy(upper.substitute(function))
+  def expansion: (ExtendsWildcardType, Substitution) = (this, Map())
 
   /** Returns the type after making the extended type raw
     * @return
@@ -619,48 +591,39 @@ final case class SuperWildcardType(
   val identifier                      = ""
   val numArgs                         = 0
   val substitutions: SubstitutionList = Nil
-  val upwardProjection: NormalType    = OBJECT
+  val upwardProjection: ClassOrInterfaceType    = OBJECT
   val downwardProjection =
     lower.downwardProjection
-  def addSubstitutionLists(substitutions: SubstitutionList) =
-    copy(lower.addSubstitutionLists(substitutions))
   def replace(oldType: InferenceVariable, newType: Type): SuperWildcardType =
     copy(lower = lower.replace(oldType, newType))
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): SuperWildcardType =
     copy(lower = lower.reorderTypeParameters(scheme))
-  def substituted       = copy(lower.substituted)
   val args              = Vector()
-  def isSomehowUnknown  = lower.substituted.isSomehowUnknown
+  def isSomehowUnknown  = lower.isSomehowUnknown
   override def toString = s"? super ${lower}"
-
   /** Returns the type after making the extending type raw
     * @return
     *   the resulting type
     */
   def raw: SuperWildcardType = copy(lower.raw)
+  def substitute(function: Substitution): SuperWildcardType = copy(lower = lower.substitute(function))
+  def expansion: (SuperWildcardType, Substitution) = (this, Map())
 
 /** A type parameter of some sort */
-sealed trait TTypeParameter extends TypeBound:
+sealed trait TTypeParameter extends Type:
   val upwardProjection: TTypeParameter
   val downwardProjection: TTypeParameter
-  def addSubstitutionLists(substitutionList: SubstitutionList): TTypeParameter
   def replace(oldType: InferenceVariable, newType: Type): TTypeParameter
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TTypeParameter =
-    val raw = if scheme.contains(this.raw) then scheme(this.raw) else this.raw
-    val newSubs = substitutions.map(m =>
-      m.map((k, v) => (k.reorderTypeParameters(scheme), v.reorderTypeParameters(scheme)))
-    )
-    raw.addSubstitutionLists(newSubs)
-
+    if scheme contains this then scheme(this) else this
   /** The type who contains this type parameter */
   def containingTypeIdentifier: String
-  def isSomehowUnknown =
-    substituted match
-      case _: TTypeParameter => false
-      case s                 => s.isSomehowUnknown
-  def raw: TTypeParameter
+  def isSomehowUnknown = false
+  def raw: this.type = this
+  def expansion: (this.type, Substitution) = (this, Map())
+  def substitute(function: Substitution): Type = if function contains this then function(this) else this
 
-/** A type parameter by index (de Bruijn indexing)
+/** A type parameter by index (something like de Bruijn indexing)
   * @param source
   *   the type containing this parameter
   * @param index
@@ -671,30 +634,15 @@ sealed trait TTypeParameter extends TypeBound:
 final case class TypeParameterIndex(
     source: String,
     index: Int,
-    substitutions: SubstitutionList = Nil
 ) extends TTypeParameter:
   def containingTypeIdentifier               = source
   val numArgs                                = 0
   val identifier                             = s"$source#${(84 + index).toChar.toString}"
   val upwardProjection: TypeParameterIndex   = this
   val downwardProjection: TypeParameterIndex = this
-  def addSubstitutionLists(substitutions: SubstitutionList): TypeParameterIndex =
-    copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
-  def replace(oldType: InferenceVariable, newType: Type): TypeParameterIndex =
-    copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  def substituted: Type = substitutions match
-    case Nil => this
-    case x :: xs =>
-      if x.contains(copy(substitutions = Nil)) then
-        x(copy(substitutions = Nil)).addSubstitutionLists(xs).substituted
-      else copy(substitutions = xs).substituted
+  def replace(oldType: InferenceVariable, newType: Type): TypeParameterIndex = this
   val args = Vector()
 
-  /** Returns the type parameter after removing all substitutions
-    * @return
-    *   the resulting type
-    */
-  def raw: TypeParameterIndex = copy(substitutions = Nil)
 
 /** A type parameter by name
   * @param sourceType
@@ -710,35 +658,15 @@ final case class TypeParameterName(
     sourceType: String,
     source: String,
     qualifiedName: String,
-    substitutions: SubstitutionList = Nil
 ) extends TTypeParameter:
   def containingTypeIdentifier = sourceType
   val identifier               = s"$source#$qualifiedName"
   val numArgs                  = 0
   val upwardProjection         = this
   val downwardProjection       = this
-  def addSubstitutionLists(substitutions: SubstitutionList) =
-    TypeParameterName(
-      sourceType,
-      source,
-      qualifiedName,
-      (this.substitutions ::: substitutions).filter(!_.isEmpty)
-    )
-  def replace(oldType: InferenceVariable, newType: Type): TypeParameterName =
-    copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  def substituted: Type = substitutions match
-    case Nil => this
-    case x :: xs =>
-      if x.contains(copy(substitutions = Nil)) then
-        x(copy(substitutions = Nil)).addSubstitutionLists(xs).substituted
-      else copy(substitutions = xs).substituted
+  def replace(oldType: InferenceVariable, newType: Type): TypeParameterName = this
+    // copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
   val args = Vector()
-
-  /** Returns the type parameter after removing all substitutions
-    * @return
-    *   the resulting type
-    */
-  def raw: TypeParameterName = copy(substitutions = Nil)
 
 /** Some placeholder for inference */
 sealed trait InferenceVariable extends Type:
@@ -751,6 +679,29 @@ sealed trait InferenceVariable extends Type:
     *   itself
     */
   def raw: this.type = this
+  val substitutions: SubstitutionList
+  def expansion: (this.type, Substitution) = (this, Map())
+
+final case class TemporaryType(
+  id: Int,
+  args: Vector[Type]
+) extends Type:
+  val numArgs = args.size
+  override def toString =
+    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
+    s"ξ$id$a"
+  def isSomehowUnknown = args.exists(_.isSomehowUnknown)
+  def raw: TemporaryType = copy(args = Vector())
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TemporaryType =
+    copy(args = args.map(_.reorderTypeParameters(scheme)))
+  val upwardProjection: TemporaryType = this
+  val downwardProjection: TemporaryType = this
+  def replace(oldType: InferenceVariable, newType: Type): TemporaryType = copy(args = args.map(_.replace(oldType, newType)))
+  def substitute(function: Substitution): TemporaryType = copy(args = args.map(_.substitute(function)))
+  def expansion: (TemporaryType, Substitution) = 
+    val base = copy(args = (0 until numArgs).map(TypeParameterIndex(identifier, _)).toVector)
+    val subs = (0 until numArgs).map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i))).toMap
+    (base, subs)
 
 /** Some random placeholder type
   * @param id
@@ -762,13 +713,12 @@ final case class PlaceholderType(id: Int) extends InferenceVariable:
   val identifier                                                             = s"τ$id(placeholder)"
   val upwardProjection: PlaceholderType                                      = this
   val downwardProjection: PlaceholderType                                    = this
-  def addSubstitutionLists(substitutions: SubstitutionList): PlaceholderType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this
     else newType
-  def substituted                                                                         = this
   val args                                                                                = Vector()
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PlaceholderType = this
+  def substitute(function: Substitution): PlaceholderType = this
 
 /** A disjunctive type is a type who could be one of several possible other types
   * @param id
@@ -796,27 +746,30 @@ final case class DisjunctiveType(
   val numArgs = 0
   val identifier =
     val str = _choices.mkString(", ")
-    s"τ$id (V{$str})"
+    s"τ$id=V{$str}"
+  override def toString() =
+    val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
+    val subsstring = substitutions.map(subs => s"{${subsFn(subs)}}").mkString
+    s"$identifier$subsstring"
   val upwardProjection: DisjunctiveType   = this
   val downwardProjection: DisjunctiveType = this
-  def addSubstitutionLists(substitutions: SubstitutionList): DisjunctiveType =
-    copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
+  def substitute(function: Substitution): DisjunctiveType = 
+    copy(substitutions = (this.substitutions ::: (function :: Nil)).filter(!_.isEmpty))
 
   /** The choices this type can be
     * @return
     *   the choices this type can be
     */
-  def choices = _choices.map(_.addSubstitutionLists(substitutions))
+  def choices = _choices.map(x => substitutions.foldLeft(x)((t, s) => t.substitute(s)))
   def replace(oldType: InferenceVariable, newType: Type): Type =
     val newChoices       = _choices.map(_.replace(oldType, newType))
     val newSource        = source.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then
       copy(source = newSource, substitutions = newSubstitutions, _choices = newChoices)
-    else newType.addSubstitutionLists(substitutions)
-  def substituted = this
+    else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
   val args        = Vector()
-  override def ⊆(that: Type): Boolean = that.substituted match
+  override def ⊆(that: Type): Boolean = that match
     case x: DisjunctiveType => this.id == x.id
     case _                  => super.⊆(that)
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): DisjunctiveType =
@@ -829,7 +782,22 @@ final case class DisjunctiveType(
       )
     )
 
-/** Some unknown concrete type
+final case class DisjunctiveTypeWithPrimitives(id: Int, substitutions: SubstitutionList = Nil, canBeBounded: Boolean = true, parameterChoices: Set[TTypeParameter] = Set(), choices: Set[Type] = Set[Type]() ++ PRIMITIVES) extends InferenceVariable:
+  val numArgs: Int = 0
+  val identifier =
+    val str = choices.mkString(", ")
+    s"τ$id=V{$str}"
+  override def toString() =
+    val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
+    val subsstring = substitutions.map(subs => s"{${subsFn(subs)}}").mkString
+    s"$identifier$subsstring"
+  val upwardProjection: DisjunctiveTypeWithPrimitives   = this
+  val downwardProjection: DisjunctiveTypeWithPrimitives = this
+  def substitute(function: Substitution): DisjunctiveTypeWithPrimitives = 
+    copy(substitutions = (this.substitutions ::: (function :: Nil)).filter(!_.isEmpty))
+
+
+/** Some unknown concrete reference type
   * @param id
   *   the ID of this alpha
   * @param source
@@ -860,6 +828,10 @@ final case class Alpha(
   val identifier         = s"α$id"
   val upwardProjection   = this
   val downwardProjection = this
+  override def toString() =
+    val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
+    val subsstring = substitutions.map(subs => s"{${subsFn(subs)}}").mkString
+    s"$identifier$subsstring"
   def addSubstitutionLists(substitutions: SubstitutionList) =
     Alpha(
       id,
@@ -872,9 +844,10 @@ final case class Alpha(
     val newSource        = source.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then copy(source = newSource, substitutions = newSubstitutions)
-    else newType.addSubstitutionLists(substitutions)
+    else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
   def substituted = this
   val args        = Vector()
+  def substitute(function: Substitution): Alpha = copy(substitutions = (substitutions ::: (function :: Nil)).filter(!_.isEmpty))
 
   /** Given an identifier of a type and the arity of its type constructor, convert this alpha into
     * an instance of that type
@@ -886,13 +859,11 @@ final case class Alpha(
     * @return
     *   the resulting type
     */
-  def concretizeToReference(identifier: String, numArgs: Int): NormalType =
-    NormalType(
+  def concretizeToReference(identifier: String, numArgs: Int): ClassOrInterfaceType =
+    ClassOrInterfaceType(
       identifier,
-      numArgs,
-      ((0 until numArgs)
+      (0 until numArgs)
         .map(i =>
-          TypeParameterIndex(identifier, i) ->
             InferenceVariableFactory.createDisjunctiveType(
               source,
               Nil,
@@ -901,44 +872,44 @@ final case class Alpha(
               canBeBounded
             )
         )
-        .toMap :: Nil).filter(!_.isEmpty)
+        .toVector
     )
-  override def ⊆(that: Type): Boolean = that.substituted match
+  override def ⊆(that: Type): Boolean = that match
     case x: Alpha => this.id == x.id
     case _        => super.⊆(that)
 
-/** A reference type after substitution, i.e. it should have no further substitutions unless it
-  * contains type arguments who are inference variables
-  * @param identifier
-  *   the identifier of this type
-  * @param args
-  *   the type arguments
-  */
-final case class SubstitutedReferenceType(
-    identifier: String,
-    args: Vector[Type]
-) extends ReferenceType:
-  val numArgs = args.size
-  val substitutions: SubstitutionList =
-    (0 until numArgs).map(i => (TypeParameterIndex(identifier, i) -> args(i))).toMap :: Nil
-  val upwardProjection   = this
-  val downwardProjection = this
-  def addSubstitutionLists(substitutions: SubstitutionList) =
-    NormalType(
-      identifier,
-      numArgs,
-      this.substitutions
-    ).addSubstitutionLists(substitutions)
-  def replace(oldType: InferenceVariable, newType: Type) =
-    copy(args = args.map(_.replace(oldType, newType)))
-  def substituted = this
-  override def toString =
-    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
-    s"$identifier$a"
-  def isSomehowUnknown              = args.foldLeft(false)(_ || _.isSomehowUnknown)
-  def raw: SubstitutedReferenceType = copy(args = Vector())
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): SubstitutedReferenceType =
-    copy(args = args.map(_.reorderTypeParameters(scheme)))
+// /** A reference type after substitution, i.e. it should have no further substitutions unless it
+//   * contains type arguments who are inference variables
+//   * @param identifier
+//   *   the identifier of this type
+//   * @param args
+//   *   the type arguments
+//   */
+// final case class SubstitutedReferenceType(
+//     identifier: String,
+//     args: Vector[Type]
+// ) extends ReferenceType:
+//   val numArgs = args.size
+//   val substitutions: SubstitutionList =
+//     (0 until numArgs).map(i => (TypeParameterIndex(identifier, i) -> args(i))).toMap :: Nil
+//   val upwardProjection   = this
+//   val downwardProjection = this
+//   def addSubstitutionLists(substitutions: SubstitutionList) =
+//     NormalType(
+//       identifier,
+//       numArgs,
+//       this.substitutions
+//     ).addSubstitutionLists(substitutions)
+//   def replace(oldType: InferenceVariable, newType: Type) =
+//     copy(args = args.map(_.replace(oldType, newType)))
+//   def substituted = this
+//   override def toString =
+//     val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
+//     s"$identifier$a"
+//   def isSomehowUnknown              = args.foldLeft(false)(_ || _.isSomehowUnknown)
+//   def raw: SubstitutedReferenceType = copy(args = Vector())
+//   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): SubstitutedReferenceType =
+//     copy(args = args.map(_.reorderTypeParameters(scheme)))
 
 /** Object that contains helper methods to create inference variables
   */

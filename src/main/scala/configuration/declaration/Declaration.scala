@@ -13,7 +13,7 @@ trait Declaration[T <: Method, U <: Constructor]:
 
   /** The bounds of the type parameters of this type
     */
-  val typeParameterBounds: Vector[Vector[TypeBound]]
+  val typeParameterBounds: Vector[Vector[Type]]
 
   /** Whether the type is final
     */
@@ -29,7 +29,7 @@ trait Declaration[T <: Method, U <: Constructor]:
 
   /** The bounds on any of the method type parameters
     */
-  val methodTypeParameterBounds: Map[String, Vector[TypeBound]]
+  val methodTypeParameterBounds: Map[String, Vector[Type]]
 
   /** The attributes of this declaration
     */
@@ -47,7 +47,7 @@ trait Declaration[T <: Method, U <: Constructor]:
     * @return
     *   the direct ancestors of this type
     */
-  def getDirectAncestors: Vector[ReferenceType]
+  def getDirectAncestors: Vector[Type]
 
   /** The number of type parameters this type receives, i.e. the arity of the type constructor of
     * this type
@@ -122,7 +122,7 @@ trait Declaration[T <: Method, U <: Constructor]:
   ) =
     if !attributes.contains(identifier) then None
     else if t.identifier != this.identifier then None
-    else Some(attributes(identifier).addSubstitutionLists(t.substitutions))
+    else Some(attributes(identifier).substitute(t.expansion._2))
 
   /** Get the all method usages (including inherited ones) from an instance of this declaration
     * @param t
@@ -152,3 +152,5 @@ trait Declaration[T <: Method, U <: Constructor]:
     for (k, v) <- x do res(k) = res(k) ++ v
     for (k, v) <- methods do res(k) = res(k) ++ v
     res.toMap
+
+  def substitute(function: Substitution): this.type

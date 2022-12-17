@@ -10,7 +10,7 @@ import com.github.javaparser.ast.body.{
   VariableDeclarator
 }
 import com.github.javaparser.ast.expr.*
-import com.github.javaparser.ast.`type`.{ClassOrInterfaceType, TypeParameter}
+import com.github.javaparser.ast.`type`.{ClassOrInterfaceType as ASTClassOrInterfaceType, TypeParameter}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
@@ -132,7 +132,7 @@ private def visit(
   // Get all the types being referenced in the program
   finalLog = mapWithLog(
     finalLog,
-    c.findAll(classOf[ClassOrInterfaceType]).asScala.toVector
+    c.findAll(classOf[ASTClassOrInterfaceType]).asScala.toVector
   )((l, t) => resolveASTType(cu, arg, t, l))._1
 
   // get modifiers which are not accessible to the
@@ -180,7 +180,7 @@ private def visit(
   val statements          = c.findAll(classOf[Statement]).asScala.toVector
   val variableDeclarators = c.findAll(classOf[VariableDeclarator]).asScala.toVector
   expressions
-    .foldLeft(LogWithOption(finalLog, Some(NormalType("", 0): Type)))((lgi, expr) =>
+    .foldLeft(LogWithOption(finalLog, Some(ClassOrInterfaceType(""): Type)))((lgi, expr) =>
       lgi.flatMap((lg, i) => resolveExpression(lg, expr, arg, expressionTypeMemo))
     )
     .rightmap(_ => arg)
@@ -235,7 +235,7 @@ private def addAssertionsOnBoundsAndSupertypes(
     else
       for bound <- tp.tail do
         bound match
-          case x @ NormalType(_, _, _) =>
+          case x: ClassOrInterfaceType =>
             config._3 += IsInterfaceAssertion(x)
           case _ => ()
   for (_, tp) <- decl.methodTypeParameterBounds do
@@ -243,6 +243,6 @@ private def addAssertionsOnBoundsAndSupertypes(
     else
       for bound <- tp.tail do
         bound match
-          case x: NormalType =>
+          case x: ClassOrInterfaceType =>
             config._3 += IsInterfaceAssertion(x)
           case _ => ()
