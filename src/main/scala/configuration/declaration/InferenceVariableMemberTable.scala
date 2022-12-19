@@ -8,12 +8,13 @@ import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
 class InferenceVariableMemberTable(
     val typet: Type,
     val attributes: Map[String, Attribute] = Map(),
-    val methods: Map[String, Set[MethodWithCallSiteParameterChoices]] =
-      Map().withDefaultValue(Set()),
+    val methods: Map[String, Vector[MethodWithCallSiteParameterChoices]] =
+      Map().withDefaultValue(Vector()),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false,
     val constraintStore: Vector[Assertion] = Vector(),
-    val exclusions: Set[String] = Set()
+    val exclusions: Set[String] = Set(),
+    val numParams: Int = 0
 ):
   def addConstraint(asst: Assertion) =
     InferenceVariableMemberTable(
@@ -41,7 +42,7 @@ class InferenceVariableMemberTable(
     val newAssertions = ArrayBuffer[Assertion]()
     val newAttributes = MutableMap[String, Attribute]()
     val newMethods =
-      MutableMap[String, Set[MethodWithCallSiteParameterChoices]]().withDefaultValue(Set())
+      MutableMap[String, Vector[MethodWithCallSiteParameterChoices]]().withDefaultValue(Vector())
     if other.mustBeClass then newAssertions += typet.isClass
     if other.mustBeInterface then newAssertions += typet.isInterface
     // add all current attributes
@@ -70,10 +71,10 @@ class InferenceVariableMemberTable(
 
   def getAttributeType(
       identifier: String,
-      context: List[Map[TTypeParameter, Type]]
+      function: Substitution
   ) =
     if !attributes.contains(identifier) then None
-    else Some(attributes(identifier).`type`.addSubstitutionLists(context))
+    else Some(attributes(identifier).substitute(function).`type`)
 
   def addAttribute(
       identifier: String,
@@ -105,7 +106,7 @@ class InferenceVariableMemberTable(
       identifier: String,
       paramTypes: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
@@ -115,7 +116,7 @@ class InferenceVariableMemberTable(
     InferenceVariableMemberTable(
       typet,
       attributes,
-      methods + (identifier -> (methods(identifier) +
+      methods + (identifier -> (methods(identifier) :+
         MethodWithCallSiteParameterChoices(
           MethodSignature(identifier, paramTypes, false),
           returnType,
@@ -148,7 +149,7 @@ class InferenceVariableMemberTable(
       newType: Type
   ): (InferenceVariableMemberTable, List[Assertion]) =
     val newAssertions = ArrayBuffer[Assertion]()
-    val newMethods    = MutableMap[String, Set[MethodWithCallSiteParameterChoices]]()
+    val newMethods    = MutableMap[String, Vector[MethodWithCallSiteParameterChoices]]()
     for (identifier, methods) <- methods do
       val newMethodSet = ArrayBuffer[MethodWithCallSiteParameterChoices]()
       for method <- methods do
@@ -160,7 +161,7 @@ class InferenceVariableMemberTable(
             newAssertions += m.returnType ~=~ replacedMethod.returnType
           case None =>
             newMethodSet += replacedMethod
-      newMethods(identifier) = newMethodSet.toSet
+      newMethods(identifier) = newMethodSet.toVector
 
     (
       InferenceVariableMemberTable(

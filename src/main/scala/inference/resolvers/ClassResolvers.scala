@@ -15,14 +15,16 @@ private def resolveIsClassAssertion(
   if config |- t.isInterface then
     (log.addWarn(s"$t was defined as an interface so it can't be a class"), Nil)
   else
-    val substitutedType = t.substituted.upwardProjection
-    // substitutedType is for sure missing or unknown
+    val substitutedType = t.upwardProjection
     substitutedType match
-      case x: TTypeParameter => (log, config :: Nil) // why?
-      case x: SubstitutedReferenceType =>
+      case x: TTypeParameter       => (log, config :: Nil) // why?
+      case x: ClassOrInterfaceType =>
+        // x is definitely missing
         val newPhi = config.phi1 + (x.identifier -> config.phi1(x.identifier).asClass)
         (log, config.copy(phi1 = newPhi) :: Nil)
       case x: DisjunctiveType =>
         expandDisjunctiveType(x, log, config asserts a)
       case x: Alpha =>
         addToConstraintStore(x, a, log, config)
+      case x: PrimitiveType =>
+        (log.addWarn(s"$x cannot be a class"), Nil)

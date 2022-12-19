@@ -74,7 +74,10 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
   while !q.isEmpty do
     val c = q.remove(0)
     if !eg.adjList.contains(c) && c != OBJECT.identifier then
-      val sups = config.getDirectSupertypes(NormalType(c, 0))
+      val sups =
+        config
+          .getSubstitutedDeclaration(ClassOrInterfaceType(c))
+          .getDirectAncestors //getDirectSupertypes(NormalType(c, 0))
       for s <- sups do
         eg.addEdge(c, s.identifier)
         q += s.identifier
@@ -124,7 +127,9 @@ private def concretizeToAll(
     config.phi2.keys.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
   val res = types
     // get the arity of the new type
-    .map(x => (x, config.getArity(NormalType(x, 0))))
+    .map(x =>
+      (x, config.getUnderlyingDeclaration(ClassOrInterfaceType(x)).numParams)
+    ) //getArity(NormalType(x, 0))))
     // concretize alpha into each of the possible types
     .map((id, arity) => realAlpha.concretizeToReference(id, arity))
     // replace the existing configuration with those types
@@ -208,7 +213,7 @@ def concretize(
   )
 
   // get lfd
-  val lfd = lowerField.filter(t => config.isFullyDeclared(NormalType(t, 0)))
+  val lfd = lowerField.filter(t => config.isFullyDeclared(ClassOrInterfaceType(t)))
 
   // subtype is fully-declared, we know exactly what A* must be
   if lfd.size > 0 then

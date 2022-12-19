@@ -11,9 +11,9 @@ private[inference] def resolveHasMethodAssertion(
     config: Configuration,
     asst: HasMethodAssertion
 ): (Log, List[Configuration]) =
-  val HasMethodAssertion(t, methodName, args, returnType) = asst
-  val decl                                                = config.getMissingDeclaration(t)
-  val context                                             = t.substituted.substitutions
+  val HasMethodAssertion(t, methodName, args, returnType, paramChoices) = asst
+  val decl         = config.getMissingDeclaration(t)
+  val (_, context) = t.expansion
   decl match
     case None =>
       (log.addError(s"has method assertion on declared type $t but there is no $methodName"), Nil)
@@ -24,14 +24,36 @@ private[inference] def resolveHasMethodAssertion(
           case Some(x) => (log, (config asserts (returnType ~=~ x.returnType)) :: Nil)
           case None =>
             val newDecl =
-              d.addMethod(methodName, args, returnType, Map(), PUBLIC, false, false, false, context)
+              d.addMethod(
+                methodName,
+                args,
+                returnType,
+                Map(),
+                PUBLIC,
+                false,
+                false,
+                false,
+                paramChoices,
+                context
+              )
             (
               log.addInfo(s"added method $methodName to $t"),
               config.copy(phi1 = config.phi1 + (t.identifier -> newDecl)) :: Nil
             )
       else
         val newDecl =
-          d.addMethod(methodName, args, returnType, Map(), PUBLIC, false, false, false, context)
+          d.addMethod(
+            methodName,
+            args,
+            returnType,
+            Map(),
+            PUBLIC,
+            false,
+            false,
+            false,
+            paramChoices,
+            context
+          )
         (
           log.addInfo(s"added method $methodName to $t"),
           config.copy(phi1 = config.phi1 + (t.identifier -> newDecl)) :: Nil

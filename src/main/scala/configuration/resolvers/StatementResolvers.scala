@@ -56,8 +56,8 @@ private def resolveAssertStmt(
         .map(e => resolveExpression(log, e, config, memo))
         .getOrElse(LogWithSome(log, STRING))
       message.rightmap(messageType =>
-        config._3 += checkType <:~ PRIMITIVE_BOOLEAN
-        config._3 += messageType <:~ STRING
+        config._3 += checkType =:~ PRIMITIVE_BOOLEAN
+        config._3 += messageType ~=~ STRING
       )
     )
     .rightmap(x => config)
@@ -72,7 +72,7 @@ private def resolveDoStmt(
     ]
 ): LogWithOption[MutableConfiguration] =
   resolveExpression(log, stmt.getCondition, config, memo)
-    .rightmap(condType => config._3 += condType <:~ PRIMITIVE_BOOLEAN)
+    .rightmap(condType => config._3 += condType =:~ PRIMITIVE_BOOLEAN)
     .rightmap(x => config)
 
 private def resolveExplicitConstructorInvocationStmt(
@@ -99,17 +99,28 @@ private def resolveForEachStmt(
   resolveExpression(log, iterable, config, memo)
     .flatMap((log, iterableType) =>
       resolveExpression(log, loopVariable, config, memo).rightmap(varType =>
-        val iterableProducerType = createDisjunctiveTypeFromContext(iterable, config)
-        // whatever the iterable produces, must be a subtype of the var type
-        config._3 += iterableProducerType <:~ varType
-        val iterType = NormalType(
-          "java.lang.Iterable",
-          1,
-          Map(TypeParameterIndex("java.lang.Iterable", 0, Nil) -> iterableProducerType) :: Nil
-        )
-        val arrayType = ArrayType(iterableProducerType)
-        // the iterable must be an array of the produced type, or a subtype of Iterable<produced type>
-        config._3 += iterableType <:~ iterType || iterableType ~=~ arrayType
+        // two cases: first case where it is some Iterable<T>
+        val iterableTTypeArg = createTypeArgumentFromContext(iterable, config)
+        val iterableTType    = ClassOrInterfaceType("java.lang.Iterable", Vector(iterableTTypeArg))
+        val iterableTAssertion = (iterableType <:~ iterableTType) && (iterableTTypeArg =:~ varType)
+        // second case where it is array
+        val arrayElementType = createDisjunctiveTypeWithPrimitivesFromContext(iterable, config)
+        val arrayType        = ArrayType(arrayElementType)
+        val arrayAssertion   = (arrayElementType =:~ varType) && (iterableType <:~ arrayType)
+        // one of these two must be true
+        config._3 += iterableTAssertion || arrayAssertion
+      // val iterableProducerType = createDisjunctiveTypeWithPrimitivesFromContext(iterable, config)
+      // // whatever the iterable produces, must be a subtype of the var type
+      // config._3 += (iterableProducerType =:~ varType)
+      // val iterType = ClassOrInterfaceType(
+      //   "java.lang.Iterable",
+      //   Vector(iterableProducerType)
+      //   // 1,
+      //   // Map(TypeParameterIndex("java.lang.Iterable", 0, Nil) -> iterableProducerType) :: Nil
+      // )
+      // val arrayType = ArrayType(iterableProducerType)
+      // // the iterable must be an array of the produced type, or a subtype of Iterable<produced type>
+      // config._3 += iterableType <:~ iterType || iterableType <:~ arrayType
       )
     )
     .rightmap(x => config)
@@ -127,7 +138,7 @@ private def resolveForStmt(
     .map(cmp =>
       resolveExpression(log, cmp, config, memo)
         .rightmap(t =>
-          config._3 += t <:~ PRIMITIVE_BOOLEAN
+          config._3 += (t =:~ PRIMITIVE_BOOLEAN)
           config
         )
     )
@@ -143,7 +154,7 @@ private def resolveIfStmt(
     ]
 ): LogWithOption[MutableConfiguration] =
   resolveExpression(log, stmt.getCondition, config, memo).rightmap(t =>
-    config._3 += t <:~ PRIMITIVE_BOOLEAN
+    config._3 += (t =:~ PRIMITIVE_BOOLEAN)
     config
   )
 
@@ -163,10 +174,10 @@ private def resolveSwitchStmt(
     flatMapWithLog(log, entries)((log, expr) => resolveExpression(log, expr, config, memo))
   entryTypes.flatMap((log, entryTypes) =>
     resolveExpression(log, stmt.getSelector, config, memo).rightmap(selectorType =>
-      val intType = selectorType <:~ PRIMITIVE_INT &&
-        ConjunctiveAssertion(entryTypes.map(_ <:~ PRIMITIVE_INT))
-      val stringType = selectorType <:~ STRING &&
-        ConjunctiveAssertion(entryTypes.map(_ <:~ STRING))
+      val intType = selectorType =:~ PRIMITIVE_INT &&
+        ConjunctiveAssertion(entryTypes.map(_ =:~ PRIMITIVE_INT))
+      val stringType = selectorType ~=~ STRING &&
+        ConjunctiveAssertion(entryTypes.map(_ ~=~ STRING))
       config._3 += intType || stringType
       config
     )
@@ -182,7 +193,7 @@ private def resolveThrowStmt(
     ]
 ): LogWithOption[MutableConfiguration] =
   resolveExpression(log, stmt.getExpression, config, memo).rightmap(exprType =>
-    config._3 += exprType <:~ NormalType("java.lang.Throwable", 0)
+    config._3 += exprType =:~ ClassOrInterfaceType("java.lang.Throwable")
     config
   )
 
@@ -200,9 +211,11 @@ private def resolveTryStmt(
     .map(x => resolveSolvedType(x.getParameter.getType.resolve))
     .toVector
   flatMapWithLog(log, resources)(resolveExpression(_, _, config, memo)).rightmap(v =>
-    config._3 += ConjunctiveAssertion(v.map(x => x <:~ NormalType("java.lang.AutoCloseable", 0)))
     config._3 += ConjunctiveAssertion(
-      catchClauses.map(x => x <:~ NormalType("java.lang.Throwable", 0))
+      v.map(x => x <:~ ClassOrInterfaceType("java.lang.AutoCloseable"))
+    )
+    config._3 += ConjunctiveAssertion(
+      catchClauses.map(x => x <:~ ClassOrInterfaceType("java.lang.Throwable"))
     )
     config
   )
@@ -217,7 +230,7 @@ private def resolveWhileStmt(
     ]
 ): LogWithOption[MutableConfiguration] =
   resolveExpression(log, stmt.getCondition, config, memo).rightmap(t =>
-    config._3 += t <:~ PRIMITIVE_BOOLEAN
+    config._3 += (t =:~ PRIMITIVE_BOOLEAN)
     config
   )
 
@@ -242,8 +255,14 @@ private def resolveReturnStmt(
             )
         case Some(expr) =>
           val exprType = resolveExpression(log, expr, config, memo)
-          exprType.rightmap(ttype =>
-            if returnType.isVoid then config._3 += EquivalenceAssertion(ttype, PRIMITIVE_VOID)
-            else config._3 += SubtypeAssertion(ttype, resolveSolvedType(returnType))
-            config
+          exprType.flatMap((log, ttype) =>
+            if returnType.isVoid then LogWithNone(log.addError(s"$stmt cannot have return type!"))
+            else
+              config._3 += (ttype =:~ resolveSolvedType(returnType))
+              LogWithSome(log, config)
           )
+// exprType.rightmap(ttype =>
+//   if returnType.isVoid then config._3 += (ttype ~=~ PRIMITIVE_VOID) || (ttype ~=~ BOXED_VOID)
+//   else config._3 += SubtypeAssertion(ttype, resolveSolvedType(returnType))
+//   config
+// )

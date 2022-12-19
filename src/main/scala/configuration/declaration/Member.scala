@@ -8,7 +8,9 @@ import com.github.javaparser.ast.NodeList
 import configuration.types.*
 
 /** An access modifier in a Java program */
-sealed trait AccessModifier
+sealed trait AccessModifier:
+  def <(that: AccessModifier): Boolean
+  def <=(that: AccessModifier): Boolean = this < that || this == that
 
 /** Companion class to [[configuration.declaration.AccessModifier]] */
 case object AccessModifier:
@@ -26,19 +28,23 @@ case object AccessModifier:
 
 /** The public access modifier */
 case object PUBLIC extends AccessModifier:
-  override def toString = "public"
+  override def toString                = "public"
+  def <(that: AccessModifier): Boolean = false
 
 /** The package-private (default) access modifier */
 case object DEFAULT extends AccessModifier:
-  override def toString = ""
+  override def toString                = ""
+  def <(that: AccessModifier): Boolean = that == PROTECTED || that == PUBLIC
 
 /** The protected access modifier */
 case object PROTECTED extends AccessModifier:
-  override def toString = "protected"
+  override def toString                = "protected"
+  def <(that: AccessModifier): Boolean = that == PUBLIC
 
 /** The private access modifier */
 case object PRIVATE extends AccessModifier:
-  override def toString = "private"
+  override def toString                = "private"
+  def <(that: AccessModifier): Boolean = that == DEFAULT || that == PROTECTED || that == PUBLIC
 
 /** An attribute in a class/interface
   * @param identifier
@@ -130,6 +136,16 @@ final case class MethodSignature(
   if hasVarArgs && formalParameters.size == 0 then
     throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
 
+  def asNArgs(n: Int): MethodSignature =
+    if (formalParameters.size != n && !hasVarArgs) || formalParameters.size > n then
+      throw new IllegalArgumentException(s"$this cannoth have $n args!")
+    if formalParameters.size == n then this
+    else
+      val ab: ArrayBuffer[Type] = ArrayBuffer()
+      ab.addAll(formalParameters)
+      while ab.size != n do ab.addOne(formalParameters(formalParameters.size - 1))
+      MethodSignature(identifier, ab.toVector, hasVarArgs)
+
   /** Reorders the type parameters in this method signature by replacing all the type parameters
     * given a scheme
     * @param scheme
@@ -140,7 +156,8 @@ final case class MethodSignature(
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodSignature =
     copy(formalParameters = formalParameters.map(_.reorderTypeParameters(scheme)))
 
-  def substitute(function: Substitution): MethodSignature = copy(formalParameters = formalParameters.map(_.substitute(function)))
+  def substitute(function: Substitution): MethodSignature =
+    copy(formalParameters = formalParameters.map(_.substitute(function)))
 
   /** Determines if this signature is callable with n arguments
     * @param n
@@ -175,7 +192,11 @@ final case class MethodSignature(
     *   the resulting method signature
     */
   def erased(decl: FixedDeclaration) =
-    MethodSignature(identifier, formalParameters.map(decl.getErasure(_)), hasVarArgs)
+    if hasVarArgs then
+      val newParams: ArrayBuffer[Type] = ArrayBuffer(formalParameters: _*)
+      newParams(newParams.size - 1) = ArrayType(newParams(newParams.size - 1))
+      MethodSignature(identifier, newParams.toVector.map(decl.getErasure(_)), false)
+    else MethodSignature(identifier, formalParameters.map(decl.getErasure(_)), false)
 
 /** A method or constructor */
 sealed trait MethodLike:
@@ -235,6 +256,8 @@ sealed trait MethodLike:
     */
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodLike
 
+  def asNArgs(n: Int): MethodLike
+
 /** A method
   * @param signature
   *   the method's signature
@@ -266,6 +289,17 @@ class Method(
       s"$signature cannot be abstract and (static or final) at the same time!"
     )
 
+  def asNArgs(n: Int): Method =
+    new Method(
+      signature.asNArgs(n),
+      returnType,
+      typeParameterBounds,
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal
+    )
+
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Method =
     new Method(
       signature.reorderTypeParameters(scheme),
@@ -279,14 +313,14 @@ class Method(
       isFinal
     )
 
-  def substitute(function: Substitution): Method = 
+  def substitute(function: Substitution): Method =
     new Method(
-      signature.substitute(function), 
-      returnType.substitute(function), 
-      typeParameterBounds.map((k, v) => (k -> v.map(x => x.substitute(function)))), 
-      accessModifier, 
-      isAbstract, 
-      isStatic, 
+      signature.substitute(function),
+      returnType.substitute(function),
+      typeParameterBounds.map((k, v) => (k -> v.map(x => x.substitute(function)))),
+      accessModifier,
+      isAbstract,
+      isStatic,
       isFinal
     )
 
@@ -396,21 +430,36 @@ class MethodWithContext(
     _isAbstract: Boolean,
     _isStatic: Boolean,
     _isFinal: Boolean,
-    val context: SubstitutionList
-) extends Method(
+    _callSiteParameterChoices: Set[TTypeParameter],
+    val context: Substitution
+) extends MethodWithCallSiteParameterChoices(
       _signature,
       _returnType,
       _typeParameterBounds,
       _accessModifier,
       _isAbstract,
       _isStatic,
-      _isFinal
+      _isFinal,
+      _callSiteParameterChoices
     ):
 
+  override def asNArgs(n: Int): MethodWithContext =
+    new MethodWithContext(
+      signature.asNArgs(n),
+      returnType,
+      typeParameterBounds,
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      callSiteParameterChoices,
+      context
+    )
+
   override def toString =
-    super.toString + " with context " + context
-      .map(m => "[" + m.map((k, v) => s"$k -> $v").mkString(", ") + "]")
-      .mkString("")
+    super.toString + " with context " + "{" + context
+      .map((k, v) => s"$k -> $v")
+      .mkString(", ") + "}"
 
   // /** Appends some substitution lists to the types of this method
   //   * @param substitutionList
@@ -429,8 +478,6 @@ class MethodWithContext(
   //     context ::: subs
   //   )
 
-
-
   override def replace(i: InferenceVariable, t: Type): MethodWithContext =
     new MethodWithContext(
       signature.replace(i, t),
@@ -440,7 +487,8 @@ class MethodWithContext(
       isAbstract,
       isStatic,
       isFinal,
-      context.map(mp => mp.map((tp, tt) => (tp -> tt.replace(i, t))))
+      callSiteParameterChoices,
+      context.map((tp, tt) => (tp -> tt.replace(i, t)))
     )
 
   override def reorderTypeParameters(
@@ -456,9 +504,8 @@ class MethodWithContext(
       isAbstract,
       isStatic,
       isFinal,
-      context.map(m =>
-        m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
-      )
+      callSiteParameterChoices.map(_.reorderTypeParameters(scheme)),
+      context.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
     )
 
 /** A method containing the parameter choices at the site of the call
@@ -514,6 +561,18 @@ class MethodWithCallSiteParameterChoices(
   //     callSiteParameterChoices
   //   )
 
+  override def asNArgs(n: Int): MethodWithCallSiteParameterChoices =
+    new MethodWithCallSiteParameterChoices(
+      signature.asNArgs(n),
+      returnType,
+      typeParameterBounds,
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      callSiteParameterChoices
+    )
+
   override def replace(i: InferenceVariable, t: Type): MethodWithCallSiteParameterChoices =
     new MethodWithCallSiteParameterChoices(
       signature.replace(i, t),
@@ -568,7 +627,14 @@ class Constructor(
   //     accessModifier
   //   )
 
-  def substitute(function: Substitution): MethodLike =
+  def asNArgs(n: Int): Constructor =
+    new Constructor(
+      signature.asNArgs(n),
+      typeParameterBounds,
+      accessModifier
+    )
+
+  def substitute(function: Substitution): Constructor =
     new Constructor(
       signature.substitute(function),
       typeParameterBounds.map((k, v) => (k -> v.map(x => x.substitute(function)))),
@@ -631,7 +697,8 @@ class ConstructorWithContext(
     _signature: MethodSignature,
     _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     _accessModifier: AccessModifier,
-    val context: List[Map[TTypeParameter, Type]]
+    val callSiteParameterChoices: Set[TTypeParameter],
+    val context: Substitution
 ) extends Constructor(_signature, _typeParameterBounds, _accessModifier):
 
   // /** Appends some substitution lists to the types of this constructor
@@ -648,12 +715,22 @@ class ConstructorWithContext(
   //     context ::: subs
   //   )
 
+  override def asNArgs(n: Int): ConstructorWithContext =
+    new ConstructorWithContext(
+      signature.asNArgs(n),
+      typeParameterBounds,
+      accessModifier,
+      callSiteParameterChoices,
+      context
+    )
+
   override def replace(i: InferenceVariable, t: Type): ConstructorWithContext =
     new ConstructorWithContext(
       signature.replace(i, t),
       typeParameterBounds.map((k, v) => (k -> v.map(x => x.replace(i, t)))),
       accessModifier,
-      context.map(mp => mp.map((tp, tt) => (tp -> tt.replace(i, t))))
+      callSiteParameterChoices,
+      context.map((tp, tt) => (tp -> tt.replace(i, t)))
     )
 
   override def reorderTypeParameters(
@@ -665,9 +742,8 @@ class ConstructorWithContext(
         (k.reorderTypeParameters(scheme) -> v.map(t => t.reorderTypeParameters(scheme)))
       ),
       accessModifier,
-      context.map(m =>
-        m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
-      )
+      callSiteParameterChoices.map(x => x.reorderTypeParameters(scheme)),
+      context.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
     )
 
 /** Companion object to [[configuration.declaration.Constructor]] */

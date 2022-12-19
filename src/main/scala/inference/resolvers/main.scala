@@ -51,6 +51,8 @@ private[inference] def resolve(
           resolveHasMethodAssertion(newLog, newConfig, x)
         case x: WideningAssertion =>
           resolveWideningAssertion(newLog, newConfig, x)
+        case x: CompatibilityAssertion =>
+          resolveCompatibilityAssertion(newLog, newConfig, x)
         case _ =>
           ???
       LogWithLeft(res._1, res._2)

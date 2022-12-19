@@ -33,7 +33,7 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
     .map(
       _.getBounds.asScala.toVector
         .map(x => resolveSolvedType(x.getType))
-        .map[TypeBound](x => x.asInstanceOf[TypeBound]) // safe
+      //.map[TypeBound](x => x.asInstanceOf[TypeBound]) // safe
     )
     .toVector
 
@@ -42,7 +42,7 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
     case Failure(x) => return Failure(x)
 
   // collect the type parameter bounds
-  val mmethodTypeParameterBounds = MutableMap[String, Vector[TypeBound]]()
+  val mmethodTypeParameterBounds = MutableMap[String, Vector[Type]]()
 
   // get the methods
   val methods = getMethods(decl, identifier, mmethodTypeParameterBounds) match
@@ -79,8 +79,8 @@ def convertResolvedReferenceTypeDeclarationToFixedDeclaration(
       isFinal,
       isAbstract,
       isInterface,
-      extendedTypes.map(_.asInstanceOf[ReferenceType]),    // safe
-      implementedTypes.map(_.asInstanceOf[ReferenceType]), // safe
+      extendedTypes.map(_.asInstanceOf[ClassOrInterfaceType]),    // safe
+      implementedTypes.map(_.asInstanceOf[ClassOrInterfaceType]), // safe
       methodTypeParameterBounds,
       attributes.toMap,
       methods,
@@ -116,8 +116,8 @@ def getAttributes(
 def getMethods(
     decl: ResolvedReferenceTypeDeclaration,
     identifier: String,
-    methodTypeParameterBounds: MutableMap[String, Vector[TypeBound]]
-): Try[Map[String, Set[Method]]] =
+    methodTypeParameterBounds: MutableMap[String, Vector[Type]]
+): Try[Map[String, Vector[Method]]] =
   val methodDeclarations = decl.getDeclaredMethods.asScala.toVector
   // create a mutable map to store the methods
   val mmethods = MutableMap[String, MutableSet[Method]]()
@@ -136,9 +136,7 @@ def getMethods(
     val typeParamBounds = typeParams
       .zip(
         typeParamDecls.map(tp =>
-          tp.getBounds.asScala.toVector.map[TypeBound](x =>
-            resolveSolvedType(x.getType).asInstanceOf[TypeBound]
-          )
+          tp.getBounds.asScala.toVector.map(x => resolveSolvedType(x.getType))
         )
       )
     // get formal parameters
@@ -191,13 +189,13 @@ def getMethods(
       hasVarArgs
     )
     methodTypeParameterBounds ++= typeParamBounds.map(x => (x._1.identifier -> x._2))
-  Success(mmethods.map((k, v) => (k, v.toSet)).toMap)
+  Success(mmethods.map((k, v) => (k, v.toVector)).toMap)
 
 def getConstructors(
     decl: ResolvedReferenceTypeDeclaration,
     identifier: String,
-    methodTypeParameterBounds: MutableMap[String, Vector[TypeBound]]
-): Try[Set[Constructor]] =
+    methodTypeParameterBounds: MutableMap[String, Vector[Type]]
+): Try[Vector[Constructor]] =
   // get constructors
   val constructorDeclarations = decl.getConstructors.asScala
   val mconstructors           = MutableSet[Constructor]()
@@ -205,11 +203,11 @@ def getConstructors(
     val typeParamDecls = constructorDeclaration.getTypeParameters.asScala.toVector
     val typeParams =
       typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
-    val typeParamBounds: Map[TTypeParameter, Vector[TypeBound]] = typeParams
+    val typeParamBounds: Map[TTypeParameter, Vector[Type]] = typeParams
       .zip(
         typeParamDecls.map(tp =>
           tp.getBounds.asScala.toVector
-            .map[TypeBound](x => resolveSolvedType(x.getType).asInstanceOf[TypeBound]) // safe
+            .map(x => resolveSolvedType(x.getType)) // safe
         )
       )
       .toMap
@@ -221,4 +219,4 @@ def getConstructors(
     val hasVarArgs     = constructorDeclaration.hasVariadicParameter
     mconstructors += Constructor(identifier, args, typeParamBounds, accessModifier, hasVarArgs)
     methodTypeParameterBounds ++= typeParamBounds.map(x => (x._1.identifier -> x._2))
-  Success(mconstructors.toSet)
+  Success(mconstructors.toVector)

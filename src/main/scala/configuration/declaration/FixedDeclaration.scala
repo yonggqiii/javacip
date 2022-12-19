@@ -36,15 +36,15 @@ class FixedDeclaration(
     val isFinal: Boolean,
     val isAbstract: Boolean,
     val isInterface: Boolean,
-    val extendedTypes: Vector[Type],
-    val implementedTypes: Vector[Type],
+    val extendedTypes: Vector[ClassOrInterfaceType],
+    val implementedTypes: Vector[ClassOrInterfaceType],
     val methodTypeParameterBounds: Map[String, Vector[Type]],
     val attributes: Map[String, Attribute],
-    val methods: Map[String, Set[Method]],
-    val constructors: Set[Constructor]
-) extends Declaration[Method, Constructor]:
+    val methods: Map[String, Vector[Method]],
+    val constructors: Vector[Constructor]
+) extends Declaration:
   val numParams = typeParameterBounds.size
-
+  val isClass   = !isInterface
   override def toString =
     val ab      = ArrayBuffer[String]()
     val numArgs = typeParameterBounds.size
@@ -95,32 +95,10 @@ class FixedDeclaration(
       if a.isEmpty then Vector(OBJECT)
       else a
 
-  /** Gets all the type bounds of this type
-    * @param t
-    *   the type whose bounds is to be obtained
-    * @param exclusions
-    *   the types who may already be included in the bounds check
-    * @return
-    *   the set of all bounds of this type
-    */
-  def getAllBounds(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
-    if exclusions.contains(t) then Set(OBJECT)
-    else
-      t match
-        case _: TTypeParameter =>
-          val bounds = getBounds(t)
-          if bounds.isEmpty then Set(OBJECT)
-          else bounds.flatMap(getAllBounds(_, exclusions + t)).toSet
-        case x: Type => Set(x)
-
   def getBoundsAsTypeParameters(t: Type, exclusions: Set[Type] = Set()): Set[Type] =
-    if exclusions.contains(t) then Set()
+    if exclusions.contains(t) || !t.isInstanceOf[TTypeParameter] then Set()
     else
-      val b = getBounds(t).filter(x =>
-        x match
-          case y: TTypeParameter => true
-          case _                 => false
-      )
+      val b = getBounds(t.asInstanceOf[TTypeParameter]).filter(x => x.isInstanceOf[TTypeParameter])
       b.toSet.flatMap(x => getBoundsAsTypeParameters(x, exclusions + t) + x)
 
   /** Get the type bounds of this type
@@ -128,7 +106,7 @@ class FixedDeclaration(
     * @return
     *   the bounds of this type
     */
-  def getBounds(typet: Type): Vector[Type] =
+  def getBounds(typet: TTypeParameter): Vector[Type] =
     typet match
       case TypeParameterIndex(source, index) =>
         if source != identifier then ??? // TODO
@@ -139,20 +117,64 @@ class FixedDeclaration(
           val index = source + "#" + qualifiedName
           if !methodTypeParameterBounds.contains(index) then ??? // TODO
           else methodTypeParameterBounds(index)
-      case _ => ??? // TODO
+  // case _ => ??? // TODO
 
-  def getAllReferenceTypeBoundsOfTypeParameter(`type`: Type, exclusions: Set[Type] = Set()): Vector[Type] =
+  def erased = new FixedDeclaration(
+    identifier,
+    Vector(),
+    isFinal,
+    isAbstract,
+    isInterface,
+    extendedTypes.map(_.raw),
+    implementedTypes.map(_.raw),
+    Map(),
+    attributes.map((s, a) => (s -> getAttributeErasure(a))),
+    methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
+    constructors.map(getConstructorErasure(_))
+  )
+
+  def getAllReferenceTypeBoundsOfTypeParameter(
+      `type`: Type,
+      exclusions: Set[Type] = Set()
+  ): Vector[ClassOrInterfaceType] =
     if exclusions contains `type` then Vector()
-    else `type` match
-      case x: TTypeParameter => 
-        val bounds = getBounds(`type`)
-        if bounds.isEmpty then Vector(OBJECT) else
-          bounds.flatMap(x => getAllReferenceTypeBoundsOfTypeParameter(x, exclusions + `type`))
-      case x: ClassOrInterfaceType => Vector(x)    
-      case _ => ???
+    else
+      `type` match
+        case x: TTypeParameter =>
+          val bounds = getBounds(x)
+          if bounds.isEmpty then Vector(OBJECT)
+          else bounds.flatMap(x => getAllReferenceTypeBoundsOfTypeParameter(x, exclusions + `type`))
+        case x: ClassOrInterfaceType => Vector(x)
+        case _                       => ???
 
-  def getLeftmostReferenceTypeBoundOfTypeParameter(`type`: Type): Type =
+  def getLeftmostReferenceTypeBoundOfTypeParameter(`type`: Type): ClassOrInterfaceType =
     getAllReferenceTypeBoundsOfTypeParameter(`type`)(0)
+
+  def getAttributeErasure(a: Attribute): Attribute =
+    Attribute(
+      a.identifier,
+      getErasure(a.`type`),
+      a.accessModifier,
+      a.isStatic,
+      a.isFinal
+    )
+
+  def getMethodErasure(m: Method): Method =
+    new Method(
+      getSignatureErasure(m.signature),
+      getErasure(m.returnType),
+      Map(),
+      m.accessModifier,
+      m.isAbstract,
+      m.isStatic,
+      m.isFinal
+    )
+
+  def getSignatureErasure(m: MethodSignature): MethodSignature =
+    MethodSignature(m.identifier, m.formalParameters.map(x => getErasure(x)), m.hasVarArgs)
+
+  def getConstructorErasure(c: Constructor): Constructor =
+    new Constructor(getSignatureErasure(c.signature), Map(), c.accessModifier)
 
   /** Gets the erasure of a type which is the erasure leftmost bound, where the erasure of a
     * non-type parameter is itself (not its raw type)
@@ -165,40 +187,15 @@ class FixedDeclaration(
     */
   def getErasure(`type`: Type): Type =
     `type` match
-      case x: TTypeParameter => getErasure(getLeftmostReferenceTypeBoundOfTypeParameter(x))
-      case x: PrimitiveType => x
-      case ArrayType(base) => ArrayType(getErasure(base))
-      case Bottom => Bottom
+      case x: TTypeParameter          => getErasure(getLeftmostReferenceTypeBoundOfTypeParameter(x))
+      case x: PrimitiveType           => x
+      case ArrayType(base)            => ArrayType(getErasure(base))
+      case Bottom                     => Bottom
       case ExtendsWildcardType(upper) => getErasure(upper)
-      case x: ClassOrInterfaceType => x.raw
-      case SuperWildcardType(lower) => OBJECT
-      case Wildcard => OBJECT
-      case x => x
-
-  // def getErasure(typet: Type, exclusions: Set[Type] = Set()): Type =
-  //   if exclusions.contains(typet) then OBJECT
-  //   else
-  //     typet match
-  //       case _: TTypeParameter =>
-  //         val bounds = getBounds(typet)
-  //         if bounds.isEmpty then OBJECT
-  //         else getErasure(bounds(0), exclusions + typet)
-  //       case x: Type => x
-
-  // /** Get the raw erasure of a type, which is the raw erasure of the leftmost bound, where the
-  //   * erasure of a non-type parameter is its raw type
-  //   * @param typet
-  //   *   the type to obtain its raw erasure
-  //   * @return
-  //   *   the raw erasure of the type
-  //   */
-  // def getRawErasure(typet: Type): Type =
-  //   typet match
-  //     case _: Type | _: TTypeParameter =>
-  //       getErasure(typet).substituted.raw
-  //     case x: PrimitiveType => x
-  //     case ArrayType(base)  => ArrayType(getRawErasure(base))
-  //     case x                => ???
+      case x: ClassOrInterfaceType    => x.raw
+      case SuperWildcardType(lower)   => OBJECT
+      case Wildcard                   => OBJECT
+      case x                          => x
 
   /** Obtains the vector of methods that have conflicting signatures
     * @return
@@ -213,3 +210,18 @@ class FixedDeclaration(
         if s.contains(erasedSig) then res += method
         else s += erasedSig
     res.toVector
+
+  def substitute(function: Substitution): FixedDeclaration =
+    FixedDeclaration(
+      identifier,
+      typeParameterBounds.map(x => x.map(t => t.substitute(function))),
+      isFinal,
+      isAbstract,
+      isInterface,
+      extendedTypes.map(x => x.substitute(function)),
+      implementedTypes.map(x => x.substitute(function)),
+      methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.substitute(function)))),
+      attributes.map((k, v) => (k -> v.substitute(function))),
+      methods.map((k, v) => (k -> v.map(m => m.substitute(function)))),
+      constructors.map(c => c.substitute(function))
+    )

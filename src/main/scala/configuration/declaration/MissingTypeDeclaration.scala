@@ -25,22 +25,38 @@ import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
   */
 class MissingTypeDeclaration(
     val identifier: String,
-    val typeParameterBounds: Vector[Vector[TypeBound]] = Vector(),
+    val typeParameterBounds: Vector[Vector[Type]] = Vector(),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false,
-    val supertypes: Vector[ReferenceType] = Vector(),
-    val methodTypeParameterBounds: Map[String, Vector[TypeBound]] = Map(),
+    val supertypes: Vector[ClassOrInterfaceType] = Vector(),
+    val methodTypeParameterBounds: Map[String, Vector[ClassOrInterfaceType]] = Map(),
     val attributes: Map[String, Attribute] = Map(),
-    val methods: Map[String, Set[MethodWithContext]] = Map().withDefaultValue(Set()),
-    val constructors: Set[ConstructorWithContext] = Set()
-) extends Declaration[MethodWithContext, ConstructorWithContext]:
-  def getDirectAncestors: Vector[ReferenceType] = supertypes
+    val methods: Map[String, Vector[Method]] = Map().withDefaultValue(Vector()),
+    val constructors: Vector[Constructor] = Vector()
+) extends Declaration:
+  def erased                                                                      = ???
+  def getLeftmostReferenceTypeBoundOfTypeParameter(t: Type): ClassOrInterfaceType = ???
+  def substitute(function: Substitution): MissingTypeDeclaration =
+    new MissingTypeDeclaration(
+      identifier,
+      typeParameterBounds.map(v => v.map(t => t.substitute(function))),
+      mustBeClass,
+      mustBeInterface,
+      supertypes.map(_.substitute(function)),
+      methodTypeParameterBounds.map((s, v) => (s -> v.map(t => t.substitute(function)))),
+      attributes.map((s, a) => (s -> a.substitute(function))),
+      methods.map((id, v) => (id -> v.map(m => m.substitute(function)))),
+      constructors.map(_.substitute(function))
+    )
+  def getDirectAncestors: Vector[ClassOrInterfaceType] = supertypes
   //  if it mustn't be an interface then best not to assume that it is
   val isInterface = mustBeInterface
   // if it musn't be an interface then there is no reason for it to be abstract
   val isAbstract = mustBeInterface
   // there is never a reason for this type declaration to be false
   val isFinal = false
+
+  val isClass = mustBeClass
 
   /** The number of parameters of this type */
   val numParams: Int = typeParameterBounds.size
@@ -49,7 +65,7 @@ class MissingTypeDeclaration(
     * @param t
     *   the type to extend
     */
-  def removeSupertype(t: NormalType | SubstitutedReferenceType) =
+  def removeSupertype(t: ClassOrInterfaceType) =
     MissingTypeDeclaration(
       identifier,
       typeParameterBounds,
@@ -66,7 +82,7 @@ class MissingTypeDeclaration(
     * @param t
     *   the type to extend
     */
-  def greedilyExtends(t: ReferenceType) =
+  def greedilyExtends(t: ClassOrInterfaceType) =
     MissingTypeDeclaration(
       identifier,
       typeParameterBounds,
@@ -112,13 +128,13 @@ class MissingTypeDeclaration(
     * @param other
     *   the inference variable member table
     * @param newType
-    *   the type which is the result the merger
+    *   the type which is the result of the merger
     * @return
     *   the resulting declaration and assertions
     */
   def merge(
       other: InferenceVariableMemberTable,
-      newType: SubstitutedReferenceType
+      newType: ClassOrInterfaceType
   ): (MissingTypeDeclaration, List[Assertion]) =
     var mttable       = this
     val newAssertions = ArrayBuffer[Assertion]()
@@ -129,12 +145,11 @@ class MissingTypeDeclaration(
       if !mttable.attributes.contains(attrName) then
         // create the attribute
         val createdAttrType = InferenceVariableFactory
-          .createDisjunctiveType(
+          .createDisjunctiveTypeWithPrimitives(
             Left(this.identifier),
             Nil,
             true,
-            (0 until this.numParams).map(i => TypeParameterIndex(this.identifier, i)).toSet,
-            false
+            (0 until this.numParams).map(i => TypeParameterIndex(this.identifier, i)).toSet
           )
         mttable = mttable.addAttribute(
           attrName,
@@ -149,17 +164,22 @@ class MissingTypeDeclaration(
         mttable
           .attributes(attrName)
           .`type`
-          .addSubstitutionLists(newType.substitutions)
+          .substitute(newType.expansion._2)
       )
 
     // handle the methods
     for (methodName, otherMethods) <- other.methods do
-      val ctx = newType.substitutions
+      val ctx = newType.expansion._2
       for otherMethod <- otherMethods do
         if mttable.methods.contains(methodName) then
           mttable
             .methods(methodName)
-            .find(x => x.signature == otherMethod.signature && x.context == ctx) match
+            .find(x =>
+              x.signature == otherMethod.signature && x.isInstanceOf[MethodWithContext] &&
+                x.asInstanceOf[MethodWithContext].context == ctx &&
+                x.asInstanceOf[MethodWithContext]
+                  .callSiteParameterChoices == otherMethod.callSiteParameterChoices
+            ) match
             case Some(m) =>
               newAssertions += m.returnType ~=~ otherMethod.returnType
             case None =>
@@ -172,6 +192,7 @@ class MissingTypeDeclaration(
                 otherMethod.isAbstract,
                 otherMethod.isStatic,
                 otherMethod.isFinal,
+                otherMethod.callSiteParameterChoices,
                 ctx
               )
         else
@@ -184,6 +205,7 @@ class MissingTypeDeclaration(
             otherMethod.isAbstract,
             otherMethod.isStatic,
             otherMethod.isFinal,
+            otherMethod.callSiteParameterChoices,
             ctx
           )
 
@@ -201,20 +223,7 @@ class MissingTypeDeclaration(
       oldType: InferenceVariable,
       newType: Type
   ): (MissingTypeDeclaration, List[Assertion]) =
-    val newAssertions = ArrayBuffer[Assertion]()
-    val newMethods    = MutableMap[String, Set[MethodWithContext]]()
-    for (identifier, mmethods) <- methods do
-      val newMethodSet = ArrayBuffer[MethodWithContext]()
-      for method <- mmethods do
-        val replacedMethod = method.replace(oldType, newType)
-        newMethodSet.find(x =>
-          x.context == replacedMethod.context && x.signature == replacedMethod.signature
-        ) match
-          case Some(m) =>
-            newAssertions += m.returnType ~=~ replacedMethod.returnType
-          case None =>
-            newMethodSet += replacedMethod
-      newMethods(identifier) = newMethodSet.toSet
+    // simply do a naive replacement
     (
       MissingTypeDeclaration(
         identifier,
@@ -224,11 +233,39 @@ class MissingTypeDeclaration(
         supertypes.map(_.replace(oldType, newType)),
         methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.replace(oldType, newType)))),
         attributes.map((id, x) => id -> x.replace(oldType, newType)),
-        newMethods.toMap,
+        methods.map((id, v) => (id -> v.map(m => m.replace(oldType, newType)))),
         constructors.map(c => c.replace(oldType, newType))
       ),
-      newAssertions.toList
+      Nil
     )
+  // val newAssertions = ArrayBuffer[Assertion]()
+  // val newMethods    = MutableMap[String, Vector[Method]]()
+  // for (identifier, mmethods) <- methods do
+  //   val newMethodSet = ArrayBuffer[MethodWithContext]()
+  //   for method <- mmethods do
+  //     val replacedMethod = method.replace(oldType, newType)
+  //     newMethodSet.find(x =>
+  //       x.context == replacedMethod.context && x.signature == replacedMethod.signature
+  //     ) match
+  //       case Some(m) =>
+  //         newAssertions += m.returnType ~=~ replacedMethod.returnType
+  //       case None =>
+  //         newMethodSet += replacedMethod
+  //   newMethods(identifier) = newMethodSet.toSet
+  // (
+  //   MissingTypeDeclaration(
+  //     identifier,
+  //     typeParameterBounds.map(v => v.map(t => t.replace(oldType, newType))),
+  //     mustBeClass,
+  //     mustBeInterface,
+  //     supertypes.map(_.replace(oldType, newType)),
+  //     methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.replace(oldType, newType)))),
+  //     attributes.map((id, x) => id -> x.replace(oldType, newType)),
+  //     newMethods.toMap,
+  //     constructors.map(c => c.replace(oldType, newType))
+  //   ),
+  //   newAssertions.toList
+  // )
 
   /** Change the parameters of this declaration
     * @param i
@@ -254,17 +291,17 @@ class MissingTypeDeclaration(
   /** Gets the type of an attribute
     * @param identifier
     *   the attribute's identifier
-    * @param context
+    * @param function
     *   the context in which the attribute is referenced
     * @return
     *   the type of the attribute
     */
   def getAttributeType(
       identifier: String,
-      context: List[Map[TTypeParameter, Type]]
+      function: Substitution
   ) =
     if !attributes.contains(identifier) then None
-    else Some(attributes(identifier).`type`.addSubstitutionLists(context))
+    else Some(attributes(identifier).substitute(function).`type`)
 
   /** Adds an attribute to this declaration
     * @param identifier
@@ -313,6 +350,8 @@ class MissingTypeDeclaration(
     *   the method being called
     * @param argTypes
     *   the types passed into the method
+    * @param paramChoices
+    *   the parameter choices attached to the method
     * @param context
     *   the context of which the method was called
     * @return
@@ -321,13 +360,19 @@ class MissingTypeDeclaration(
   def getMethodReturnType(
       identifier: String,
       argTypes: Vector[Type],
-      context: List[Map[TTypeParameter, Type]]
+      paramChoices: Set[TTypeParameter],
+      context: Substitution
   ): Option[Type] =
+    if !methods.contains(identifier) then return None
     val methodSet = methods(identifier)
     methodSet
       .find(x =>
         x.signature.formalParameters == argTypes &&
-          x.context == context
+          (!x.isInstanceOf[MethodWithContext] || (x
+            .asInstanceOf[MethodWithContext]
+            .context == context && x
+            .asInstanceOf[MethodWithContext]
+            .callSiteParameterChoices == paramChoices))
       )
       .map(_.returnType)
 
@@ -357,12 +402,13 @@ class MissingTypeDeclaration(
       identifier: String,
       paramTypes: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[TypeBound]],
+      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
       isFinal: Boolean,
-      context: List[Map[TTypeParameter, Type]]
+      callSiteParameterChoices: Set[TTypeParameter],
+      context: Substitution
   ): MissingTypeDeclaration =
     val newMethod = MethodWithContext(
       MethodSignature(identifier, paramTypes, false),
@@ -372,12 +418,13 @@ class MissingTypeDeclaration(
       isAbstract,
       isStatic,
       isFinal,
+      callSiteParameterChoices,
       context
     )
 
     val oldMethods =
-      if methods.contains(identifier) then methods(identifier) else Set[MethodWithContext]()
-    val newMethods = oldMethods + newMethod
+      if methods.contains(identifier) then methods(identifier) else Vector[Method]()
+    val newMethods = oldMethods :+ newMethod
 
     MissingTypeDeclaration(
       this.identifier,
@@ -403,13 +450,13 @@ class MissingTypeDeclaration(
           .map(i =>
             TypeParameterIndex(identifier, i).toString +
               (if typeParameterBounds(i).size == 0 then ""
-               else " extends " + typeParameterBounds(i).map(_.substituted).mkString(" & "))
+               else " extends " + typeParameterBounds(i).mkString(" & "))
           )
           .mkString(", ") + ">"
     ab += identifier + args
     if supertypes.size > 0 then
       ab += "inherits"
-      ab += supertypes.map(_.substituted).mkString(", ")
+      ab += supertypes.mkString(", ")
     val header = ab.mkString(" ")
     val res    = ArrayBuffer[String](header)
     if attributes.size > 0 then
@@ -422,3 +469,8 @@ class MissingTypeDeclaration(
       res += "Constructors:"
       for c <- constructors do res += s"\t$c"
     res.mkString("\n")
+
+  def getAllReferenceTypeBoundsOfTypeParameter(
+      `type`: Type,
+      exclusions: Set[Type] = Set()
+  ): Vector[ClassOrInterfaceType] = ???

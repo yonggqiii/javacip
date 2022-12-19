@@ -11,10 +11,10 @@ private[inference] def resolveEquivalenceAssertion(
     asst: EquivalenceAssertion
 ): (Log, List[Configuration]) =
   val EquivalenceAssertion(x, y) = asst
-  if x ⊂ y then (log.addWarn(s"${x.substituted} ⊂ ${y.substituted}"), Nil)
-  else if y ⊂ x then (log.addWarn(s"${y.substituted} ⊂ ${x.substituted}"), Nil)
+  if x ⊂ y then (log.addWarn(s"${x} ⊂ ${y}"), Nil)
+  else if y ⊂ x then (log.addWarn(s"${y} ⊂ ${x}"), Nil)
   else
-    (x.substituted, y.substituted) match
+    (x, y) match
       case (Bottom, Bottom)     => (log, config :: Nil)
       case (Wildcard, Wildcard) => (log, config :: Nil)
       case (a: PlaceholderType, b) =>
@@ -59,11 +59,11 @@ private[inference] def resolveEquivalenceAssertion(
         concretizeAlphaToPrimitive(log, config, a, b)
       case (b: PrimitiveType, a: Alpha) =>
         concretizeAlphaToPrimitive(log, config, a, b)
-      case (x: Alpha, y: SubstitutedReferenceType) =>
+      case (x: Alpha, y: ClassOrInterfaceType) =>
         concretizeAlphaToReference(log, config asserts asst, x, y)
-      case (y: SubstitutedReferenceType, x: Alpha) =>
+      case (y: ClassOrInterfaceType, x: Alpha) =>
         concretizeAlphaToReference(log, config asserts asst, x, y)
-      case (x: SubstitutedReferenceType, y: SubstitutedReferenceType) =>
+      case (x: ClassOrInterfaceType, y: ClassOrInterfaceType) =>
         resolveReferenceEquivalences(x, y, log, config)
       case (x: Alpha, y: TTypeParameter) =>
         (log.addWarn(s"$x != $y"), Nil)
@@ -75,9 +75,9 @@ private[inference] def resolveEquivalenceAssertion(
         else
           val c = newList(0)
           addToConstraintStore(y, asst, newLog, c)
-      case (x: PrimitiveType, y: SubstitutedReferenceType) =>
+      case (x: PrimitiveType, y: ClassOrInterfaceType) =>
         (log.addWarn(s"$x != $y"), Nil)
-      case (x: SubstitutedReferenceType, y: PrimitiveType) =>
+      case (x: ClassOrInterfaceType, y: PrimitiveType) =>
         (log.addWarn(s"$x != $y"), Nil)
 
       case _ => (log.addWarn(s"not implemented: $asst"), Nil)
@@ -99,7 +99,7 @@ private[inference] def concretizeAlphaToReference(
     log: Log,
     config: Configuration,
     a: Alpha,
-    s: SubstitutedReferenceType
+    s: ClassOrInterfaceType
 ): (Log, List[Configuration]) =
   val newType = a.concretizeToReference(s.identifier, s.numArgs)
 
@@ -113,8 +113,8 @@ private[inference] def concretizeAlphaToReference(
   )
 
 private def resolveReferenceEquivalences(
-    x: SubstitutedReferenceType,
-    y: SubstitutedReferenceType,
+    x: ClassOrInterfaceType,
+    y: ClassOrInterfaceType,
     log: Log,
     config: Configuration
 ) =

@@ -12,7 +12,7 @@ private[inference] def deconflict(
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
   val newAssertions: ArrayBuffer[Assertion] = ArrayBuffer()
-  val allRawTypes = (config.delta.keys ++ config.phi1.keys).toSet.map(i => NormalType(i, 0))
+  val allRawTypes = (config.delta.keys ++ config.phi1.keys).toSet.map(i => ClassOrInterfaceType(i))
   // detect cyclic inheritance
   for x <- allRawTypes do
     val others = allRawTypes - x
@@ -29,20 +29,16 @@ private[inference] def deconflict(
         if y.identifier == z.identifier then
           if !(y.isSomehowUnknown && z.isSomehowUnknown) then
             if (y.isSomehowUnknown || z.isSomehowUnknown) then newAssertions += (y ~=~ z)
-            else
-              val (ysub, zsub) = (y.substituted, z.substituted)
-              if y.substituted != z.substituted then
-                return LogWithLeft(
-                  log.addWarn(s"$x <: $ysub and $zsub!"),
-                  Nil
-                )
+            else if y != z then
+              return LogWithLeft(
+                log.addWarn(s"$x <: $y and $z!"),
+                Nil
+              )
       // class/interface assertions
       if (config |- x.isInterface) && !(config |- y.isInterface) && y != OBJECT then
         newAssertions += y.isInterface
-    if supertypes.exists(x =>
-        (config |- x.isClass) && x.substituted != OBJECT.substituted
-      ) && !(config |- x.isClass)
-    then newAssertions += x.isClass
+    if supertypes.exists(x => (config |- x.isClass) && x != OBJECT) && !(config |- x.isClass) then
+      newAssertions += x.isClass
   // stop here
   if !newAssertions.isEmpty then
     return LogWithLeft(
@@ -56,12 +52,12 @@ private[inference] def deconflict(
     for candidate <- supertypes do
       val decl = resConfig.phi1(i)
       val res  = supertypes - candidate
-      if res.exists(t => config |- t <:~ NormalType(candidate.identifier, 0)) then
-        val newDecl = decl.removeSupertype(NormalType(candidate.identifier, 0))
+      if res.exists(t => config |- t <:~ ClassOrInterfaceType(candidate.identifier)) then
+        val newDecl = decl.removeSupertype(ClassOrInterfaceType(candidate.identifier))
         // println(newDecl)
         resConfig = resConfig.copy(phi1 =
           resConfig.phi1 + (decl.identifier -> decl.removeSupertype(
-            NormalType(candidate.identifier, 0)
+            ClassOrInterfaceType(candidate.identifier)
           ))
         )
   // double class extensions

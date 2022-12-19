@@ -129,7 +129,7 @@ def buildType(
 
   (log, cu)
 
-def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t.substituted match
+def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
   case x: PrimitiveType =>
     if x == PRIMITIVE_BOOLEAN then ASTPrimitiveType(ASTPrimitiveType.Primitive.BOOLEAN)
     else if x == PRIMITIVE_BYTE then ASTPrimitiveType(ASTPrimitiveType.Primitive.BYTE)
@@ -152,9 +152,9 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t.substitute
     if lowerBound.isInstanceOf[ASTReferenceType] then
       ASTWildcardType().setSuperType(lowerBound.asInstanceOf[ASTReferenceType])
     else ???
-  case ArrayType(x)                => ASTArrayType(typeToASTType(x, prohibitedNames))
-  case TypeParameterIndex(_, i, _) => ASTClassOrInterfaceType(null, numToLetter(i, prohibitedNames))
-  case SubstitutedReferenceType(x, args) =>
+  case ArrayType(x)             => ASTArrayType(typeToASTType(x, prohibitedNames))
+  case TypeParameterIndex(_, i) => ASTClassOrInterfaceType(null, numToLetter(i, prohibitedNames))
+  case ClassOrInterfaceType(x, args) =>
     val res =
       if x.slice(0, 10) == "java.lang." then ASTClassOrInterfaceType(null, x.substring(10))
       else ASTClassOrInterfaceType(null, x)

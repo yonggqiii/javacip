@@ -20,18 +20,22 @@ given assertionOrdering: Ordering[Assertion] with
           x.isInstanceOf[PlaceholderType] && y.isInstanceOf[PlaceholderType]
         case ContainmentAssertion(x, y) =>
           x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
-        case x: ConjunctiveAssertion        => false
-        case y: DisjunctiveAssertion        => false
-        case IsClassAssertion(x)            => x.isInstanceOf[PlaceholderType]
-        case IsInterfaceAssertion(x)        => x.isInstanceOf[PlaceholderType]
-        case HasMethodAssertion(x, _, _, _) => false
-        case IsDeclaredAssertion(x)         => false
-        case IsMissingAssertion(x)          => false
-        case IsUnknownAssertion(x)          => false
-        case IsPrimitiveAssertion(x)        => false
-        case IsReferenceAssertion(x)        => x.isInstanceOf[PlaceholderType]
-        case IsIntegralAssertion(x)         => false
-        case IsNumericAssertion(x)          => false
+        case x: ConjunctiveAssertion => false
+        case y: DisjunctiveAssertion => false
+        case IsClassAssertion(x)     => x.isInstanceOf[PlaceholderType]
+        case IsInterfaceAssertion(x) => x.isInstanceOf[PlaceholderType]
+        case x: HasMethodAssertion   => false
+        case IsDeclaredAssertion(x)  => false
+        case IsMissingAssertion(x)   => false
+        case IsUnknownAssertion(x)   => false
+        case IsPrimitiveAssertion(x) => false
+        case IsReferenceAssertion(x) => x.isInstanceOf[PlaceholderType]
+        case IsIntegralAssertion(x)  => false
+        case IsNumericAssertion(x)   => false
+        case CompatibilityAssertion(x, y) =>
+          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
+        case WideningAssertion(x, y) =>
+          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
     val (xdisj, xreplace, ydisj, yreplace) =
       (disjunctiveTester(x), replaceableTester(x), disjunctiveTester(y), replaceableTester(y))
     if xreplace && !yreplace then -1
@@ -178,17 +182,20 @@ case class IsInterfaceAssertion(t: Type) extends Assertion:
   *   the return type of the method
   */
 case class HasMethodAssertion(
-    source: Type,
+    source: ClassOrInterfaceType,
     methodName: String,
     args: Vector[Type],
-    returnType: Type
+    returnType: Type,
+    callSiteParameterChoices: Set[TTypeParameter]
 ) extends Assertion:
-  override def toString = s"$source has $returnType $methodName($args)"
+  override def toString =
+    s"$source has $returnType $methodName($args) whose type arguments might be $callSiteParameterChoices"
   def replace(oldType: InferenceVariable, newType: Type): HasMethodAssertion =
     copy(
       source = source.replace(oldType, newType),
       args = args.map(_.replace(oldType, newType)),
-      returnType = returnType.replace(oldType, newType)
+      returnType = returnType.replace(oldType, newType),
+      callSiteParameterChoices
     )
 
 /** A predicate checking if a type is declared in the program
