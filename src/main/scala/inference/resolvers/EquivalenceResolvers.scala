@@ -56,9 +56,9 @@ private[inference] def resolveEquivalenceAssertion(
       case (_, a: DisjunctiveType) =>
         expandDisjunctiveType(a, log, config asserts asst)
       case (a: Alpha, b: PrimitiveType) =>
-        concretizeAlphaToPrimitive(log, config, a, b)
+        (log.addWarn(s"$a cannot be a primitive type"), Nil)
       case (b: PrimitiveType, a: Alpha) =>
-        concretizeAlphaToPrimitive(log, config, a, b)
+        (log.addWarn(s"$a cannot be a primitive type"), Nil)
       case (x: Alpha, y: ClassOrInterfaceType) =>
         concretizeAlphaToReference(log, config asserts asst, x, y)
       case (y: ClassOrInterfaceType, x: Alpha) =>
@@ -75,25 +75,25 @@ private[inference] def resolveEquivalenceAssertion(
         else
           val c = newList(0)
           addToConstraintStore(y, asst, newLog, c)
-      case (x: PrimitiveType, y: ClassOrInterfaceType) =>
+      case (x: PrimitiveType, _) =>
         (log.addWarn(s"$x != $y"), Nil)
-      case (x: ClassOrInterfaceType, y: PrimitiveType) =>
+      case (_, y: PrimitiveType) =>
         (log.addWarn(s"$x != $y"), Nil)
 
-      case _ => (log.addWarn(s"not implemented: $asst"), Nil)
+      case _ => ???
 
-private[inference] def concretizeAlphaToPrimitive(
-    log: Log,
-    config: Configuration,
-    a: Alpha,
-    p: PrimitiveType
-): (Log, List[Configuration]) =
-  (
-    log.addInfo(s"concretizing $a to $p"),
-    List(config.replace(a.copy(substitutions = Nil), p))
-      .filter(!_.isEmpty)
-      .map(_.get)
-  )
+// private[inference] def concretizeAlphaToPrimitive(
+//     log: Log,
+//     config: Configuration,
+//     a: Alpha,
+//     p: PrimitiveType
+// ): (Log, List[Configuration]) =
+//   (
+//     log.addInfo(s"concretizing $a to $p"),
+//     List(config.replace(a.copy(substitutions = Nil), p))
+//       .filter(!_.isEmpty)
+//       .map(_.get)
+//   )
 
 private[inference] def concretizeAlphaToReference(
     log: Log,

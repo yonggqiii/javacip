@@ -10,7 +10,10 @@ import com.github.javaparser.ast.body.{
   VariableDeclarator
 }
 import com.github.javaparser.ast.expr.*
-import com.github.javaparser.ast.`type`.{ClassOrInterfaceType as ASTClassOrInterfaceType, TypeParameter}
+import com.github.javaparser.ast.`type`.{
+  ClassOrInterfaceType as ASTClassOrInterfaceType,
+  TypeParameter
+}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
@@ -46,7 +49,8 @@ private type MutablePhi = (
     MutableMap[Type, InferenceVariableMemberTable]
 )
 private type MutableOmega         = MutableSet[Assertion]
-private type MutableConfiguration = (MutableDelta, MutablePhi, MutableOmega)
+private type MutablePsi           = MutableSet[Type]
+private type MutableConfiguration = (MutableDelta, MutablePhi, MutableOmega, MutablePsi)
 
 /** Parses the configuration of the algorithm given the file path of the Java source code
   * @param log
@@ -85,7 +89,7 @@ def parseConfiguration(
   ///////// Step 3 /////////
   // 3a
   val c: MutableConfiguration =
-    (MutableMap(), (MutableMap(), MutableMap()), MutableSet())
+    (MutableMap(), (MutableMap(), MutableMap()), MutableSet(), MutableSet())
   val decls =
     s.rightmap(x => (x, x.findAll(classOf[ClassOrInterfaceDeclaration]).asScala.toVector))
   // 3b and 3c
@@ -98,6 +102,7 @@ def parseConfiguration(
         x._2._1.toMap,
         x._2._2.toMap,
         PriorityQueue(x._3.toList: _*),
+        x._4.toSet,
         o.opt.get // safe since decls already depends on s
       )
     )

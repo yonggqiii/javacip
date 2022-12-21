@@ -35,54 +35,16 @@ val BOXED_BOOLEAN = ClassOrInterfaceType("java.lang.Boolean")
 /** The `java.lang.Void` type */
 val BOXED_VOID = ClassOrInterfaceType("java.lang.Void")
 
-/** The primitive types */
-val PRIMITIVES: Set[PrimitiveType] = Set(
-  PRIMITIVE_BYTE,
-  PRIMITIVE_SHORT,
-  PRIMITIVE_INT,
-  PRIMITIVE_LONG,
-  PRIMITIVE_CHAR,
-  PRIMITIVE_FLOAT,
-  PRIMITIVE_DOUBLE,
-  PRIMITIVE_BOOLEAN
+val BOXES: Set[ClassOrInterfaceType] = Set(
+  BOXED_BOOLEAN,
+  BOXED_BYTE,
+  BOXED_CHAR,
+  BOXED_DOUBLE,
+  BOXED_FLOAT,
+  BOXED_INT,
+  BOXED_LONG,
+  BOXED_SHORT
 )
-
-val BOXES: Set[ClassOrInterfaceType] = PRIMITIVES.map(_.boxed)
-
-/** The widening relation <<~= */
-val WIDENING_RELATION: Set[(Type, Type)] = Set(
-  (PRIMITIVE_BYTE, PRIMITIVE_SHORT),
-  (PRIMITIVE_BYTE, PRIMITIVE_INT),    // transitive
-  (PRIMITIVE_BYTE, PRIMITIVE_LONG),   // transitive
-  (PRIMITIVE_BYTE, PRIMITIVE_FLOAT),  // transitive
-  (PRIMITIVE_BYTE, PRIMITIVE_DOUBLE), // transitive
-  (PRIMITIVE_SHORT, PRIMITIVE_INT),
-  (PRIMITIVE_SHORT, PRIMITIVE_LONG),   // transitive
-  (PRIMITIVE_SHORT, PRIMITIVE_FLOAT),  // transitive
-  (PRIMITIVE_SHORT, PRIMITIVE_DOUBLE), // transitive
-  (PRIMITIVE_CHAR, PRIMITIVE_INT),
-  (PRIMITIVE_CHAR, PRIMITIVE_LONG),   // transitive
-  (PRIMITIVE_CHAR, PRIMITIVE_FLOAT),  // transitive
-  (PRIMITIVE_CHAR, PRIMITIVE_DOUBLE), // transitive
-  (PRIMITIVE_INT, PRIMITIVE_LONG),
-  (PRIMITIVE_INT, PRIMITIVE_FLOAT),  // transitive
-  (PRIMITIVE_INT, PRIMITIVE_DOUBLE), // transitive
-  (PRIMITIVE_LONG, PRIMITIVE_FLOAT),
-  (PRIMITIVE_LONG, PRIMITIVE_DOUBLE), // transitive
-  (PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE),
-  (PRIMITIVE_BYTE, PRIMITIVE_BYTE),    // reflexive
-  (PRIMITIVE_SHORT, PRIMITIVE_SHORT),  // reflexive
-  (PRIMITIVE_CHAR, PRIMITIVE_CHAR),    // reflexive
-  (PRIMITIVE_INT, PRIMITIVE_INT),      // reflexive
-  (PRIMITIVE_LONG, PRIMITIVE_LONG),    // reflexive
-  (PRIMITIVE_FLOAT, PRIMITIVE_FLOAT),  // reflexive
-  (PRIMITIVE_DOUBLE, PRIMITIVE_DOUBLE) // reflexive
-)
-
-val BOX_RELATION: Set[(PrimitiveType, ClassOrInterfaceType)] = PRIMITIVES.map(x => (x, x.boxed))
-val UNBOX_RELATION: Set[(ClassOrInterfaceType, PrimitiveType)] = BOX_RELATION.map { case (x, y) =>
-  (y, x)
-}
 
 extension (t: (Type, Type))
   def in(set: Set[(Type, Type)]): DisjunctiveAssertion =
@@ -102,6 +64,9 @@ sealed trait Type:
     *   the resulting CompatibilityAssertion
     */
   def ~:=(that: Type) = CompatibilityAssertion(this, that)
+
+  def breadth: Int
+  def depth: Int
 
   /** Asserts that this type is compatible with another type
     * @param that
@@ -257,7 +222,7 @@ sealed trait Type:
     case x: SuperWildcardType   => this ⊆ x.lower
     case x: TTypeParameter      => false
     case x: InferenceVariable   => false
-    case x: ClassOrInterfaceType => ??? // not possible
+    case x: ClassOrInterfaceType => x.args.exists(y => x ⊆ y) // why not possible?
 
   /** Checks if this type occurs in or is equal to another type
     * @param that
@@ -312,6 +277,8 @@ sealed trait Type:
 
 /** The primitive types */
 sealed trait PrimitiveType extends Type:
+  def breadth = 0
+  def depth   = 0
   val boxed: ClassOrInterfaceType
   val numArgs                                                                           = 0
   val substitutions                                                                     = Nil
@@ -346,6 +313,8 @@ sealed trait PrimitiveType extends Type:
 final case class ArrayType(
     base: Type
 ) extends Type:
+  def breadth = 0
+  def depth   = base.depth
   override def toString =
     base.toString + "[]"
   val identifier                    = base.identifier + "[]"
@@ -375,6 +344,8 @@ final case class ClassOrInterfaceType(
     identifier: String,
     args: Vector[Type]
 ) extends Type:
+  def breadth = args.size
+  def depth   = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
   val numArgs = args.size
   override def toString =
     val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
@@ -583,6 +554,8 @@ case object PRIMITIVE_VOID extends PrimitiveType:
 
 /** The bottom type, usually a null */
 case object Bottom extends Type:
+  def breadth                                                                         = 0
+  def depth                                                                           = 0
   val upwardProjection: Bottom.type                                                   = this
   val downwardProjection: Bottom.type                                                 = this
   val identifier                                                                      = "⊥"
@@ -597,6 +570,8 @@ case object Bottom extends Type:
 
 /** the `?` type */
 case object Wildcard extends Type:
+  def breadth                                                                           = 0
+  def depth                                                                             = 0
   val upwardProjection: ClassOrInterfaceType                                            = OBJECT
   val downwardProjection: Bottom.type                                                   = Bottom
   val identifier                                                                        = "?"
@@ -614,6 +589,8 @@ case object Wildcard extends Type:
 final case class ExtendsWildcardType(
     upper: Type
 ) extends Type:
+  def breadth                         = upper.breadth
+  def depth                           = upper.depth
   val identifier                      = ""
   val numArgs                         = 0
   val upwardProjection                = upper.upwardProjection
@@ -638,6 +615,8 @@ final case class ExtendsWildcardType(
 final case class SuperWildcardType(
     lower: Type
 ) extends Type:
+  def breadth                                = lower.breadth
+  def depth                                  = lower.depth
   val identifier                             = ""
   val numArgs                                = 0
   val substitutions: SubstitutionList        = Nil
@@ -663,6 +642,8 @@ final case class SuperWildcardType(
 
 /** A type parameter of some sort */
 sealed trait TTypeParameter extends Type:
+  def breadth = 0
+  def depth   = 0
   val upwardProjection: TTypeParameter
   val downwardProjection: TTypeParameter
   def replace(oldType: InferenceVariable, newType: Type): TTypeParameter
@@ -734,13 +715,20 @@ sealed trait InferenceVariable extends Type:
   def raw: InferenceVariable = this
   val substitutions: SubstitutionList
   def expansion: (InferenceVariable, Substitution) = (this, Map())
+  def breadth                                      = 0
+  def depth                                        = 0
+
+sealed trait DisjunctiveType extends InferenceVariable:
+  val choices: Vector[Type]
 
 final case class TemporaryType(
     id: Int,
     args: Vector[Type]
 ) extends InferenceVariable:
-  val numArgs    = args.size
-  val identifier = s"ξ$id"
+  override def breadth = args.size
+  override def depth   = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
+  val numArgs          = args.size
+  val identifier       = s"ξ$id"
   override def toString =
     val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
     s"$identifier$a"
@@ -769,7 +757,7 @@ final case class TemporaryType(
 final case class PlaceholderType(id: Int) extends InferenceVariable:
   val substitutions                       = Nil
   val numArgs                             = 0
-  val identifier                          = s"τ$id(placeholder)"
+  val identifier                          = s"δ$id"
   val upwardProjection: PlaceholderType   = this
   val downwardProjection: PlaceholderType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
@@ -779,7 +767,8 @@ final case class PlaceholderType(id: Int) extends InferenceVariable:
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PlaceholderType = this
   def substitute(function: Substitution): PlaceholderType                                 = this
 
-/** A disjunctive type is a type who could be one of several possible other types
+/** A disjunctive type is a type who could be one of several possible other reference types
+  * (including Type Parameters)
   * @param id
   *   the ID of this type
   * @param source
@@ -794,57 +783,53 @@ final case class PlaceholderType(id: Int) extends InferenceVariable:
   * @param _choices
   *   the actual choices of this type
   */
-final case class DisjunctiveType(
+final case class ReferenceOnlyDisjunctiveType(
     id: Int,
     source: Either[String, Type],
     substitutions: SubstitutionList = Nil,
     canBeSubsequentlyBounded: Boolean = false,
     parameterChoices: Set[TTypeParameter] = Set(),
-    _choices: Vector[Type] = Vector()
-) extends InferenceVariable:
+    choices: Vector[Type] = Vector()
+) extends DisjunctiveType:
   val numArgs = 0
   val identifier =
-    val str = _choices.mkString(", ")
+    val str = choices.mkString(", ")
     s"τ$id=V{$str}"
   override def toString() =
     val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
     val subsstring = substitutions.map(subs => s"{${subsFn(subs)}}").mkString
     s"$identifier$subsstring"
-  val upwardProjection: DisjunctiveType   = this
-  val downwardProjection: DisjunctiveType = this
-  def substitute(function: Substitution): DisjunctiveType =
+  val upwardProjection: ReferenceOnlyDisjunctiveType   = this
+  val downwardProjection: ReferenceOnlyDisjunctiveType = this
+  def substitute(function: Substitution): ReferenceOnlyDisjunctiveType =
     copy(substitutions = (this.substitutions ::: (function :: Nil)).filter(!_.isEmpty))
-
-  /** The choices this type can be
-    * @return
-    *   the choices this type can be
-    */
-  def choices = _choices.map(x => substitutions.foldLeft(x)((t, s) => t.substitute(s)))
   def replace(oldType: InferenceVariable, newType: Type): Type =
-    val newChoices       = _choices.map(_.replace(oldType, newType))
+    val newChoices       = choices.map(_.replace(oldType, newType))
     val newSource        = source.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then
-      copy(source = newSource, substitutions = newSubstitutions, _choices = newChoices)
+      copy(source = newSource, substitutions = newSubstitutions, choices = newChoices)
     else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
   val args = Vector()
   override def ⊆(that: Type): Boolean = that match
-    case x: DisjunctiveType => this.id == x.id
-    case _                  => super.⊆(that)
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): DisjunctiveType =
+    case x: ReferenceOnlyDisjunctiveType => this.id == x.id
+    case _                               => super.⊆(that)
+  def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): ReferenceOnlyDisjunctiveType =
     copy(
       source = source.map(_.reorderTypeParameters(scheme)),
       parameterChoices = parameterChoices.map(_.reorderTypeParameters(scheme)),
-      _choices = _choices.map(_.reorderTypeParameters(scheme)),
+      choices = choices.map(_.reorderTypeParameters(scheme)),
       substitutions = substitutions.map(m =>
         m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
       )
     )
 
-final case class PrimitivesOnlyDisjunctiveType(id: Int) extends InferenceVariable:
+final case class PrimitivesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
-  val choices = PRIMITIVES.toSet[Type]
+  val choices = PRIMITIVES.toVector
   val args    = Vector()
   def reorderTypeParameters(
       scheme: Map[TTypeParameter, TTypeParameter]
@@ -859,10 +844,10 @@ final case class PrimitivesOnlyDisjunctiveType(id: Int) extends InferenceVariabl
   def substitute(function: Substitution) = this
   val substitutions                      = Nil
 
-final case class BoxesOnlyDisjunctiveType(id: Int) extends InferenceVariable:
+final case class BoxesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
-  val choices = BOXES.toSet[Type]
+  val choices = BOXES.toVector
   val args    = Vector()
   def reorderTypeParameters(
       scheme: Map[TTypeParameter, TTypeParameter]
@@ -881,8 +866,8 @@ final case class DisjunctiveTypeWithPrimitives(
     id: Int,
     substitutions: SubstitutionList = Nil,
     parameterChoices: Set[TTypeParameter] = Set(),
-    choices: Set[Type] = Set[Type]() ++ PRIMITIVES
-) extends InferenceVariable:
+    choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES
+) extends DisjunctiveType:
   def replace(oldType: InferenceVariable, newType: Type): Type =
     val newChoices       = choices.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
@@ -916,8 +901,8 @@ final case class VoidableDisjunctiveType(
     id: Int,
     substitutions: SubstitutionList = Nil,
     parameterChoices: Set[TTypeParameter] = Set(),
-    choices: Set[Type] = Set[Type]() ++ PRIMITIVES + PRIMITIVE_VOID
-) extends InferenceVariable:
+    choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES :+ PRIMITIVE_VOID
+) extends DisjunctiveType:
   def replace(oldType: InferenceVariable, newType: Type): Type =
     val newChoices       = choices.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
@@ -1058,6 +1043,7 @@ object InferenceVariableFactory:
       canBeBounded: Boolean = false
   ) =
     id += 1
+    val myID = id
     val choices: Vector[Type] =
       if !canBeBounded then
         parameterChoices.toVector :+ createAlpha(
@@ -1072,7 +1058,14 @@ object InferenceVariableFactory:
         val supers      = baseChoices.map(SuperWildcardType(_))
         val extend      = baseChoices.map(ExtendsWildcardType(_))
         (baseChoices :+ Wildcard) ++ supers ++ extend
-    DisjunctiveType(id, source, substitutions, canBeSubsequentlyBounded, parameterChoices, choices)
+    ReferenceOnlyDisjunctiveType(
+      myID,
+      source,
+      substitutions,
+      canBeSubsequentlyBounded,
+      parameterChoices,
+      choices
+    )
 
   def createDisjunctiveTypeWithPrimitives(
       source: scala.util.Either[String, Type],
@@ -1081,14 +1074,15 @@ object InferenceVariableFactory:
       parameterChoices: Set[TTypeParameter] = Set()
   ) =
     id += 1
+    val myID = id
     val choices: Vector[Type] =
-      (parameterChoices.toVector :+ createAlpha(
+      parameterChoices.toVector ++ PRIMITIVES.toVector :+ createAlpha(
         source,
         Nil,
         canBeSubsequentlyBounded,
         parameterChoices
-      )) ++ PRIMITIVES.toVector
-    DisjunctiveTypeWithPrimitives(id, substitutions, parameterChoices, choices.toSet)
+      )
+    DisjunctiveTypeWithPrimitives(myID, substitutions, parameterChoices, choices)
 
   def createVoidableDisjunctiveType(
       source: scala.util.Either[String, Type],
@@ -1097,14 +1091,15 @@ object InferenceVariableFactory:
       parameterChoices: Set[TTypeParameter] = Set()
   ) =
     id += 1
+    val myID = id
     val choices: Vector[Type] =
-      (parameterChoices.toVector :+ createAlpha(
+      (parameterChoices.toVector ++ PRIMITIVES.toVector :+ PRIMITIVE_VOID :+ createAlpha(
         source,
         Nil,
         canBeSubsequentlyBounded,
         parameterChoices
-      )) ++ PRIMITIVES.toVector :+ PRIMITIVE_VOID
-    VoidableDisjunctiveType(id, substitutions, parameterChoices, choices.toSet)
+      ))
+    VoidableDisjunctiveType(myID, substitutions, parameterChoices, choices)
 
   def createPrimitivesOnlyDisjunctiveType() =
     id += 1
@@ -1143,3 +1138,59 @@ object InferenceVariableFactory:
   def createPlaceholderType(): PlaceholderType =
     id += 1
     PlaceholderType(id)
+
+/** The primitive types */
+val PRIMITIVES: Set[PrimitiveType] = Set(
+  PRIMITIVE_BYTE,
+  PRIMITIVE_SHORT,
+  PRIMITIVE_INT,
+  PRIMITIVE_LONG,
+  PRIMITIVE_CHAR,
+  PRIMITIVE_FLOAT,
+  PRIMITIVE_DOUBLE,
+  PRIMITIVE_BOOLEAN
+)
+
+/** The widening relation <<~= */
+val WIDENING_RELATION: Set[(Type, Type)] = Set(
+  (PRIMITIVE_BYTE, PRIMITIVE_SHORT),
+  (PRIMITIVE_BYTE, PRIMITIVE_INT),    // transitive
+  (PRIMITIVE_BYTE, PRIMITIVE_LONG),   // transitive
+  (PRIMITIVE_BYTE, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_BYTE, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_SHORT, PRIMITIVE_INT),
+  (PRIMITIVE_SHORT, PRIMITIVE_LONG),   // transitive
+  (PRIMITIVE_SHORT, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_SHORT, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_CHAR, PRIMITIVE_INT),
+  (PRIMITIVE_CHAR, PRIMITIVE_LONG),   // transitive
+  (PRIMITIVE_CHAR, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_CHAR, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_INT, PRIMITIVE_LONG),
+  (PRIMITIVE_INT, PRIMITIVE_FLOAT),  // transitive
+  (PRIMITIVE_INT, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_LONG, PRIMITIVE_FLOAT),
+  (PRIMITIVE_LONG, PRIMITIVE_DOUBLE), // transitive
+  (PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE),
+  (PRIMITIVE_BYTE, PRIMITIVE_BYTE),    // reflexive
+  (PRIMITIVE_SHORT, PRIMITIVE_SHORT),  // reflexive
+  (PRIMITIVE_CHAR, PRIMITIVE_CHAR),    // reflexive
+  (PRIMITIVE_INT, PRIMITIVE_INT),      // reflexive
+  (PRIMITIVE_LONG, PRIMITIVE_LONG),    // reflexive
+  (PRIMITIVE_FLOAT, PRIMITIVE_FLOAT),  // reflexive
+  (PRIMITIVE_DOUBLE, PRIMITIVE_DOUBLE) // reflexive
+)
+
+val BOX_RELATION: Set[(PrimitiveType, ClassOrInterfaceType)] = Set(
+  (PRIMITIVE_CHAR, BOXED_CHAR),
+  (PRIMITIVE_BYTE, BOXED_BYTE),
+  (PRIMITIVE_SHORT, BOXED_SHORT),
+  (PRIMITIVE_INT, BOXED_INT),
+  (PRIMITIVE_LONG, BOXED_LONG),
+  (PRIMITIVE_FLOAT, BOXED_FLOAT),
+  (PRIMITIVE_DOUBLE, BOXED_DOUBLE),
+  (PRIMITIVE_BOOLEAN, BOXED_BOOLEAN)
+)
+val UNBOX_RELATION: Set[(ClassOrInterfaceType, PrimitiveType)] = BOX_RELATION.map { case (x, y) =>
+  (y, x)
+}

@@ -109,6 +109,8 @@ private def resolveForEachStmt(
         val arrayAssertion   = (arrayElementType =:~ varType) && (iterableType <:~ arrayType)
         // one of these two must be true
         config._3 += iterableTAssertion || arrayAssertion
+        config._4 += iterableTTypeArg
+        config._4 += arrayElementType
       // val iterableProducerType = createDisjunctiveTypeWithPrimitivesFromContext(iterable, config)
       // // whatever the iterable produces, must be a subtype of the var type
       // config._3 += (iterableProducerType =:~ varType)

@@ -12,10 +12,23 @@ private[inference] def resolve(
     log: Log,
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
-  if config.isComplete then LogWithRight(log, config)
+  if config.omega.isEmpty then
+    config.psi.find(x => x.isInstanceOf[DisjunctiveType]) match
+      case Some(t) =>
+        val tt = t.asInstanceOf[DisjunctiveType]
+        LogWithLeft(
+          log,
+          tt.choices
+            .map(choice => config.replace(tt, choice))
+            .filter(_.isDefined)
+            .map(_.get)
+            .toList
+        )
+      case None => LogWithRight(log, config)
+  //if config.isComplete then LogWithRight(log, config)
   else
     val (asst, newConfig) = config.pop()
-    if newConfig |- asst then LogWithLeft(log, newConfig :: Nil)
+    if newConfig |- asst then LogWithLeft(log.addInfo(s"$asst has been proven"), newConfig :: Nil)
     else
       val newLog = log.addInfo(s"resolving $asst")
       val res = asst match

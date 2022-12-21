@@ -12,31 +12,31 @@ class InferenceVariableMemberTable(
       Map().withDefaultValue(Vector()),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false,
-    val constraintStore: Vector[Assertion] = Vector(),
-    val exclusions: Set[String] = Set(),
+    // val constraintStore: Vector[Assertion] = Vector(),
+    // val exclusions: Set[String] = Set(),
     val numParams: Int = 0
 ):
-  def addConstraint(asst: Assertion) =
-    InferenceVariableMemberTable(
-      typet,
-      attributes,
-      methods,
-      mustBeClass,
-      mustBeInterface,
-      constraintStore :+ asst,
-      exclusions
-    )
+  // def addConstraint(asst: Assertion) =
+  //   InferenceVariableMemberTable(
+  //     typet,
+  //     attributes,
+  //     methods,
+  //     mustBeClass,
+  //     mustBeInterface,
+  //     constraintStore :+ asst,
+  //     exclusions
+  //   )
 
-  def addExclusion(identifier: String) =
-    InferenceVariableMemberTable(
-      typet,
-      attributes,
-      methods,
-      mustBeClass,
-      mustBeInterface,
-      constraintStore,
-      exclusions + identifier
-    )
+  // def addExclusion(identifier: String) =
+  //   InferenceVariableMemberTable(
+  //     typet,
+  //     attributes,
+  //     methods,
+  //     mustBeClass,
+  //     mustBeInterface,
+  //     constraintStore,
+  //     exclusions + identifier
+  //   )
 
   def merge(other: InferenceVariableMemberTable): (InferenceVariableMemberTable, List[Assertion]) =
     val newAssertions = ArrayBuffer[Assertion]()
@@ -62,9 +62,9 @@ class InferenceVariableMemberTable(
         newAttributes.toMap,
         newMethods.toMap,
         mustBeClass,
-        mustBeInterface,
-        constraintStore ++ other.constraintStore,
-        exclusions ++ other.exclusions
+        mustBeInterface
+        // constraintStore ++ other.constraintStore,
+        // exclusions ++ other.exclusions
       ),
       newAssertions.toList
     )
@@ -97,9 +97,9 @@ class InferenceVariableMemberTable(
         )),
         methods,
         mustBeClass,
-        mustBeInterface,
-        constraintStore,
-        exclusions
+        mustBeInterface
+        // constraintStore,
+        // exclusions
       )
 
   def addMethod(
@@ -128,9 +128,9 @@ class InferenceVariableMemberTable(
           callSiteParameterChoices
         ))),
       mustBeClass,
-      mustBeInterface,
-      constraintStore,
-      exclusions
+      mustBeInterface
+      // constraintStore,
+      // exclusions
     )
 
   def getMethodReturnType(
@@ -142,7 +142,7 @@ class InferenceVariableMemberTable(
       .map(_.returnType)
 
   override def toString =
-    s"type $typet\nattributes:${attributes}\nmethods:$methods\nconstraints:$constraintStore"
+    s"type $typet\nattributes:${attributes}\nmethods:$methods" //\nconstraints:$constraintStore"
 
   def replace(
       oldType: InferenceVariable,
@@ -169,9 +169,9 @@ class InferenceVariableMemberTable(
         attributes.map(_ -> _.replace(oldType, newType)),
         newMethods.toMap,
         mustBeClass,
-        mustBeInterface,
-        constraintStore.map(_.replace(oldType, newType)),
-        exclusions
+        mustBeInterface
+        // constraintStore.map(_.replace(oldType, newType)),
+        // exclusions
       ),
       newAssertions.toList
     )

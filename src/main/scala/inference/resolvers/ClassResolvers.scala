@@ -26,5 +26,7 @@ private def resolveIsClassAssertion(
         expandDisjunctiveType(x, log, config asserts a)
       case x: Alpha =>
         addToConstraintStore(x, a, log, config)
+      case x: PlaceholderType =>
+        addToConstraintStore(x, a, log, config)
       case x: PrimitiveType =>
         (log.addWarn(s"$x cannot be a class"), Nil)

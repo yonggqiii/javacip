@@ -171,3 +171,5 @@ trait Declaration:
       `type`: Type,
       exclusions: Set[Type] = Set()
   ): Vector[ClassOrInterfaceType]
+
+  def getErasure(`type`: Type): Type

@@ -8,40 +8,37 @@ import configuration.types.*
   */
 given assertionOrdering: Ordering[Assertion] with
   def compare(x: Assertion, y: Assertion): Int =
-    val disjunctiveTester: Assertion => Boolean = x =>
-      x match
-        case _: DisjunctiveAssertion => true
-        case _                       => false
-    val replaceableTester: Assertion => Boolean = asst =>
+    // val disjunctiveTester: Assertion => Boolean = x =>
+    //   x match
+    //     case _: DisjunctiveAssertion => true
+    //     case _                       => false
+    val disjunctiveTester: Assertion => Boolean = asst =>
       asst match
         case SubtypeAssertion(x, y) =>
-          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
+          x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case EquivalenceAssertion(x, y) =>
-          x.isInstanceOf[PlaceholderType] && y.isInstanceOf[PlaceholderType]
+          x.isInstanceOf[DisjunctiveType] && y.isInstanceOf[DisjunctiveType]
         case ContainmentAssertion(x, y) =>
-          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
+          x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case x: ConjunctiveAssertion => false
-        case y: DisjunctiveAssertion => false
-        case IsClassAssertion(x)     => x.isInstanceOf[PlaceholderType]
-        case IsInterfaceAssertion(x) => x.isInstanceOf[PlaceholderType]
+        case y: DisjunctiveAssertion => true
+        case IsClassAssertion(x)     => x.isInstanceOf[DisjunctiveType]
+        case IsInterfaceAssertion(x) => x.isInstanceOf[DisjunctiveType]
         case x: HasMethodAssertion   => false
         case IsDeclaredAssertion(x)  => false
         case IsMissingAssertion(x)   => false
         case IsUnknownAssertion(x)   => false
-        case IsPrimitiveAssertion(x) => false
-        case IsReferenceAssertion(x) => x.isInstanceOf[PlaceholderType]
-        case IsIntegralAssertion(x)  => false
-        case IsNumericAssertion(x)   => false
+        case IsPrimitiveAssertion(x) => x.isInstanceOf[DisjunctiveType]
+        case IsReferenceAssertion(x) => x.isInstanceOf[DisjunctiveType]
+        case IsIntegralAssertion(x)  => x.isInstanceOf[DisjunctiveType]
+        case IsNumericAssertion(x)   => x.isInstanceOf[DisjunctiveType]
         case CompatibilityAssertion(x, y) =>
-          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
+          x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case WideningAssertion(x, y) =>
-          x.isInstanceOf[PlaceholderType] || y.isInstanceOf[PlaceholderType]
-    val (xdisj, xreplace, ydisj, yreplace) =
-      (disjunctiveTester(x), replaceableTester(x), disjunctiveTester(y), replaceableTester(y))
-    if xreplace && !yreplace then -1
-    else if !xreplace && yreplace then 1
-    else if xreplace && yreplace then 0
-    else if xdisj && !ydisj then -1
+          x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
+    val (xdisj, ydisj) =
+      (disjunctiveTester(x), disjunctiveTester(y))
+    if xdisj && !ydisj then -1
     else if !xdisj && ydisj then 1
     else 0
 

@@ -27,6 +27,6 @@ def resolveVariableDeclarator(
       val typeOfInitializer = resolveExpression(log, expr, config, memo)
       val typeOfVariable    = resolveSolvedType(declarator.getType.resolve)
       typeOfInitializer.rightmap(t =>
-        config._3 += SubtypeAssertion(t, typeOfVariable)
+        config._3 += (typeOfVariable ~:= t) //SubtypeAssertion(t, typeOfVariable)
         config
       )

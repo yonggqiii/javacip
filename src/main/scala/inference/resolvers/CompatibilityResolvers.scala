@@ -18,33 +18,65 @@ private def resolveCompatibilityAssertion(
    * 3) boxed(source) <: target
    * 4) unboxed(source) <<~= target
    */
-  (source, target) match
-    case (source, target): (PrimitiveType, PrimitiveType) =>
-      (log, (config asserts (target in source.widened.toSet[Type])) :: Nil)
-    case (source, target): (ClassOrInterfaceType, ClassOrInterfaceType) =>
-      (log, (config asserts (source <:~ target)) :: Nil)
-    case (source, target): (PrimitiveType, ClassOrInterfaceType) =>
-      (log, (config asserts (source.boxed <:~ target)) :: Nil)
-    case (source, target): (ClassOrInterfaceType, PrimitiveType) =>
-      (
-        log,
-        (config asserts DisjunctiveAssertion(target.boxedSources.map(source <:~ _).toVector)) :: Nil
-      )
-    case (source, target) =>
+  (source.upwardProjection, target.downwardProjection) match
+    case (s, t) if t == OBJECT =>
+      (log, config :: Nil)
+    case (s: PrimitiveType, t: PrimitiveType) =>
+      (log, (config asserts (s <<~= t)) :: Nil)
+    case (s @ (_: ClassOrInterfaceType | _: Alpha), t @ (_: ClassOrInterfaceType | _: Alpha)) =>
+      (log, (config asserts (s <:~ t)) :: Nil)
+    case (s: Alpha, t: PrimitiveType) =>
+      val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
+      val P = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+      val asst =
+        (s <:~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
+      (log, (config.addToPsi(B).addToPsi(P) asserts asst) :: Nil)
+    case (s: PrimitiveType, t: ClassOrInterfaceType) =>
+      (log, (config asserts (s.boxed <:~ t)) :: Nil)
+    case (s @ (_: Alpha | _: PlaceholderType), t @ (_: Alpha | _: PlaceholderType)) =>
+      val (l, c) = addToConstraintStore(s, a, log, config)
+      addToConstraintStore(t, a, l, c.head)
+    case (s @ (_: Alpha | _: PlaceholderType), _) =>
+      addToConstraintStore(s, a, log, config)
+    case (_, s @ (_: Alpha | _: PlaceholderType)) =>
+      addToConstraintStore(s, a, log, config)
+    case (s: ClassOrInterfaceType, t: PrimitiveType) =>
+      if t.boxedSources.contains(s) then (log, config :: Nil)
+      else (log.addWarn(s"$s does not unbox to something that widens to $t"), Nil)
+    case (s: TTypeParameter, t: ClassOrInterfaceType) =>
+      (log, (config asserts s <:~ t) :: Nil)
+    case (Bottom, t: ClassOrInterfaceType) =>
+      (log, config :: Nil)
+    case (Bottom, Bottom) =>
+      (log, config :: Nil)
+    case (s, Bottom) =>
+      (log.addWarn(s"$Bottom := $s will always be false"), Nil)
+    case (s: ArrayType, t) =>
+      (log, (config asserts (s <:~ t)) :: Nil)
+    case (s, t: ArrayType) =>
+      (log, (config asserts (s <:~ t)) :: Nil)
+    case (s: DisjunctiveType, t) =>
+      expandDisjunctiveType(s, log, config asserts a)
+    case (s, t: DisjunctiveType) =>
+      expandDisjunctiveType(t, log, config asserts a)
+    case (s, t) =>
       // case 1
-      val case1Assertion = source <:~ target
+      val case1Assertion = s <:~ t
       // case 2
-      val case2Assertion = source <<~= target
+      val case2Assertion = s <<~= t
       val B              = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
       val P              = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
       // case 3
-      val case3Assertion = ((source, B) in BOX_RELATION.toSet[(Type, Type)]) && (B <:~ target)
+      val case3Assertion = ((s, B) in BOX_RELATION.toSet[(Type, Type)]) && (B <:~ t)
       // case 4
       val case4Assertion =
-        (source <:~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= target)
+        (s ~=~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
+      println(s"case: $a")
       (
         log,
-        (config asserts DisjunctiveAssertion(
-          Vector(case1Assertion, case2Assertion, case3Assertion, case4Assertion)
-        )) :: Nil
+        (config asserts case1Assertion) ::
+          (config asserts case2Assertion) ::
+          (config.addToPsi(B) asserts case3Assertion) ::
+          (config.addToPsi(B).addToPsi(P) asserts case4Assertion) ::
+          Nil
       )

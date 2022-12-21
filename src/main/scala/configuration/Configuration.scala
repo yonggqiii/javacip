@@ -19,7 +19,8 @@ import scala.collection.mutable.{
   ArrayBuffer,
   Map as MutableMap,
   Queue as MutableQueue,
-  PriorityQueue
+  PriorityQueue,
+  Set as MutableSet
 }
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
@@ -34,15 +35,26 @@ import com.github.javaparser.ast.CompilationUnit
   *   the table of inference variables generated in the program
   * @param omega
   *   the queue of assertions to be resolved
+  * @param psi
+  *   the types that are generated
   */
 case class Configuration(
     delta: Map[String, FixedDeclaration],
     phi1: Map[String, MissingTypeDeclaration],
     phi2: Map[Type, InferenceVariableMemberTable],
     omega: PriorityQueue[Assertion],
+    psi: Set[Type],
     cu: CompilationUnit,
-    _cache: MutableMap[String, FixedDeclaration] = MutableMap()
+    _cache: MutableMap[String, FixedDeclaration] = MutableMap(),
+    constraintStore: Map[String, Set[Assertion]] = Map(),
+    exclusions: Map[String, Set[ClassOrInterfaceType]] = Map()
 ):
+  def addToPsi(`type`: Type) =
+    copy(psi = psi + `type`)
+
+  def addAllToPsi(types: IterableOnce[Type]) =
+    copy(psi = psi ++ types)
+
   /** Add an assertion to the configuration
     * @param a
     *   the assertion to add
@@ -209,14 +221,14 @@ case class Configuration(
     case x: HasMethodAssertion => false
     case WideningAssertion(l, r) =>
       (l, r) match
-        case (l, r): (PrimitiveType, PrimitiveType) => l.widened.contains(r)
+        case (ll: PrimitiveType, rr: PrimitiveType) => ll.widened.contains(rr)
         case _                                      => false
     case x: CompatibilityAssertion => false
     case x =>
       println(x)
       ???
   private def proveSubtype(left: Type, right: Type): Boolean =
-    val (sup, sub) = (left.upwardProjection, right.upwardProjection)
+    val (sub, sup) = (left.upwardProjection, right.downwardProjection)
     if sup == OBJECT then true
     else if sub == Bottom then true
     else if sub.isSomehowUnknown || sup.isSomehowUnknown then false
@@ -243,7 +255,16 @@ case class Configuration(
             case None => false
             case Some(s) =>
               if s.numArgs == 0 || y.numArgs == 0 then true
-              else this |- ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
+              else
+                val x = ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
+                this |- ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
+        case (ArrayType(x), ArrayType(y)) =>
+          this |- ((x <:~ y) || (x.isPrimitive && (x ~=~ y)))
+        case (ArrayType(x), y: ClassOrInterfaceType) =>
+          this |- ((y ~=~ OBJECT) || (((x in PRIMITIVES
+            .toSet[Type]) || (x ~=~ OBJECT)) && (y ~=~ ClassOrInterfaceType(
+            "java.lang.Cloneable"
+          ) || y ~=~ ClassOrInterfaceType("java.io.Serializable"))))
         // the rest require a more sophisticated analysis
         // case (x: PrimitiveType, y: PrimitiveType)            => x.widened.contains(y)
         // case (x: PrimitiveType, y: SubstitutedReferenceType) => this |- (x.boxed <:~ y)
@@ -275,13 +296,29 @@ case class Configuration(
      */
     val newPhi1       = MutableMap[String, MissingTypeDeclaration]()
     val newAssertions = ArrayBuffer[Assertion]()
-
+    //if oldType.id == 11 then println(s"yo? $oldType $newType")
     for (s, mtd) <- phi1 do
       val (newMtd, a) = mtd.replace(oldType, newType)
       newPhi1 += (s -> newMtd)
       newAssertions ++= a
 
     val newPhi2 = MutableMap[Type, InferenceVariableMemberTable]()
+
+    val newConstraintStore = MutableMap[String, MutableSet[Assertion]]()
+
+    // populate the new constraint store
+    for (id, set) <- constraintStore do
+      if id != oldType.identifier then
+        val newSet = MutableSet[Assertion]()
+        newConstraintStore(id) = newSet
+        newSet.addAll(constraintStore(id).map(_.replace(oldType, newType)))
+      else
+        val liftedConstraints = constraintStore(id).map(_.replace(oldType, newType))
+        // println(
+        //   s"because $oldType was replaced with $newType, the following assertions were lifted into Omega:"
+        // )
+        // println(liftedConstraints.mkString(", "))
+        newAssertions ++= liftedConstraints
 
     //val alphaTable = MutableMap[Alpha, NormalType]()
 
@@ -291,7 +328,7 @@ case class Configuration(
       newAssertions ++= newAssts
       newSource match
         case x: ClassOrInterfaceType =>
-          newAssertions ++= newTable.constraintStore
+          // newAssertions ++= newTable.constraintStore
           if this |- x.isMissing then
             // x is a missing type
             // merge
@@ -310,7 +347,11 @@ case class Configuration(
               val attrType      = attribute.`type`
               val attrContainer = upcastToAttributeContainer(x, attrName)
               attrContainer match
-                case None     => return None // no way attribute can exist
+                case None =>
+                  // if oldType.id == 11 then
+                  //   println(this)
+                  //   println(s"$t, $newSource $attrName fucker")
+                  return None // no way attribute can exist
                 case Some(ac) =>
                   // attribute belongs to some declared type
                   if this |- ac.isDeclared then
@@ -410,7 +451,7 @@ case class Configuration(
                   )
                 newAssertions += DisjunctiveAssertion(disjassts.toVector)
         case x: TTypeParameter =>
-          newAssertions ++= newTable.constraintStore
+          // newAssertions ++= newTable.constraintStore
           val sourceType = x.containingTypeIdentifier
           val (erasure, allBounds): (ClassOrInterfaceType, Set[ClassOrInterfaceType]) =
             getFixedDeclaration(
@@ -540,7 +581,7 @@ case class Configuration(
             newAssertions ++= na
         case p: PrimitiveType =>
           // add to constraint store
-          newAssertions ++= newTable.constraintStore
+          // newAssertions ++= newTable.constraintStore
           // primitive types cannot have any members, nor can they be asserted
           // to be a class or interface
           if !newTable.attributes.isEmpty || !newTable.methods.isEmpty || newTable.mustBeClass || newTable.mustBeInterface then
@@ -549,15 +590,26 @@ case class Configuration(
           println(x)
           ???
     val newOmega = omega.toVector ++ newAssertions
+    //if oldType.id == 11 then println("bitch")
     Some(
       Configuration(
         delta,
         newPhi1.toMap,
         newPhi2.toMap,
         PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*),
-        cu
+        psi.map(_.replace(oldType, newType)),
+        cu,
+        _cache,
+        newConstraintStore.map((s, v) => (s -> v.toSet)).toMap,
+        exclusions
       )
     )
+
+  def addToConstraintStore(alphaOrDelta: Alpha | PlaceholderType, asst: Assertion): Configuration =
+    val id = alphaOrDelta.identifier
+    if !constraintStore.contains(id) then
+      copy(constraintStore = constraintStore + (id -> Set(asst)))
+    else copy(constraintStore = constraintStore + (id -> (constraintStore(id) + asst)))
 
   /** Upcasts a bunch of types into its supertypes that can potentially contain the method with some
     * arity
@@ -633,6 +685,10 @@ case class Configuration(
         case IsReferenceAssertion(x) => x.isInstanceOf[PlaceholderType]
         case IsIntegralAssertion(x)  => false
         case IsNumericAssertion(x)   => false
+        case CompatibilityAssertion(a, b) =>
+          a.isInstanceOf[PlaceholderType] || b.isInstanceOf[PlaceholderType]
+        case WideningAssertion(left, right) =>
+          left.isInstanceOf[PlaceholderType] || right.isInstanceOf[PlaceholderType]
     omega.isEmpty || omega.forall(tester)
 
   override def toString =
@@ -641,7 +697,11 @@ case class Configuration(
       "\n\nPhi:\n" +
       phi1.values.mkString("\n") + "\n" + phi2.values.mkString("\n") +
       "\n\nOmega:\n" +
-      omega.mkString("\n")
+      omega.mkString("\n") +
+      "\n\nPsi: " + psi.mkString(", ") +
+      "\n\nConstraint store:\n" + constraintStore
+        .map((id, s) => s"$id: [${s.mkString(", ")}]")
+        .mkString("\n")
 
   /** Upcasts a type into the first ancestor that contains an attribute of attributeName
     * @param typet
@@ -686,7 +746,7 @@ case class Configuration(
   def getSubstitutedDeclaration(t: ClassOrInterfaceType): Declaration =
     val ud = getUnderlyingDeclaration(t)
     // case of t being a raw type
-    if t.numArgs != ud.numParams && t.numArgs == 0 then ud.erased
+    if t.numArgs < ud.numParams && t.numArgs == 0 then ud.erased
     else
       if t.numArgs != ud.numParams then
         throw RuntimeException(
@@ -765,7 +825,7 @@ case class Configuration(
     *   the resulting type; it returns None if the upcast fails
     */
   def upcast(t: ClassOrInterfaceType, target: ClassOrInterfaceType): Option[Type] =
-    if t.identifier == target.identifier then Some(t)
+    if t.identifier == target.identifier then return Some(t)
     val decl       = getSubstitutedDeclaration(t)
     val supertypes = decl.getDirectAncestors
     supertypes.foldLeft(None: Option[Type])((o, i) =>

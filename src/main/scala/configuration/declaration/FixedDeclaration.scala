@@ -161,7 +161,7 @@ class FixedDeclaration(
 
   def getMethodErasure(m: Method): Method =
     new Method(
-      getSignatureErasure(m.signature),
+      m.signature.erased(this),
       getErasure(m.returnType),
       Map(),
       m.accessModifier,
@@ -170,11 +170,8 @@ class FixedDeclaration(
       m.isFinal
     )
 
-  def getSignatureErasure(m: MethodSignature): MethodSignature =
-    MethodSignature(m.identifier, m.formalParameters.map(x => getErasure(x)), m.hasVarArgs)
-
   def getConstructorErasure(c: Constructor): Constructor =
-    new Constructor(getSignatureErasure(c.signature), Map(), c.accessModifier)
+    new Constructor(c.signature.erased(this), Map(), c.accessModifier)
 
   /** Gets the erasure of a type which is the erasure leftmost bound, where the erasure of a
     * non-type parameter is itself (not its raw type)
@@ -186,7 +183,7 @@ class FixedDeclaration(
     *   the erasure of the type
     */
   def getErasure(`type`: Type): Type =
-    `type` match
+    `type`.upwardProjection match
       case x: TTypeParameter          => getErasure(getLeftmostReferenceTypeBoundOfTypeParameter(x))
       case x: PrimitiveType           => x
       case ArrayType(base)            => ArrayType(getErasure(base))

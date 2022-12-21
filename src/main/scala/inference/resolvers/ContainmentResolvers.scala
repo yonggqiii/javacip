@@ -10,9 +10,9 @@ private def resolveContainmentAssertion(log: Log, config: Configuration, a: Cont
   val ContainmentAssertion(ys, zs) = a
   (ys, zs) match
     case (yy: DisjunctiveType, _) =>
-      expandDisjunctiveType(yy, log, config asserts (yy <=~ zs))
+      expandDisjunctiveType(yy, log, config asserts a)
     case (_, yy: DisjunctiveType) =>
-      expandDisjunctiveType(yy, log, config asserts (ys <=~ yy))
+      expandDisjunctiveType(yy, log, config asserts a)
     case (_, Wildcard) => (log, config :: Nil)
     case (_, ExtendsWildcardType(upper)) =>
       val newAsst = ys <:~ upper

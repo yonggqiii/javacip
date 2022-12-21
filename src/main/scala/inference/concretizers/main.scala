@@ -13,6 +13,8 @@ import scala.collection.mutable.ArrayBuffer
 class ErasureGraph(
     val adjList: MutableMap[String, MutableSet[String]] = MutableMap()
 ):
+  override def toString() =
+    adjList.map((a, b) => s"$a: [${b.mkString(", ")}]").mkString("\n")
   def addEdge(from: String, to: String): Unit =
     if !adjList.contains(from) then adjList(from) = MutableSet()
     if !adjList.contains(to) then adjList(to) = MutableSet()
@@ -39,17 +41,34 @@ class ErasureGraph(
     val q       = ArrayBuffer[String](from)
     val visited = MutableSet[String]()
     while !q.isEmpty do
-      val current = q.remove(0)
-      if current == to then return true
-      visited.add(current)
-      q.addAll(adjList(current))
+      val current = q.remove(q.size - 1)
+      if !visited.contains(current) then
+        if current == to then return true
+        visited.add(current)
+        q.addAll(adjList(current))
     return false
 
 private def createErasureGraph(config: Configuration): ErasureGraph =
-  val alphas = config.phi2.keys.filter(x => x.isInstanceOf[Alpha]).toVector
+  val alphas = config.psi.filter(x => x.isInstanceOf[Alpha]).map(_.asInstanceOf[Alpha]).toVector
+//    config.phi2.keys.filter(x => x.isInstanceOf[Alpha]).map(_.asInstanceOf[Alpha]).toVector
+
   val ceff = alphas
-    .flatMap(x => config.phi2(x).constraintStore)
-    .filter(x => x.isInstanceOf[SubtypeAssertion] || x.isInstanceOf[EquivalenceAssertion])
+    .flatMap(x =>
+      if config.constraintStore.contains(x.identifier) then config.constraintStore(x.identifier)
+      else Vector()
+    )
+    .filter { x =>
+      x match
+        case x @ CompatibilityAssertion(a, b) =>
+          if !a.isInstanceOf[PlaceholderType] && !b.isInstanceOf[PlaceholderType] then
+            throw new RuntimeException(s"$x is still here lmao")
+          else false
+        case SubtypeAssertion(left, right) =>
+          !left.isInstanceOf[PlaceholderType] && !right.isInstanceOf[PlaceholderType]
+        case EquivalenceAssertion(left, right) =>
+          !left.isInstanceOf[PlaceholderType] && !right.isInstanceOf[PlaceholderType]
+        case _ => false
+    }
   val eg = ErasureGraph()
   val q  = ArrayBuffer[String]()
   q.addAll(config.delta.keys)
@@ -63,8 +82,9 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
         else
           val equiv = x.asInstanceOf[EquivalenceAssertion]
           (equiv.left, equiv.right)
-      if !left.isInstanceOf[Alpha] then Some(left.identifier)
-      else if !right.isInstanceOf[Alpha] then Some(right.identifier)
+      if !left.isInstanceOf[Alpha] && !left.isInstanceOf[PlaceholderType] then Some(left.identifier)
+      else if !right.isInstanceOf[Alpha] && !right.isInstanceOf[PlaceholderType] then
+        Some(right.identifier)
       else None
     )
     .filter(_.isDefined)
@@ -96,12 +116,11 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
 private def concretizeToUnknown(
     log: Log,
     config: Configuration,
-    alpha: String,
-    maxArity: Int
+    alpha: String
 ): List[Configuration] =
   val realAlpha =
-    config.phi2.keys.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
-  val newArities = Vector(0, 1, 2, 3, maxArity)
+    config.psi.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
+  val newArities = Vector(0, 3)
   val newTypes =
     newArities.map(arity => realAlpha.concretizeToReference(s"UNKNOWN_TYPE_${realAlpha.id}", arity))
   val newDecls =
@@ -109,6 +128,7 @@ private def concretizeToUnknown(
   val newConfigs = newDecls.map { case (t, d) =>
     config
       .copy(phi1 = config.phi1 + (t.identifier -> d))
+      .addAllToPsi(t.args)
       .replace(realAlpha.copy(substitutions = Nil), t)
   } filter { x =>
     x.isDefined
@@ -124,16 +144,14 @@ private def concretizeToAll(
     types: Set[String]
 ): LogWithLeft[List[Configuration]] =
   val realAlpha =
-    config.phi2.keys.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
+    config.psi.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
   val res = types
     // get the arity of the new type
-    .map(x =>
-      (x, config.getUnderlyingDeclaration(ClassOrInterfaceType(x)).numParams)
-    ) //getArity(NormalType(x, 0))))
+    .map(x => (x, config.getUnderlyingDeclaration(ClassOrInterfaceType(x)).numParams))
     // concretize alpha into each of the possible types
     .map((id, arity) => realAlpha.concretizeToReference(id, arity))
     // replace the existing configuration with those types
-    .map(x => config.replace(realAlpha.copy(substitutions = Nil), x))
+    .map(x => config.addAllToPsi(x.args).replace(realAlpha.copy(substitutions = Nil), x))
     .filter(_.isDefined)
     .map(_.get)
     .toList
@@ -150,35 +168,39 @@ def concretize(
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
   // case of having inference variables to concretize
-  val ivs = config.phi2.keys.filter(x => x.isInstanceOf[DisjunctiveType]).toVector
-  if !ivs.isEmpty then
-    val iv       = ivs(0)
-    val (lg, ls) = expandDisjunctiveType(iv.asInstanceOf[DisjunctiveType], log, config)
-    return LogWithLeft(lg, ls)
-
+  // val ivs = config.psi.filter(x => x.isInstanceOf[ReferenceOnlyDisjunctiveType]).toVector
+  // println("1")
+  // if !ivs.isEmpty then
+  //   val iv       = ivs(0)
+  //   val (lg, ls) = expandDisjunctiveType(iv.asInstanceOf[ReferenceOnlyDisjunctiveType], log, config)
+  //   return LogWithLeft(lg, ls)
+  //println(config)
   // construct erasure graph
   val erasureGraph = createErasureGraph(config)
   // get all relevant vertices
-  val alphas      = config.phi2.keys.filter(x => x.isInstanceOf[Alpha]).map(x => x.identifier).toSet
-  val allVertices = erasureGraph.adjList.keys.toSet
+  val alphas       = config.psi.filter(x => x.isInstanceOf[Alpha]).map(x => x.identifier).toSet
+  val allVertices  = erasureGraph.adjList.keys.toSet
   val allConcretes = allVertices.diff(alphas)
   // nothing to do!
+  //println("4")
   if alphas.isEmpty then return LogWithRight(log.addWarn("concretize not implemented!"), config)
   // find A*
-  val lowestAlpha = alphas
-    .filter(x =>
-      alphas.forall(y =>
-        y == x ||
-          erasureGraph.EΔΦ(x).contains(y) ||
-          !erasureGraph.path(y, x)
-      )
-    )
-    .toVector(0)
+  //println(5)
+  //println(erasureGraph)
+  val lowestAlpha = alphas.toVector(0)
+  // .filter(x =>
+  //   alphas.forall(y =>
+  //     y == x ||
+  //       erasureGraph.EΔΦ(x).contains(y) ||
+  //       !erasureGraph.path(y, x)
+  //   )
+  // )
+  // .toVector(0)
+  // println(6)
   // find e and partition to ec and ea
   val e  = erasureGraph.EΔΦ(lowestAlpha)
   val ec = e.filter(c => allConcretes.contains(c))
   val ea = e.diff(ec)
-
   // fail if |ec| > 1
   if ec.size > 1 then
     return LogWithLeft(
@@ -197,7 +219,6 @@ def concretize(
       lowestAlpha,
       ec
     )
-
   // get L and U
   val lowerField = allConcretes.filter(t =>
     ea.exists(a => erasureGraph.path(t, a)) &&
@@ -205,13 +226,15 @@ def concretize(
         allConcretes.exists(s => s != t && erasureGraph.path(t, s) && erasureGraph.path(s, a))
       )
   )
+  //println(6.5)
+
   val upperField = allConcretes.filter(t =>
     ea.exists(a => erasureGraph.path(a, t)) &&
       !ea.exists(a =>
         allConcretes.exists(s => s != t && erasureGraph.path(a, s) && erasureGraph.path(s, t))
       )
   )
-
+  //println(7)
   // get lfd
   val lfd = lowerField.filter(t => config.isFullyDeclared(ClassOrInterfaceType(t)))
 
@@ -251,19 +274,19 @@ def concretize(
   val res1                        = concretizeToAll(log, config, lowestAlpha, c)
   val (newLog, configsFromKnowns) = (res1.log, res1.left)
 
-  // what is the max number of parameters????
-  val choices = e.map(a =>
-    val alpha        = config.phi2.keys.find(x => x.identifier == a).get.asInstanceOf[Alpha]
-    val paramChoices = alpha.parameterChoices.size
-    if alpha.canBeBounded then (paramChoices + 1) * 3
-    else paramChoices
-  )
+  // // what is the max number of parameters????
+  // val choices = e.map(a =>
+  //   val alpha        = config.phi2.keys.find(x => x.identifier == a).get.asInstanceOf[Alpha]
+  //   val paramChoices = alpha.parameterChoices.size
+  //   if alpha.canBeBounded then (paramChoices + 1) * 3
+  //   else paramChoices
+  // )
 
-  val iStar = choices.foldLeft(0)((x, y) => (x + 1) * (y + 1) - 1)
+  // val iStar = choices.foldLeft(0)((x, y) => (x + 1) * (y + 1) - 1)
 
-  val res2 = concretizeToUnknown(log, config, lowestAlpha, iStar)
+  val res2 = concretizeToUnknown(log, config, lowestAlpha)
 
   return LogWithLeft(
-    newLog.addInfo(s"or $lowestAlpha is of an unknown type with $iStar maximum arity"),
+    newLog.addInfo(s"or $lowestAlpha is of an unknown type"),
     configsFromKnowns ::: res2
   )

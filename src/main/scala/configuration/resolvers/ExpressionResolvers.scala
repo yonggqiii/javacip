@@ -177,6 +177,7 @@ private def getAttrTypeFromMissingScope(
             InferenceVariableFactory
               .createDisjunctiveTypeWithPrimitives(source, Nil, true, parameterChoices)
           case scala.util.Right(x) => InferenceVariableFactory.createPlaceholderType()
+        config._4 += newIV
         // get the actual type of the attribute
         val attrType: Type = newIV.substitute(context)
         // add attribute to the type declaration and add to phi
@@ -270,53 +271,6 @@ private def resolveAssignExpr(
       t
     )
   )
-// what is this?
-// expr.getOperator match
-//   case AssignExpr.Operator.ASSIGN =>
-//     // right <: left
-//     resolveExpression(log, v, config, memo).flatMap((log, v) =>
-//       resolveExpression(log, t, config, memo).rightmap(t =>
-//         config._3 += SubtypeAssertion(v, t)
-//         t
-//       )
-//     )
-//   case AssignExpr.Operator.BINARY_AND | AssignExpr.Operator.BINARY_OR | AssignExpr.Operator.XOR =>
-//     // both sides of op are integrals or booleans
-//     resolveExpression(log, v, config, memo).flatMap((log, v) =>
-//       resolveExpression(log, t, config, memo).rightmap(t =>
-//         config._3 += (IsIntegralAssertion(v) && IsIntegralAssertion(
-//           t
-//         )) || (v <:~ PRIMITIVE_BOOLEAN && t <:~ PRIMITIVE_BOOLEAN)
-//         t
-//       )
-//     )
-//   case AssignExpr.Operator.LEFT_SHIFT | AssignExpr.Operator.SIGNED_RIGHT_SHIFT |
-//       AssignExpr.Operator.UNSIGNED_RIGHT_SHIFT =>
-//     // both sides of op are integrals
-//     resolveExpression(log, v, config, memo).flatMap((log, v) =>
-//       resolveExpression(log, t, config, memo).rightmap(t =>
-//         config._3 += IsIntegralAssertion(v) && IsIntegralAssertion(t)
-//         t
-//       )
-//     )
-//   case AssignExpr.Operator.DIVIDE | AssignExpr.Operator.MINUS | AssignExpr.Operator.MULTIPLY |
-//       AssignExpr.Operator.REMAINDER =>
-//     resolveExpression(log, v, config, memo).flatMap((log, v) =>
-//       resolveExpression(log, t, config, memo).rightmap(t =>
-//         config._3 += IsNumericAssertion(v)
-//         config._3 += IsNumericAssertion(t)
-//         t
-//       )
-//     )
-//   case AssignExpr.Operator.PLUS =>
-//     resolveExpression(log, v, config, memo).flatMap((log, v) =>
-//       resolveExpression(log, t, config, memo).rightmap(t =>
-//         config._3 += (IsNumericAssertion(v)
-//           && IsNumericAssertion(t)) ||
-//           t ~=~ STRING
-//         t
-//       )
-//     )
 
 private def resolveBinaryExpr(
     log: Log,
@@ -338,6 +292,7 @@ private def resolveBinaryExpr(
         case BinaryExpr.Operator.BINARY_AND | BinaryExpr.Operator.BINARY_OR |
             BinaryExpr.Operator.XOR =>
           val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+          config._4 += rt
           config._2._2(rt) = InferenceVariableMemberTable(rt)
           config._3 += (IsIntegralAssertion(left) &&
             IsIntegralAssertion(right) &&
@@ -349,6 +304,7 @@ private def resolveBinaryExpr(
         case BinaryExpr.Operator.DIVIDE | BinaryExpr.Operator.MINUS | BinaryExpr.Operator.MULTIPLY |
             BinaryExpr.Operator.REMAINDER =>
           val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+          config._4 += rt
           config._2._2(rt) = InferenceVariableMemberTable(rt)
           config._3 += IsNumericAssertion(left) &&
             IsNumericAssertion(right) &&
@@ -366,6 +322,7 @@ private def resolveBinaryExpr(
         case BinaryExpr.Operator.LEFT_SHIFT | BinaryExpr.Operator.SIGNED_RIGHT_SHIFT |
             BinaryExpr.Operator.UNSIGNED_RIGHT_SHIFT =>
           val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+          config._4 += rt
           config._2._2(rt) = InferenceVariableMemberTable(rt)
           config._3 += IsIntegralAssertion(left) &&
             IsIntegralAssertion(right) &&
@@ -375,6 +332,7 @@ private def resolveBinaryExpr(
           rt
         case BinaryExpr.Operator.PLUS =>
           val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+          config._4 += rt
           config._2._2(rt) = InferenceVariableMemberTable(rt)
           config._3 += (IsNumericAssertion(left) &&
             IsNumericAssertion(right) &&
@@ -431,6 +389,7 @@ private def resolveConditionalExpr(
       resolveExpression(log, falseBranch, config, memo).rightmap(falseType =>
         // create the right inference variable
         val result = createDisjunctiveTypeWithPrimitivesFromContext(expr, config)
+        config._4 += result
         config._3 += condType =:~ PRIMITIVE_BOOLEAN &&
           trueType =:~ result &&
           falseType =:~ result
@@ -653,6 +612,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         // in the declaration yet
         originalArguments.rightmap(args =>
           val returnType = createReturnTypeFromContext(expr, config)
+          config._4 += returnType
           // create the new declaration by adding the method
           config._2._1 += (missingDeclaration.identifier -> missingDeclaration
             .addMethod(
@@ -673,6 +633,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     // we're not sure what the return type should be, so we have a placeholder
     // and encode the choices using a dijunctive assertion of conjuctive assertions
     val returnType = createReturnTypeFromContext(expr, config)
+    config._4 += returnType
     // assertions from the bunch of declared methods (might be empty)
     val ambiguousDeclaredMethods = originalArguments
       .rightmap(args =>
@@ -750,7 +711,7 @@ private def createDisjunctiveTypeWithPrimitivesFromContext(
 private def createTypeArgumentFromContext(
     expr: Expression,
     config: MutableConfiguration
-): DisjunctiveType =
+): ReferenceOnlyDisjunctiveType =
   // get the parameter choices
   val parameterChoices = getParamChoicesFromExpression(expr)
   val source = Left(
@@ -815,6 +776,7 @@ private def matchMethodCallToMethodUsage(
       )
       // create the inference variable
       val iv = createTypeArgumentFromContext(expr, config)
+      config._4 += iv
       // add new inference variable to phi
       config._2._2(iv) = InferenceVariableMemberTable(iv)
       // return mapping
@@ -885,7 +847,8 @@ private def resolveMethodFromDisjunctiveType(
     table.methods(methodName).find(m => m.signature.formalParameters == originalArguments) match
       case Some(m) => m.returnType
       case None =>
-        val returnType               = createReturnTypeFromContext(expr, config)
+        val returnType = createReturnTypeFromContext(expr, config)
+        config._4 += returnType
         val callSiteParameterChoices = getParamChoicesFromExpression(expr)
         val newTable = table.addMethod(
           methodName,
@@ -1027,6 +990,7 @@ private def resolveUnaryExpr(
     expr.getOperator match
       case UnaryExpr.Operator.BITWISE_COMPLEMENT =>
         val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+        config._4 += rt
         config._2._2(rt) = InferenceVariableMemberTable(rt)
         config._3 += IsIntegralAssertion(x) &&
           IsIntegralAssertion(rt) &&
@@ -1039,6 +1003,7 @@ private def resolveUnaryExpr(
           UnaryExpr.Operator.POSTFIX_DECREMENT | UnaryExpr.Operator.POSTFIX_INCREMENT |
           UnaryExpr.Operator.PREFIX_DECREMENT | UnaryExpr.Operator.PREFIX_INCREMENT =>
         val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+        config._4 += rt
         config._2._2(rt) = InferenceVariableMemberTable(rt)
         config._3 += IsNumericAssertion(x) &&
           IsNumericAssertion(rt) &&

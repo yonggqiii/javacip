@@ -191,7 +191,7 @@ final case class MethodSignature(
     * @return
     *   the resulting method signature
     */
-  def erased(decl: FixedDeclaration) =
+  def erased(decl: Declaration) =
     if hasVarArgs then
       val newParams: ArrayBuffer[Type] = ArrayBuffer(formalParameters: _*)
       newParams(newParams.size - 1) = ArrayType(newParams(newParams.size - 1))

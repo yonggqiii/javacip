@@ -12,15 +12,18 @@ private[inference] def deconflict(
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
   val newAssertions: ArrayBuffer[Assertion] = ArrayBuffer()
-  val allRawTypes = (config.delta.keys ++ config.phi1.keys).toSet.map(i => ClassOrInterfaceType(i))
+  val allBaseTypes = (config.delta.keys ++ config.phi1.keys).toSet.map(i =>
+    val arity = config.getUnderlyingDeclaration(ClassOrInterfaceType(i)).numParams
+    ClassOrInterfaceType(i, (0 until arity).map(n => TypeParameterIndex(i, n)).toVector)
+  )
   // detect cyclic inheritance
-  for x <- allRawTypes do
-    val others = allRawTypes - x
+  for x <- allBaseTypes do
+    val others = allBaseTypes - x
     for y <- others do
-      if (config |- x <:~ y) && (config |- y <:~ x) then
+      if (config |- x.raw <:~ y.raw) && (config |- y.raw <:~ x.raw) then
         return LogWithLeft(log.addWarn(s"cyclic inheritance: $x, $y"), Nil)
   // equality of duplicate supertypes
-  for x <- allRawTypes do
+  for x <- allBaseTypes do
     val supertypes = config.getAllKnownSupertypes(x)
     for y <- supertypes do
       val otherSupertypes = supertypes - y
@@ -31,7 +34,7 @@ private[inference] def deconflict(
             if (y.isSomehowUnknown || z.isSomehowUnknown) then newAssertions += (y ~=~ z)
             else if y != z then
               return LogWithLeft(
-                log.addWarn(s"$x <: $y and $z!"),
+                log.addWarn(s"$x <: $y and $z!").addWarn(config.toString),
                 Nil
               )
       // class/interface assertions
@@ -42,7 +45,7 @@ private[inference] def deconflict(
   // stop here
   if !newAssertions.isEmpty then
     return LogWithLeft(
-      log,
+      log.addWarn("fuck oyu!"),
       (config assertsAllOf newAssertions) :: Nil
     )
   // pointless extensions

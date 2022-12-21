@@ -34,7 +34,52 @@ class MissingTypeDeclaration(
     val methods: Map[String, Vector[Method]] = Map().withDefaultValue(Vector()),
     val constructors: Vector[Constructor] = Vector()
 ) extends Declaration:
-  def erased                                                                      = ???
+  def erased = new MissingTypeDeclaration(
+    identifier,
+    Vector(),
+    mustBeClass,
+    mustBeInterface,
+    supertypes.map(_.raw),
+    Map(),
+    attributes.map((s, a) => (s -> getAttributeErasure(a))),
+    methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
+    constructors.map(getConstructorErasure(_))
+  )
+
+  def getErasure(`type`: Type): Type = `type`.upwardProjection match
+    case x: TTypeParameter =>
+      if x.containingTypeIdentifier != this.identifier then ???
+      OBJECT
+    case x: PrimitiveType        => x
+    case ArrayType(base)         => ArrayType(getErasure(base))
+    case x: ClassOrInterfaceType => x.raw
+    case x                       => x
+
+  def getAttributeErasure(a: Attribute): Attribute =
+    Attribute(
+      a.identifier,
+      getErasure(a.`type`),
+      a.accessModifier,
+      a.isStatic,
+      a.isFinal
+    )
+  def getMethodErasure(m: Method): Method =
+    if m.isInstanceOf[MethodWithContext] then m
+    else
+      new Method(
+        m.signature.erased(this),
+        getErasure(m.returnType),
+        Map(),
+        m.accessModifier,
+        m.isAbstract,
+        m.isStatic,
+        m.isFinal
+      )
+
+  def getConstructorErasure(c: Constructor): Constructor =
+    if c.isInstanceOf[ConstructorWithContext] then c
+    else new Constructor(c.signature.erased(this), Map(), c.accessModifier)
+
   def getLeftmostReferenceTypeBoundOfTypeParameter(t: Type): ClassOrInterfaceType = ???
   def substitute(function: Substitution): MissingTypeDeclaration =
     new MissingTypeDeclaration(

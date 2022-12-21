@@ -16,6 +16,14 @@ private[inference] def resolveSubtypeAssertion(
   val (sub, sup)             = (x.upwardProjection, y.downwardProjection)
   // trivial cases
   (sub, sup) match
+    case (Bottom, _) =>
+      (log, config :: Nil)
+    case (x, Bottom) =>
+      (log.addWarn(s"$x <: $Bottom will always be false"), Nil)
+    case (x: PrimitivesOnlyDisjunctiveType, _) =>
+      (log.addWarn(s"primitives cannot be involved in subtype relations"), Nil)
+    case (_, x: PrimitivesOnlyDisjunctiveType) =>
+      (log.addWarn(s"primitives cannot be involved in subtype relations"), Nil)
     case (i: DisjunctiveType, _) =>
       expandDisjunctiveType(i, log, config asserts a)
     case (_, i: DisjunctiveType) =>
@@ -25,9 +33,16 @@ private[inference] def resolveSubtypeAssertion(
     case (m: PrimitiveType, _) =>
       (log.addWarn(s"$sub cannot be a subtype of $sup as $sub is primitive"), Nil)
     case (ArrayType(m), ArrayType(n)) =>
-      (log, (config asserts (m <:~ n)) :: Nil)
-    // TODO: CHANGE THIS
-    // array type cannot be sub/super types of other types except the trivial ones
+      (log, (config asserts (m <:~ n || (m.isPrimitive && m ~=~ n))) :: Nil)
+    case (ArrayType(m), n: ClassOrInterfaceType) =>
+      val newConfig = config asserts ((n ~=~ OBJECT) || (((m in PRIMITIVES
+        .toSet[Type]) || (m ~=~ OBJECT)) && (n ~=~ ClassOrInterfaceType(
+        "java.lang.Cloneable"
+      ) || n ~=~ ClassOrInterfaceType("java.io.Serializable"))))
+      (log, newConfig :: Nil)
+    case (m: ClassOrInterfaceType, n: ArrayType) =>
+      (log.addWarn(s"$m <: $n is trivially not true"), Nil)
+    // CHANGE THIS
     case (m: ArrayType, _) =>
       `resolve Array <: Type`(m, sup, log, config)
     // TODO: CHANGE THIS
@@ -53,23 +68,32 @@ private[inference] def resolveSubtypeAssertion(
       addToConstraintStore(alpha, sub <:~ alpha, log, config)
     case (alpha: Alpha, _) =>
       addToConstraintStore(alpha, alpha <:~ sup, log, config)
-    case (Bottom, _) =>
-      (log, config :: Nil)
-    case (x, Bottom) =>
-      (log.addWarn(s"$x <: $Bottom will always be false"), Nil)
+    case (delta: PlaceholderType, _) =>
+      addToConstraintStore(delta, a, log, config)
+    case (_, delta: PlaceholderType) =>
+      addToConstraintStore(delta, a, log, config)
     case x =>
       println(x)
       println(a)
       ???
 
-private def addToConstraintStore(alpha: Alpha, asst: Assertion, log: Log, config: Configuration) =
-  val table =
-    if config.phi2.contains(alpha) then config.phi2(alpha) else InferenceVariableMemberTable(alpha)
-  val newTable = table.addConstraint(asst)
+private def addToConstraintStore(
+    alpha: Alpha | PlaceholderType,
+    asst: Assertion,
+    log: Log,
+    config: Configuration
+) =
   (
-    log.addInfo(s"adding $asst to constraint store in $alpha"),
-    (config.copy(phi2 = config.phi2 + (alpha -> newTable))) :: Nil
+    log.addInfo(s"adding $asst to constraint store"),
+    (config.addToConstraintStore(alpha, asst)) :: Nil
   )
+// val table =
+//   if config.phi2.contains(alpha) then config.phi2(alpha) else InferenceVariableMemberTable(alpha)
+// val newTable = table.addConstraint(asst)
+// (
+//   log.addInfo(s"adding $asst to constraint store in $alpha"),
+//   (config.copy(phi2 = config.phi2 + (alpha -> newTable))) :: Nil
+// )
 
 private def `resolve Array <: Type`(
     subtype: ArrayType,
@@ -143,7 +167,7 @@ private def `resolve Reference <: Reference`(
   // do not create cyclic inheritances
   if config |- supRaw <:~ subRaw then
     return (log.addWarn(s"$a is false because $supRaw <: $subRaw"), Nil)
-
+  log.addInfo(s"$subtype upcasts to ${config.upcast(subtype, supertype)}")
   // upcast the subtype to the supertype
   config upcast (subtype, supertype) match
     // upcasting success, easy
@@ -193,8 +217,16 @@ private def `resolve Reference <: Reference`(
             else if subIsInterface then Vector(a, supertype.isInterface)
             else Vector(a)
           (
-            log.addInfo(s"$subtype greedily extends $newSupertype"),
-            config.copy(phi1 = newPhi1).assertsAllOf(newAssts) :: Nil
+            log
+              .addInfo(s"$subtype greedily extends $newSupertype")
+              .addInfo(
+                config
+                  .copy(phi1 = newPhi1)
+                  .addAllToPsi(newSupertype.args)
+                  .assertsAllOf(newAssts)
+                  .toString
+              ),
+            config.copy(phi1 = newPhi1).addAllToPsi(newSupertype.args).assertsAllOf(newAssts) :: Nil
           )
       else
         val missingAncestors = config upcastToMissingAncestors subtype
@@ -222,6 +254,7 @@ private def `resolve Alpha <: Ref`(
     val concretizedConfig = config
       .asserts(subtype <:~ supertype)
       .replace(subtype.copy(substitutions = Nil), newAlpha)
+      .map(_.addAllToPsi(newAlpha.args))
       .map(_ :: Nil)
       .getOrElse(Nil)
     (log.addInfo(s"$subtype must be an instance of ${supertype.identifier}"), concretizedConfig)
