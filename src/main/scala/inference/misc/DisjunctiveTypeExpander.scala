@@ -1,7 +1,7 @@
 package inference.misc
 
 import configuration.Configuration
-import configuration.types.DisjunctiveType
+import configuration.types.*
 import configuration.assertions.*
 import utils.*
 
@@ -22,6 +22,40 @@ private[inference] def expandDisjunctiveType(
       .toList
   )
 
+private[inference] def expandDisjunctiveTypeToPrimitive(
+    i: DisjunctiveType,
+    log: Log,
+    config: Configuration
+) =
+  val choices = i.choices.filter(x =>
+    x.isInstanceOf[PrimitiveType] || x.isInstanceOf[PrimitivesOnlyDisjunctiveType] || x
+      .isInstanceOf[DisjunctiveTypeWithPrimitives] || x.isInstanceOf[VoidableDisjunctiveType]
+  )
+  (
+    log.addInfo(s"expanding ${i.identifier} into its primtive choices", choices.toString),
+    choices
+      .map(config.replace(i, _))
+      .filter(!_.isEmpty)
+      .map(_.get)
+      .toList
+  )
+
+private[inference] def expandDisjunctiveTypeToReference(
+    i: DisjunctiveType,
+    log: Log,
+    config: Configuration
+) =
+  val choices = i.choices.filter(x =>
+    !x.isInstanceOf[PrimitiveType] && !x.isInstanceOf[PrimitivesOnlyDisjunctiveType]
+  )
+  (
+    log.addInfo(s"expanding ${i.identifier} into its reference choices", choices.toString),
+    choices
+      .map(config.replace(i, _))
+      .filter(!_.isEmpty)
+      .map(_.get)
+      .toList
+  )
 // i.source match
 //   case Left(_) =>
 //     val choices = i.choices

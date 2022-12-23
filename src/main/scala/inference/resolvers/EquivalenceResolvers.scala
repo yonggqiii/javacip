@@ -11,8 +11,8 @@ private[inference] def resolveEquivalenceAssertion(
     asst: EquivalenceAssertion
 ): (Log, List[Configuration]) =
   val EquivalenceAssertion(x, y) = asst
-  if x ⊂ y then (log.addWarn(s"${x} ⊂ ${y}"), Nil)
-  else if y ⊂ x then (log.addWarn(s"${y} ⊂ ${x}"), Nil)
+  if x ⊂ y then (log.addWarn(s"${x} ⊂ ${y} OCCURS"), Nil)
+  else if y ⊂ x then (log.addWarn(s"${y} ⊂ ${x} OCCURS"), Nil)
   else
     (x, y) match
       case (Bottom, Bottom)     => (log, config :: Nil)
@@ -80,7 +80,7 @@ private[inference] def resolveEquivalenceAssertion(
       case (_, y: PrimitiveType) =>
         (log.addWarn(s"$x != $y"), Nil)
 
-      case _ => ???
+// case _ => ???
 
 // private[inference] def concretizeAlphaToPrimitive(
 //     log: Log,

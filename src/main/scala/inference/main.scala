@@ -13,30 +13,68 @@ import inference.parameterizers.parameterizeMembers
 import scala.util.{Try, Success, Failure, Either, Left, Right}
 
 def infer(log: Log, config: Configuration): LogWithOption[Configuration] =
-  infer(log, config :: Nil)
+  infer(log, addAllToConfigs(Map(), config :: Nil))
 
 @tailrec
 private def infer(
     log: Log,
-    configs: List[Configuration],
+    configs: Map[Int, List[Configuration]],
     a: Int = 0
 ): LogWithOption[Configuration] =
   if a > 100000 then return LogWithNone(log.addError("max hit", configs(0).toString))
-  if a % 1000 == 0 then println(s"$a, ${configs.size}")
-  configs match
-    case Nil     => LogWithNone(log.addError(s"Terminating as type errors exist"))
-    case x :: xs =>
-      //if x.phi1("B").attributes("x").`type`.toString == "UNKNOWN_TYPE_2<B#T, B#U, B#V>" then
-      // if x.phi1("B").attributes("x").`type`.raw.toString == "UNKNOWN_TYPE_2" then
-      //   println(x.phi1("B").attributes("x").`type`)
-      if (x.psi.exists(t => t.breadth > 3 || t.depth > 1)) then infer(log, xs, a + 1)
+  if a % 1000 == 0 then println(s"$a, ${configs.map((k, v) => v.size).sum}")
+  getConfig(configs) match
+    case None => LogWithNone(log.addError(s"Terminating as type errors exist"))
+    case Some((x, xs)) =>
+      if x.maxBreadth > 3 || x.maxDepth > 3 then infer(log, xs, a + 1)
+      //if (x.psi.exists(t => t.breadth > 3 || t.depth > 1)) then infer(log, xs, a + 1)
       else
         val res = resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers
-        if res.isLeft then infer(res.log, res.left ::: xs, a + 1)
-        else if !res.right.omega.isEmpty then infer(res.log, res.right :: xs, a + 1)
+        if res.isLeft then
+          val allConfigs = addAllToConfigs(xs, res.left)
+          infer(res.log, allConfigs, a + 1)
+        // else if !res.right.omega.isEmpty then infer(res.log, res.right :: xs, a + 1)
         else
           LogWithSome(
             res.log
               .addSuccess(s"successfully inferred compilable configuration", res.right.toString),
             res.right
           )
+// configs match
+//   case Nil => LogWithNone(log.addError(s"Terminating as type errors exist"))
+//   case x :: xs =>
+//     if x.maxBreadth > 3 || x.maxDepth > 1 then infer(log, xs, a + 1)
+//     //if (x.psi.exists(t => t.breadth > 3 || t.depth > 1)) then infer(log, xs, a + 1)
+//     else
+//       val res = resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers
+//       if res.isLeft then infer(res.log, res.left ::: xs, a + 1)
+//       // else if !res.right.omega.isEmpty then infer(res.log, res.right :: xs, a + 1)
+//       else
+//         LogWithSome(
+//           res.log
+//             .addSuccess(s"successfully inferred compilable configuration", res.right.toString),
+//           res.right
+//         )
+
+private def getConfig(
+    configs: Map[Int, List[Configuration]]
+): Option[(Configuration, Map[Int, List[Configuration]])] =
+  val x = configs.filter((k, v) => !v.isEmpty)
+  if x.isEmpty then None
+  else
+    val minKey = x.keySet.min
+    val first  = x(minKey).head
+    val second = x + (minKey -> x(minKey).tail)
+    Some((first, second))
+
+@tailrec
+private def addAllToConfigs(
+    configs: Map[Int, List[Configuration]],
+    newConfigs: List[Configuration]
+): Map[Int, List[Configuration]] =
+  newConfigs match
+    case Nil => configs
+    case x :: xs =>
+      val key = x.maxBreadth * x.maxDepth
+      if !configs.contains(key) then addAllToConfigs(configs + (key -> (x :: Nil)), xs)
+      else addAllToConfigs(configs + (key                           -> (x :: configs(key))), xs)

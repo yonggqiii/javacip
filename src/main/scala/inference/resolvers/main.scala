@@ -54,8 +54,8 @@ private[inference] def resolve(
           resolveContainmentAssertion(newLog, newConfig, x)
         case x: IsPrimitiveAssertion =>
           resolveIsPrimitiveAssertion(newLog, newConfig, x)
-        case x: IsReferenceAssertion =>
-          resolveIsReferenceAssertion(newLog, newConfig, x)
+        // case x: IsReferenceAssertion =>
+        //   resolveIsReferenceAssertion(newLog, newConfig, x)
         case x: IsIntegralAssertion =>
           resolveIntegralAssertion(newLog, newConfig, x)
         case x: IsNumericAssertion =>

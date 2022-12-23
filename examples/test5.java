@@ -19,9 +19,15 @@ class A {
         }
 }
 
+
 // class Cat {
 // }
 
 // class B<T, U, V> {
 // C<T, U, V> x;
+// }
+
+// class C<T, U, V> {
+//         T t;
+//         C<U, V, T> a;
 // }

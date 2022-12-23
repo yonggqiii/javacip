@@ -6,7 +6,8 @@ import configuration.declaration.{
   Declaration,
   FixedDeclaration,
   MissingTypeDeclaration,
-  InferenceVariableMemberTable
+  InferenceVariableMemberTable,
+  MethodWithContext
 }
 import configuration.assertions.*
 import configuration.assertions.given
@@ -47,8 +48,195 @@ case class Configuration(
     cu: CompilationUnit,
     _cache: MutableMap[String, FixedDeclaration] = MutableMap(),
     constraintStore: Map[String, Set[Assertion]] = Map(),
-    exclusions: Map[String, Set[ClassOrInterfaceType]] = Map()
+    exclusions: Map[String, Set[String]] = Map()
 ):
+  def combineTemporaryType(
+      t: TemporaryType,
+      other: SomeClassOrInterfaceType
+  ): Option[Configuration] =
+    if exclusions.contains(t.identifier) && exclusions(t.identifier).contains(other.identifier) then
+      return None
+    val tempDecl = phi1(t.identifier)
+    if tempDecl.numParams != getArity(other) then return None
+    // PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*
+    val newOmega = ArrayBuffer[Assertion]()
+    newOmega.addAll(omega.map(_.combineTemporaryType(t, other)))
+    val newPsi = psi.map(_.combineTemporaryType(t, other))
+    val newConstraintStore = constraintStore
+      .filter((k, v) => k != t.identifier)
+      .map((k, v) => (k -> v.map(_.combineTemporaryType(t, other))))
+    if constraintStore.contains(t.identifier) then
+      newOmega.addAll(constraintStore(t.identifier).map(_.combineTemporaryType(t, other)))
+    val newExclusions = exclusions.filter((k, v) => k != t.identifier)
+    if this |- other.isMissing then
+      // just combine the two MissingTypeDeclarations
+      val otherDecl = phi1(other.identifier)
+      val oo        = otherDecl.combineWithTemporaryTypeDeclaration(t, other, tempDecl)
+      if oo.isEmpty then return None
+      val (newDecl, assertions) = oo.get
+      newOmega.addAll(assertions)
+      val newPhi1 = phi1 + (other.identifier -> newDecl)
+      return Some(
+        Configuration(
+          delta,
+          newPhi1,
+          phi2.map((k, v) => k.combineTemporaryType(t, other) -> v.combineTemporaryType(t, other)),
+          PriorityQueue(newOmega.toSeq: _*),
+          newPsi,
+          cu,
+          _cache,
+          newConstraintStore,
+          newExclusions
+        )
+      )
+    // here, other is a declared type
+    // do isClass and isInterface checks
+    if tempDecl.mustBeClass then newOmega += other.isClass
+    if tempDecl.mustBeInterface then newOmega += other.isInterface
+    val x = ClassOrInterfaceType(
+      other.identifier,
+      (0 until getUnderlyingDeclaration(other).numParams)
+        .map(i => TypeParameterIndex(other.identifier, i))
+        .toVector
+    )
+    val newPhi1 = MutableMap[String, MissingTypeDeclaration]()
+    // collect the supertypes
+    val tempSupertypes = this.getAllKnownSupertypes(
+      TemporaryType(
+        t.id,
+        (0 until tempDecl.numParams).map(i => TypeParameterIndex(t.identifier, i)).toVector
+      )
+    )
+    newOmega ++= tempSupertypes.map(x <:~ _)
+    for (s, mtd) <- phi1 do newPhi1(s) = mtd
+    // collect attributes
+    for
+      (attrName, attribute) <- tempDecl.attributes.map((k, v) =>
+        (k -> v.combineTemporaryType(t, other))
+      )
+    do
+      val attrType      = attribute.`type`
+      val attrContainer = upcastToAttributeContainer(x, attrName)
+      attrContainer match
+        case None =>
+          return None // no way attribute can exist
+        case Some(ac) =>
+          // attribute belongs to some declared type
+          if this |- ac.isDeclared then
+            // assert that the types are equal
+            newOmega += attrType ~=~ getSubstitutedDeclaration(ac)
+              .attributes(attrName)
+              .`type`
+          else
+            // attribute belongs to some missing type
+            // if attribute doesn't exist, add a new one first
+            if !newPhi1(ac.identifier).attributes.contains(attrName) then
+              val createdAttrType =
+                InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+                  Left(ac.identifier),
+                  Nil,
+                  true,
+                  (0 until newPhi1(ac.identifier).numParams)
+                    .map(i => TypeParameterIndex(ac.identifier, i))
+                    .toSet
+                )
+              // update table in phi
+              newPhi1(ac.identifier) = newPhi1(ac.identifier).addAttribute(
+                attrName,
+                createdAttrType,
+                attribute.isStatic,
+                attribute.accessModifier,
+                attribute.isFinal
+              )
+            // get expansion
+            val (_, substitution) = ac.expansion
+            // assert
+            newOmega += newPhi1(ac.identifier)
+              .attributes(attrName)
+              .`type`
+              .substitute(substitution) ~=~ attrType
+    // collect the methods
+    for (methodName, methodSet) <- tempDecl.methods do
+      // each row in the methodTable is actually a method definition
+      for method <- methodSet.map(_.combineTemporaryType(t, other)) do
+        val paramTypes = method.signature.formalParameters
+        val returnType = method.returnType
+        val context    = method.asInstanceOf[MethodWithContext].context
+        val callSiteParameterChoices =
+          method.asInstanceOf[MethodWithContext].callSiteParameterChoices
+        // find the types that may actually contain the methods
+        val methodContainers =
+          upcastAllToMethodContainer(Set(x), methodName, paramTypes.size)
+        if methodContainers.isEmpty then return None
+        // distinguish between declared and missing types
+        val (fixedMethodContainers, missingMethodContainers) =
+          methodContainers.partition(x => this |- x.isDeclared)
+        // the disjunctive assertion to create
+        val disjassts = ArrayBuffer[Assertion]()
+        // handle the fixed declarations
+        for t <- fixedMethodContainers do
+          // get all relevant methods
+          val decl = getSubstitutedDeclaration(t) // definitely ok
+          val relevantMethods = decl
+            .methods(methodName)
+            .filter(m => m.callableWithNArgs(paramTypes.size))
+          for rmethod <- relevantMethods do
+            val relevantMethod = rmethod.asNArgs(paramTypes.size).substitute(context)
+            val (realTypeParams, realParamTypes, realRt) = (
+              relevantMethod.typeParameterBounds.keys,
+              relevantMethod.signature.formalParameters,
+              relevantMethod.returnType
+            )
+            // create the assertions
+            val tpMap: Map[TTypeParameter, Type] =
+              realTypeParams
+                .map(x =>
+                  x -> InferenceVariableFactory.createDisjunctiveType(
+                    scala.util.Left(decl.identifier),
+                    Nil,
+                    true,
+                    callSiteParameterChoices,
+                    true
+                  )
+                )
+                .toMap
+            val conjAssertion = ArrayBuffer[Assertion]()
+            for i <- (0 until paramTypes.size) do
+              conjAssertion += paramTypes(i) <:~ realParamTypes(i).substitute(tpMap)
+            conjAssertion += returnType ~=~ realRt.substitute(tpMap)
+            // assert the passed-in type arguments meets their bounds
+            conjAssertion += ConjunctiveAssertion(
+              relevantMethod.typeParameterBounds.toVector.flatMap { case (tp, b) =>
+                val newBounds = b.map(x => x.substitute(tpMap))
+                newBounds.map(tp.substitute(tpMap) <:~ _)
+              }
+            )
+            disjassts += ConjunctiveAssertion(conjAssertion.toVector)
+        for t <- missingMethodContainers do
+          disjassts += HasMethodAssertion(
+            t.substitute(context),
+            methodName,
+            paramTypes,
+            returnType,
+            callSiteParameterChoices
+          )
+        newOmega += DisjunctiveAssertion(disjassts.toVector)
+    Some(
+      Configuration(
+        delta,
+        newPhi1.toMap,
+        phi2.map((k, v) => k.combineTemporaryType(t, other) -> v.combineTemporaryType(t, other)),
+        PriorityQueue(newOmega.toSeq: _*),
+        newPsi,
+        cu,
+        _cache,
+        newConstraintStore,
+        newExclusions
+      )
+    )
+
+  val maxBreadth = if psi.isEmpty then 0 else psi.map(_.breadth).max
+  val maxDepth   = if psi.isEmpty then 0 else psi.map(_.depth).max
   def addToPsi(`type`: Type) =
     copy(psi = psi + `type`)
 
@@ -80,10 +268,7 @@ case class Configuration(
   def getArity(t: Type): Int = t match
     // the arity of a type constructor is the number of parameters the base type
     // in the underlying declaration
-    case x: ClassOrInterfaceType => getUnderlyingDeclaration(x).numParams
-    // if it is a temporary type, then it is the number of parameters as stated
-    // in the "declaration"
-    case x: TemporaryType => getInferenceVariableMemberTable(x).numParams
+    case x: SomeClassOrInterfaceType => getUnderlyingDeclaration(x).numParams
     // for all other types it is 0
     case _ => 0
 
@@ -103,7 +288,7 @@ case class Configuration(
     * @return
     *   all the missing supertypes
     */
-  def upcastToMissingAncestors(t: ClassOrInterfaceType): Vector[ClassOrInterfaceType] =
+  def upcastToMissingAncestors(t: SomeClassOrInterfaceType): Vector[SomeClassOrInterfaceType] =
     if this |- t.isMissing then Vector(t)
     else getSubstitutedDeclaration(t).getDirectAncestors.flatMap(x => upcastToMissingAncestors(x))
 
@@ -126,7 +311,7 @@ case class Configuration(
   def |-(a: Assertion): Boolean = a match
     case SubtypeAssertion(sub, sup) =>
       proveSubtype(sub.upwardProjection, sup.downwardProjection)
-    case EquivalenceAssertion(a, b) => a == b // simple proof of equivalence;
+    case EquivalenceAssertion(a, b) => proveEquivalence(a, b)
     case ContainmentAssertion(sub, sup) =>
       sup match
         case ExtendsWildcardType(upper) => this |- sub <:~ upper
@@ -137,7 +322,7 @@ case class Configuration(
       val t  = a.upwardProjection
       val id = t.identifier
       t match
-        case x: ClassOrInterfaceType =>
+        case x: SomeClassOrInterfaceType =>
           // get info from the underlying declaration
           getFixedDeclaration(x) match
             case Some(decl) => !decl.isInterface
@@ -159,7 +344,7 @@ case class Configuration(
       val t  = a.upwardProjection
       val id = t.identifier
       t match
-        case x: ClassOrInterfaceType =>
+        case x: SomeClassOrInterfaceType =>
           // get info from the underlying declaration
           getFixedDeclaration(x) match
             case Some(decl) => decl.isInterface
@@ -191,7 +376,7 @@ case class Configuration(
       if v.isEmpty then true
       else (this |- v.head) && (this |- ConjunctiveAssertion(v.tail))
     case IsPrimitiveAssertion(t) => t.isInstanceOf[PrimitiveType]
-    case IsReferenceAssertion(t) => ???
+    //case IsReferenceAssertion(t) => ???
     case IsIntegralAssertion(t) =>
       t == PRIMITIVE_BYTE ||
         t == PRIMITIVE_CHAR ||
@@ -227,6 +412,26 @@ case class Configuration(
     case x =>
       println(x)
       ???
+  private def proveEquivalence(a: Type, b: Type): Boolean =
+    (a, b) match
+      case (x @ (_: Alpha | _: PlaceholderType), _) =>
+        constraintStore.contains(x.identifier) && constraintStore(x.identifier).contains(a ~=~ b)
+      case (_, x @ (_: Alpha | _: PlaceholderType)) =>
+        constraintStore.contains(x.identifier) && constraintStore(x.identifier).contains(a ~=~ b)
+      case (x: SomeClassOrInterfaceType, y: SomeClassOrInterfaceType) =>
+        x.identifier == y.identifier && x.numArgs == y.numArgs && x.args.zip(y.args).forall {
+          case (x, y) => this |- (x ~=~ y)
+        }
+      case (x: PrimitiveType, y: PrimitiveType) =>
+        x == y
+      case (ArrayType(x), ArrayType(y)) =>
+        this |- (x ~=~ y)
+      case (ExtendsWildcardType(x), ExtendsWildcardType(y)) =>
+        this |- (x ~=~ y)
+      case (SuperWildcardType(x), SuperWildcardType(y)) =>
+        this |- (x ~=~ y)
+      case _ => a == b
+
   private def proveSubtype(left: Type, right: Type): Boolean =
     val (sub, sup) = (left.upwardProjection, right.downwardProjection)
     if sup == OBJECT then true
@@ -243,14 +448,14 @@ case class Configuration(
               case Some(decl) =>
                 val bounds = decl.getBoundsAsTypeParameters(x)
                 bounds.contains(y)
-        case (x: TTypeParameter, y: ClassOrInterfaceType) =>
+        case (x: TTypeParameter, y: SomeClassOrInterfaceType) =>
           val source = x.containingTypeIdentifier
           getFixedDeclaration(ClassOrInterfaceType(source)) match
             case None => false
             case Some(decl) =>
               val bounds = decl.getAllReferenceTypeBoundsOfTypeParameter(x)
               this |- DisjunctiveAssertion(bounds.map(x => x <:~ y))
-        case (x: ClassOrInterfaceType, y: ClassOrInterfaceType) =>
+        case (x: SomeClassOrInterfaceType, y: SomeClassOrInterfaceType) =>
           upcast(x, y) match
             case None => false
             case Some(s) =>
@@ -260,18 +465,11 @@ case class Configuration(
                 this |- ConjunctiveAssertion(s.args.zip(y.args).map(x => x._1 <=~ x._2))
         case (ArrayType(x), ArrayType(y)) =>
           this |- ((x <:~ y) || (x.isPrimitive && (x ~=~ y)))
-        case (ArrayType(x), y: ClassOrInterfaceType) =>
+        case (ArrayType(x), y: SomeClassOrInterfaceType) =>
           this |- ((y ~=~ OBJECT) || (((x in PRIMITIVES
             .toSet[Type]) || (x ~=~ OBJECT)) && (y ~=~ ClassOrInterfaceType(
             "java.lang.Cloneable"
           ) || y ~=~ ClassOrInterfaceType("java.io.Serializable"))))
-        // the rest require a more sophisticated analysis
-        // case (x: PrimitiveType, y: PrimitiveType)            => x.widened.contains(y)
-        // case (x: PrimitiveType, y: SubstitutedReferenceType) => this |- (x.boxed <:~ y)
-        // case (x: SubstitutedReferenceType, y: PrimitiveType) =>
-        //   y.isAssignableBy.contains(x)
-        // case (x: ArrayType, y: ArrayType) =>
-        //   this |- ((x.base.isReference && y.base.isReference && x.base <:~ y.base) || (x.base.isPrimitive && x.base ~=~ y.base))
         case _ => false
 
   /** Replaces one type by another type everywhere in the configuration
@@ -327,7 +525,7 @@ case class Configuration(
       val (newTable, newAssts) = ivmt.replace(oldType, newType)
       newAssertions ++= newAssts
       newSource match
-        case x: ClassOrInterfaceType =>
+        case x: SomeClassOrInterfaceType =>
           // newAssertions ++= newTable.constraintStore
           if this |- x.isMissing then
             // x is a missing type
@@ -453,7 +651,7 @@ case class Configuration(
         case x: TTypeParameter =>
           // newAssertions ++= newTable.constraintStore
           val sourceType = x.containingTypeIdentifier
-          val (erasure, allBounds): (ClassOrInterfaceType, Set[ClassOrInterfaceType]) =
+          val (erasure, allBounds): (SomeClassOrInterfaceType, Set[SomeClassOrInterfaceType]) =
             getFixedDeclaration(
               ClassOrInterfaceType(sourceType)
             ) match
@@ -623,10 +821,10 @@ case class Configuration(
     *   the ancestors who contain said method
     */
   def upcastAllToMethodContainer(
-      bounds: Set[ClassOrInterfaceType],
+      bounds: Set[SomeClassOrInterfaceType],
       methodName: String,
       arity: Int
-  ): Set[ClassOrInterfaceType] =
+  ): Set[SomeClassOrInterfaceType] =
     bounds.flatMap(upcastOneToMethodContainer(_, methodName, arity))
 
   /** Upcasts a type into its supertypes that can potentially contain the method with some arity
@@ -640,10 +838,10 @@ case class Configuration(
     *   the ancestors who contain said method
     */
   def upcastOneToMethodContainer(
-      t: ClassOrInterfaceType,
+      t: SomeClassOrInterfaceType,
       methodName: String,
       arity: Int
-  ): Set[ClassOrInterfaceType] =
+  ): Set[SomeClassOrInterfaceType] =
     if this |- t.isMissing then return Set(t)
     // safe because it must be declared
     val decl = getSubstitutedDeclaration(t).asInstanceOf[FixedDeclaration]
@@ -682,9 +880,9 @@ case class Configuration(
         case IsMissingAssertion(x)   => false
         case IsUnknownAssertion(x)   => false
         case IsPrimitiveAssertion(x) => false
-        case IsReferenceAssertion(x) => x.isInstanceOf[PlaceholderType]
-        case IsIntegralAssertion(x)  => false
-        case IsNumericAssertion(x)   => false
+        // case IsReferenceAssertion(x) => x.isInstanceOf[PlaceholderType]
+        case IsIntegralAssertion(x) => false
+        case IsNumericAssertion(x)  => false
         case CompatibilityAssertion(a, b) =>
           a.isInstanceOf[PlaceholderType] || b.isInstanceOf[PlaceholderType]
         case WideningAssertion(left, right) =>
@@ -712,9 +910,9 @@ case class Configuration(
     *   an optional ancestor who contains said attribute
     */
   def upcastToAttributeContainer(
-      t: ClassOrInterfaceType,
+      t: SomeClassOrInterfaceType,
       attributeName: String
-  ): Option[ClassOrInterfaceType] =
+  ): Option[SomeClassOrInterfaceType] =
     if this |- t.isMissing then return Some(t)
     // safe because we know t must be declared
     val decl = getSubstitutedDeclaration(t).asInstanceOf[FixedDeclaration]
@@ -736,14 +934,14 @@ case class Configuration(
     * @return
     *   the declaration of the type
     */
-  def getUnderlyingDeclaration(t: ClassOrInterfaceType): Declaration =
+  def getUnderlyingDeclaration(t: SomeClassOrInterfaceType): Declaration =
     getFixedDeclaration(t) match
       case Some(x) => x
       case _       => phi1(t.identifier)
 
   def getInferenceVariableMemberTable(t: InferenceVariable): InferenceVariableMemberTable = phi2(t)
 
-  def getSubstitutedDeclaration(t: ClassOrInterfaceType): Declaration =
+  def getSubstitutedDeclaration(t: SomeClassOrInterfaceType): Declaration =
     val ud = getUnderlyingDeclaration(t)
     // case of t being a raw type
     if t.numArgs < ud.numParams && t.numArgs == 0 then ud.erased
@@ -761,10 +959,12 @@ case class Configuration(
     * @return
     *   an optional declaration; it returns None as long as the type is missing or unknown
     */
-  def getFixedDeclaration(t: ClassOrInterfaceType): Option[FixedDeclaration] =
-    if this |- t.isMissing then None
-    else if delta.contains(t.identifier) then Some(delta(t.identifier))
-    else getReflectionTypeDeclaration(t)
+  def getFixedDeclaration(t: SomeClassOrInterfaceType): Option[FixedDeclaration] = t match
+    case x: ClassOrInterfaceType =>
+      if this |- t.isMissing then None
+      else if delta.contains(t.identifier) then Some(delta(t.identifier))
+      else getReflectionTypeDeclaration(x)
+    case x: TemporaryType => None
 
   private def getReflectionTypeDeclaration(t: ClassOrInterfaceType): Option[FixedDeclaration] =
     val rts         = ReflectionTypeSolver()
@@ -784,38 +984,6 @@ case class Configuration(
         _cache(identifier) = res
         Some(res)
 
-  // /** Upcasts a type into an instance of another type
-  //   * @param t
-  //   *   the type to upcast
-  //   * @param target
-  //   *   the type to upcast it into
-  //   * @return
-  //   *   the resulting type; it returns None if the upcast fails
-  //   */
-  // def upcast(t: Type, target: Type): Option[Type] = (t.substituted, target.substituted) match
-  //   case (x, y): (SubstitutedReferenceType, SubstitutedReferenceType) =>
-  //     if x.identifier == y.identifier then Some(t)
-  //     else
-  //       val (supertypes, isRaw) = getFixedDeclaration(t) match
-  //         case Some(decl) =>
-  //           (
-  //             (decl.extendedTypes ++ decl.implementedTypes),
-  //             decl.numParams > 0 && x.numArgs == 0
-  //           )
-  //         case None =>
-  //           (phi1(x.identifier).supertypes, phi1(x.identifier).numParams > 0 && x.numArgs == 0)
-  //       (if supertypes.isEmpty && x != OBJECT.substituted then Vector(OBJECT) else supertypes)
-  //         .map(i =>
-  //           if isRaw then NormalType(i.identifier, 0)
-  //           else i.addSubstitutionLists(x.substitutions)
-  //         )
-  //         .foldLeft(None: Option[Type])((o, i) =>
-  //           o match
-  //             case None    => upcast(i, target)
-  //             case Some(_) => o
-  //         )
-  //   case _ => None
-
   /** Upcasts a type into an instance of another type
     * @param t
     *   the type to upcast
@@ -824,7 +992,7 @@ case class Configuration(
     * @return
     *   the resulting type; it returns None if the upcast fails
     */
-  def upcast(t: ClassOrInterfaceType, target: ClassOrInterfaceType): Option[Type] =
+  def upcast(t: SomeClassOrInterfaceType, target: SomeClassOrInterfaceType): Option[Type] =
     if t.identifier == target.identifier then return Some(t)
     val decl       = getSubstitutedDeclaration(t)
     val supertypes = decl.getDirectAncestors
@@ -834,33 +1002,16 @@ case class Configuration(
         case x: Some[Type] => x
     )
 
-  // def addExclusionToAlpha(id: Int, exclusion: String) =
-  //   val newPhi2 = MutableMap[Type, InferenceVariableMemberTable]()
-  //   for (t, ivmt) <- phi2 do
-  //     t match
-  //       case x: Alpha if x.id == id =>
-  //         val newTable = ivmt.addExclusion(exclusion)
-  //         newPhi2(x) = newTable
-  //       case _ =>
-  //         newPhi2(t) = ivmt
-  //   copy(phi2 = newPhi2.toMap)
-
-  // def excludes(id: Int, exclusion: String) =
-  //   phi2
-  //     .filter((x, y) => x.isInstanceOf[Alpha] && x.asInstanceOf[Alpha].id == id)
-  //     .map((x, y) => y.exclusions.contains(exclusion))
-  //     .foldLeft(false)(_ || _)
-
-  def getAllKnownSupertypes(t: ClassOrInterfaceType): Set[ClassOrInterfaceType] =
+  def getAllKnownSupertypes(t: SomeClassOrInterfaceType): Set[SomeClassOrInterfaceType] =
     getSubstitutedDeclaration(t).getDirectAncestors.toSet.flatMap(x => getAllKnownSupertypes(x) + x)
 
-  def isFullyDeclared(t: ClassOrInterfaceType): Boolean =
+  def isFullyDeclared(t: SomeClassOrInterfaceType): Boolean =
     getFixedDeclaration(t) match
       case None => false
       case Some(decl) =>
         val a = decl.getDirectAncestors
         a.forall(x => isFullyDeclared(ClassOrInterfaceType(x.identifier)))
 
-  def getMissingDeclaration(t: ClassOrInterfaceType): Option[MissingTypeDeclaration] =
+  def getMissingDeclaration(t: SomeClassOrInterfaceType): Option[MissingTypeDeclaration] =
     if phi1.contains(t.identifier) then Some(phi1(t.identifier))
     else None

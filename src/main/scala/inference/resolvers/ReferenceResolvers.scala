@@ -6,7 +6,7 @@ import configuration.types.*
 import inference.misc.expandDisjunctiveType
 import utils.*
 
-def resolveIsReferenceAssertion(log: Log, config: Configuration, a: IsReferenceAssertion) = ???
+// def resolveIsReferenceAssertion(log: Log, config: Configuration, a: IsReferenceAssertion) = ???
 // val IsReferenceAssertion(t) = a
 // t.substituted match
 //   case m: DisjunctiveType =>

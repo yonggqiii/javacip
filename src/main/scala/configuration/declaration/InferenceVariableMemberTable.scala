@@ -11,32 +11,20 @@ class InferenceVariableMemberTable(
     val methods: Map[String, Vector[MethodWithCallSiteParameterChoices]] =
       Map().withDefaultValue(Vector()),
     val mustBeClass: Boolean = false,
-    val mustBeInterface: Boolean = false,
-    // val constraintStore: Vector[Assertion] = Vector(),
-    // val exclusions: Set[String] = Set(),
-    val numParams: Int = 0
+    val mustBeInterface: Boolean = false
 ):
-  // def addConstraint(asst: Assertion) =
-  //   InferenceVariableMemberTable(
-  //     typet,
-  //     attributes,
-  //     methods,
-  //     mustBeClass,
-  //     mustBeInterface,
-  //     constraintStore :+ asst,
-  //     exclusions
-  //   )
 
-  // def addExclusion(identifier: String) =
-  //   InferenceVariableMemberTable(
-  //     typet,
-  //     attributes,
-  //     methods,
-  //     mustBeClass,
-  //     mustBeInterface,
-  //     constraintStore,
-  //     exclusions + identifier
-  //   )
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): InferenceVariableMemberTable =
+    new InferenceVariableMemberTable(
+      typet.combineTemporaryType(oldType, newType),
+      attributes.map((k, v) => (k -> v.combineTemporaryType(oldType, newType))),
+      methods.map((k, v) => (k -> v.map(x => x.combineTemporaryType(oldType, newType)))),
+      mustBeClass,
+      mustBeInterface
+    )
 
   def merge(other: InferenceVariableMemberTable): (InferenceVariableMemberTable, List[Assertion]) =
     val newAssertions = ArrayBuffer[Assertion]()

@@ -3,7 +3,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
-import inference.misc.expandDisjunctiveType
+import inference.misc.*
 import utils.*
 
 private def resolveWideningAssertion(log: Log, config: Configuration, a: WideningAssertion) =
@@ -18,9 +18,9 @@ private def resolveWideningAssertion(log: Log, config: Configuration, a: Widenin
     case (_, x: BoxesOnlyDisjunctiveType) =>
       (log.addWarn(s"$x be widened from anything"), Nil)
     case (x: DisjunctiveType, _) =>
-      expandDisjunctiveType(x, log, config asserts a)
+      expandDisjunctiveTypeToPrimitive(x, log, config asserts a)
     case (_, x: DisjunctiveType) =>
-      expandDisjunctiveType(x, log, config asserts a)
+      expandDisjunctiveTypeToPrimitive(x, log, config asserts a)
     case (x: ClassOrInterfaceType, _) =>
       (log.addWarn(s"$x cannot widen to anything"), Nil)
     case (_, x: ClassOrInterfaceType) =>

@@ -181,11 +181,11 @@ sealed trait Type:
     */
   def isPrimitive = IsPrimitiveAssertion(this)
 
-  /** Asserts that this type is a reference type
-    * @return
-    *   the resulting IsReferenceAssertion
-    */
-  def isReference = IsReferenceAssertion(this)
+  // /** Asserts that this type is a reference type
+  //   * @return
+  //   *   the resulting IsReferenceAssertion
+  //   */
+  // def isReference = IsReferenceAssertion(this)
 
   /** Determines if this type contains any inference variables, alphas or placeholder types */
   def isSomehowUnknown: Boolean
@@ -207,6 +207,8 @@ sealed trait Type:
     *   the raw type of this type
     */
   def raw: Type
+
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Type
 
   /** Checks if this type strictly occurs in, but is not equal to, another type
     * @param that
@@ -277,6 +279,10 @@ sealed trait Type:
 
 /** The primitive types */
 sealed trait PrimitiveType extends Type:
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): PrimitiveType = this
   def breadth = 0
   def depth   = 0
   val boxed: ClassOrInterfaceType
@@ -326,6 +332,9 @@ final case class ArrayType(
   val args             = Vector()
   def isSomehowUnknown = base.isSomehowUnknown
 
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): ArrayType =
+    copy(base = base.combineTemporaryType(oldType, newType))
+
   /** Returns the type after making its base raw
     * @return
     *   the resulting raw type
@@ -340,10 +349,23 @@ final case class ArrayType(
   /** Nothing */
   def expansion: (ArrayType, Substitution) = (this, Map())
 
+sealed trait SomeClassOrInterfaceType extends Type:
+  def raw: SomeClassOrInterfaceType
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): SomeClassOrInterfaceType
+  val upwardProjection: SomeClassOrInterfaceType
+  val downwardProjection: SomeClassOrInterfaceType
+  def replace(oldType: InferenceVariable, newType: Type): SomeClassOrInterfaceType
+  def substitute(function: Substitution): SomeClassOrInterfaceType
+  def expansion: (SomeClassOrInterfaceType, Substitution)
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): SomeClassOrInterfaceType
+
 final case class ClassOrInterfaceType(
     identifier: String,
     args: Vector[Type]
-) extends Type:
+) extends SomeClassOrInterfaceType:
   def breadth = args.size
   def depth   = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
   val numArgs = args.size
@@ -366,44 +388,15 @@ final case class ClassOrInterfaceType(
       .map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i)))
       .toMap
     (base, subs)
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ClassOrInterfaceType =
+    copy(args = args.map(_.combineTemporaryType(oldType, newType)))
 
 object ClassOrInterfaceType:
   def apply(identifier: String): ClassOrInterfaceType =
     new ClassOrInterfaceType(identifier, Vector())
-// /** Just your regular reference type
-//   * @param identifier
-//   *   the name of the type
-//   * @param numArgs
-//   *   the number of arguments of this type
-//   * @param substitutions
-//   *   the list of substitutions of this type
-//   */
-// final case class NormalType(
-//     identifier: String,
-//     numArgs: Int,
-//     substitutions: SubstitutionList = Nil
-// ) extends ReferenceType:
-//   val upwardProjection: NormalType   = this
-//   val downwardProjection: NormalType = this
-//   def addSubstitutionLists(substitutions: SubstitutionList): NormalType =
-//     if numArgs > 0 then
-//       copy(substitutions = (this.substitutions ::: substitutions).filter(!_.isEmpty))
-//     else this
-//   def replace(oldType: InferenceVariable, newType: Type): NormalType =
-//     copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-//   def substituted = SubstitutedReferenceType(identifier, args.map(_.substituted))
-//   val args = (0 until numArgs)
-//     .map(TypeParameterIndex(identifier, _))
-//     .map(_.addSubstitutionLists(substitutions))
-//     .toVector
-//   def isSomehowUnknown = substituted.isSomehowUnknown
-//   def raw: NormalType  = copy(numArgs = 0, substitutions = Nil)
-//   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): NormalType =
-//     copy(substitutions =
-//       substitutions.map(m =>
-//         m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
-//       )
-//     )
 
 /** Companion object to [[configuration.types.PrimitiveType]]. */
 object PrimitiveType:
@@ -567,6 +560,8 @@ case object Bottom extends Type:
   def raw: Bottom.type                                                                = this
   def expansion: (Bottom.type, Substitution)          = (this, Map())
   def substitute(function: Substitution): Bottom.type = this
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Bottom.type =
+    this
 
 /** the `?` type */
 case object Wildcard extends Type:
@@ -584,6 +579,10 @@ case object Wildcard extends Type:
   def raw: Wildcard.type                                                                = this
   def substitute(function: Substitution): Wildcard.type                                 = this
   def expansion: (Wildcard.type, Substitution) = (this, Map())
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Wildcard.type = this
 
 /** the `? extends Foo` type */
 final case class ExtendsWildcardType(
@@ -599,17 +598,22 @@ final case class ExtendsWildcardType(
     copy(upper = upper.replace(oldType, newType))
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ExtendsWildcardType =
     copy(upper = upper.reorderTypeParameters(scheme))
-  val args                                                    = Vector()
-  def isSomehowUnknown                                        = upper.isSomehowUnknown
-  override def toString                                       = s"? extends $upper"
-  def substitute(function: Substitution): ExtendsWildcardType = copy(upper.substitute(function))
-  def expansion: (ExtendsWildcardType, Substitution)          = (this, Map())
+  val args              = Vector()
+  def isSomehowUnknown  = upper.isSomehowUnknown
+  override def toString = s"? extends $upper"
+  def substitute(function: Substitution): ExtendsWildcardType =
+    copy(upper = upper.substitute(function))
+  def expansion: (ExtendsWildcardType, Substitution) = (this, Map())
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ExtendsWildcardType = copy(upper = upper.combineTemporaryType(oldType, newType))
 
   /** Returns the type after making the extended type raw
     * @return
     *   the resulting type
     */
-  def raw: ExtendsWildcardType = copy(upper.raw)
+  def raw: ExtendsWildcardType = copy(upper = upper.raw)
 
 /** the `? super Foo` type */
 final case class SuperWildcardType(
@@ -630,6 +634,10 @@ final case class SuperWildcardType(
   val args              = Vector()
   def isSomehowUnknown  = lower.isSomehowUnknown
   override def toString = s"? super ${lower}"
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): SuperWildcardType = copy(lower = lower.combineTemporaryType(oldType, newType))
 
   /** Returns the type after making the extending type raw
     * @return
@@ -649,6 +657,10 @@ sealed trait TTypeParameter extends Type:
   def replace(oldType: InferenceVariable, newType: Type): TTypeParameter
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TTypeParameter =
     if scheme contains this then scheme(this) else this
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): TTypeParameter
 
   /** The type who contains this type parameter */
   def containingTypeIdentifier: String
@@ -677,6 +689,11 @@ final case class TypeParameterIndex(
   val downwardProjection: TypeParameterIndex = this
   def replace(oldType: InferenceVariable, newType: Type): TypeParameterIndex = this
   val args                                                                   = Vector()
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): TypeParameterIndex =
+    if source != oldType.identifier then this else copy(source = newType.identifier)
 
 /** A type parameter by name
   * @param sourceType
@@ -701,6 +718,16 @@ final case class TypeParameterName(
   def replace(oldType: InferenceVariable, newType: Type): TypeParameterName = this
   // copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
   val args = Vector()
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): TypeParameterName =
+    if sourceType != oldType.identifier then this
+    else
+      copy(
+        sourceType = newType.identifier,
+        source = newType.identifier + source.substring(sourceType.length, source.length)
+      )
 
 /** Some placeholder for inference */
 sealed trait InferenceVariable extends Type:
@@ -717,6 +744,10 @@ sealed trait InferenceVariable extends Type:
   def expansion: (InferenceVariable, Substitution) = (this, Map())
   def breadth                                      = 0
   def depth                                        = 0
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Type
 
 sealed trait DisjunctiveType extends InferenceVariable:
   val choices: Vector[Type]
@@ -724,7 +755,8 @@ sealed trait DisjunctiveType extends InferenceVariable:
 final case class TemporaryType(
     id: Int,
     args: Vector[Type]
-) extends InferenceVariable:
+) extends InferenceVariable,
+      SomeClassOrInterfaceType:
   override def breadth = args.size
   override def depth   = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
   val numArgs          = args.size
@@ -749,6 +781,13 @@ final case class TemporaryType(
       .toMap
     (base, subs)
   val substitutions = Nil
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): SomeClassOrInterfaceType =
+    if oldType.id != id then copy(args = args.map(_.combineTemporaryType(oldType, newType)))
+    else
+      ClassOrInterfaceType(newType.identifier, args.map(_.combineTemporaryType(oldType, newType)))
 
 /** Some random placeholder type
   * @param id
@@ -766,6 +805,10 @@ final case class PlaceholderType(id: Int) extends InferenceVariable:
   val args                                                                                = Vector()
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PlaceholderType = this
   def substitute(function: Substitution): PlaceholderType                                 = this
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): PlaceholderType = this
 
 /** A disjunctive type is a type who could be one of several possible other reference types
   * (including Type Parameters)
@@ -825,8 +868,33 @@ final case class ReferenceOnlyDisjunctiveType(
         m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
       )
     )
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ReferenceOnlyDisjunctiveType =
+    val newSource =
+      if source.isLeft && source.asInstanceOf[Left[String, Type]].value == oldType.identifier then
+        Left(newType.identifier)
+      else source
+    val newSubstitutions = substitutions.map(m =>
+      m.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
+      )
+    )
+    val newParameterChoices = parameterChoices.map(_.combineTemporaryType(oldType, newType))
+    val newChoices          = choices.map(_.combineTemporaryType(oldType, newType))
+    copy(
+      source = newSource,
+      substitutions = newSubstitutions,
+      parameterChoices = newParameterChoices,
+      choices = newChoices
+    )
 
 final case class PrimitivesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): PrimitivesOnlyDisjunctiveType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
   val choices = PRIMITIVES.toVector
@@ -845,6 +913,10 @@ final case class PrimitivesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
   val substitutions                      = Nil
 
 final case class BoxesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): BoxesOnlyDisjunctiveType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
   val choices = BOXES.toVector
@@ -868,6 +940,22 @@ final case class DisjunctiveTypeWithPrimitives(
     parameterChoices: Set[TTypeParameter] = Set(),
     choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES
 ) extends DisjunctiveType:
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): DisjunctiveTypeWithPrimitives =
+    val newSubstitutions = substitutions.map(m =>
+      m.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
+      )
+    )
+    val newParameterChoices = parameterChoices.map(_.combineTemporaryType(oldType, newType))
+    val newChoices          = choices.map(_.combineTemporaryType(oldType, newType))
+    copy(
+      substitutions = newSubstitutions,
+      parameterChoices = newParameterChoices,
+      choices = newChoices
+    )
   def replace(oldType: InferenceVariable, newType: Type): Type =
     val newChoices       = choices.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
@@ -903,6 +991,22 @@ final case class VoidableDisjunctiveType(
     parameterChoices: Set[TTypeParameter] = Set(),
     choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES :+ PRIMITIVE_VOID
 ) extends DisjunctiveType:
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): VoidableDisjunctiveType =
+    val newSubstitutions = substitutions.map(m =>
+      m.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
+      )
+    )
+    val newParameterChoices = parameterChoices.map(_.combineTemporaryType(oldType, newType))
+    val newChoices          = choices.map(_.combineTemporaryType(oldType, newType))
+    copy(
+      substitutions = newSubstitutions,
+      parameterChoices = newParameterChoices,
+      choices = newChoices
+    )
   def replace(oldType: InferenceVariable, newType: Type): Type =
     val newChoices       = choices.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
@@ -951,6 +1055,25 @@ final case class Alpha(
     canBeBounded: Boolean = false,
     parameterChoices: Set[TTypeParameter] = Set()
 ) extends InferenceVariable:
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Alpha =
+    val newSource =
+      if source.isLeft && source.asInstanceOf[Left[String, Type]].value == oldType.identifier then
+        Left(newType.identifier)
+      else source
+    val newSubstitutions = substitutions.map(m =>
+      m.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
+      )
+    )
+    val newParameterChoices = parameterChoices.map(_.combineTemporaryType(oldType, newType))
+    copy(
+      source = newSource,
+      substitutions = newSubstitutions,
+      parameterChoices = newParameterChoices
+    )
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Alpha =
     copy(
       source = source.map(_.reorderTypeParameters(scheme)),
@@ -1010,6 +1133,33 @@ final case class Alpha(
         )
         .toVector
     )
+
+  def concretizeToTemporary(typeId: Int, numArgs: Int): (TemporaryType) =
+    TemporaryType(
+      typeId,
+      (0 until numArgs)
+        .map(i =>
+          InferenceVariableFactory.createDisjunctiveType(
+            source,
+            Nil,
+            canBeBounded,
+            parameterChoices,
+            canBeBounded
+          )
+        )
+        .toVector
+    )
+
+  // def concretizeToArray(): ArrayType =
+  //   ArrayType(
+  //     InferenceVariableFactory.createDisjunctiveType(
+  //       source,
+  //       Nil,
+  //       canBeBounded,
+  //       parameterChoices,
+  //       false
+  //     )
+  //   )
   override def ⊆(that: Type): Boolean = that match
     case x: Alpha => this.id == x.id
     case _        => super.⊆(that)
@@ -1018,6 +1168,10 @@ final case class Alpha(
   */
 object InferenceVariableFactory:
   private var id = 0
+
+  def createTemporaryType(): TemporaryType =
+    id += 1
+    TemporaryType(id, Vector())
 
   /** Creates a disjunctive type
     * @param source

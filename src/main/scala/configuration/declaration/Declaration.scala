@@ -50,7 +50,7 @@ trait Declaration:
     * @return
     *   the direct ancestors of this type
     */
-  def getDirectAncestors: Vector[ClassOrInterfaceType]
+  def getDirectAncestors: Vector[SomeClassOrInterfaceType]
 
   /** The number of type parameters this type receives, i.e. the arity of the type constructor of
     * this type
@@ -166,10 +166,10 @@ trait Declaration:
   //   res.toMap
 
   def substitute(function: Substitution): Declaration
-  def getLeftmostReferenceTypeBoundOfTypeParameter(`type`: Type): ClassOrInterfaceType
+  def getLeftmostReferenceTypeBoundOfTypeParameter(`type`: Type): SomeClassOrInterfaceType
   def getAllReferenceTypeBoundsOfTypeParameter(
       `type`: Type,
       exclusions: Set[Type] = Set()
-  ): Vector[ClassOrInterfaceType]
+  ): Vector[SomeClassOrInterfaceType]
 
   def getErasure(`type`: Type): Type

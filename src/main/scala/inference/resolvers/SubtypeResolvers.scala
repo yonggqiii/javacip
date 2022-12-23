@@ -4,7 +4,7 @@ import configuration.Configuration
 import configuration.assertions.*
 import configuration.declaration.*
 import configuration.types.*
-import inference.misc.expandDisjunctiveType
+import inference.misc.*
 import utils.*
 
 private[inference] def resolveSubtypeAssertion(
@@ -25,9 +25,9 @@ private[inference] def resolveSubtypeAssertion(
     case (_, x: PrimitivesOnlyDisjunctiveType) =>
       (log.addWarn(s"primitives cannot be involved in subtype relations"), Nil)
     case (i: DisjunctiveType, _) =>
-      expandDisjunctiveType(i, log, config asserts a)
+      expandDisjunctiveTypeToReference(i, log, config asserts a)
     case (_, i: DisjunctiveType) =>
-      expandDisjunctiveType(i, log, config asserts a)
+      expandDisjunctiveTypeToReference(i, log, config asserts a)
     case (_, m: PrimitiveType) =>
       (log.addWarn(s"$sub cannot be a subtype of $sup as $sup is primitive"), Nil)
     case (m: PrimitiveType, _) =>
@@ -42,9 +42,8 @@ private[inference] def resolveSubtypeAssertion(
       (log, newConfig :: Nil)
     case (m: ClassOrInterfaceType, n: ArrayType) =>
       (log.addWarn(s"$m <: $n is trivially not true"), Nil)
-    // CHANGE THIS
-    case (m: ArrayType, _) =>
-      `resolve Array <: Type`(m, sup, log, config)
+    case (alpha: Alpha, arr: ArrayType) =>
+      `resolve Alpha <: Array`(alpha, arr, log, config, a)
     // TODO: CHANGE THIS
     case (_, m: ArrayType) =>
       `resolve Type <: Array`(sub, m, log, config)
@@ -87,21 +86,56 @@ private def addToConstraintStore(
     log.addInfo(s"adding $asst to constraint store"),
     (config.addToConstraintStore(alpha, asst)) :: Nil
   )
-// val table =
-//   if config.phi2.contains(alpha) then config.phi2(alpha) else InferenceVariableMemberTable(alpha)
-// val newTable = table.addConstraint(asst)
-// (
-//   log.addInfo(s"adding $asst to constraint store in $alpha"),
-//   (config.copy(phi2 = config.phi2 + (alpha -> newTable))) :: Nil
-// )
 
-private def `resolve Array <: Type`(
-    subtype: ArrayType,
-    supertype: Type,
+private def `resolve Alpha <: Array`(
+    subtype: Alpha,
+    supertype: ArrayType,
     log: Log,
-    config: Configuration
+    config: Configuration,
+    a: Assertion
 ) =
-  (log.addWarn(s"$subtype can only be a subtype of other array types or Object"), Nil)
+  val base = supertype.base
+  base.downwardProjection match
+    case Bottom | _: PlaceholderType                              => (log.addError(s"wtf? $a"), Nil)
+    case _: ExtendsWildcardType | _: SuperWildcardType | Wildcard => ???
+    case _: PrimitiveType | _: PrimitivesOnlyDisjunctiveType | _: BoxesOnlyDisjunctiveType =>
+      // if the array type's element is a primitive type, the alpha must be as well
+      (
+        log.addInfo(s"concretizing $subtype to $supertype"),
+        (config.replace(subtype, supertype) :: Nil)
+          .filter(_.isDefined)
+          .map(_.get)
+      )
+    case _: ClassOrInterfaceType | _: ReferenceOnlyDisjunctiveType | _: Alpha | _: TTypeParameter |
+        _: ArrayType | _: TemporaryType =>
+      val newElementType = InferenceVariableFactory.createDisjunctiveType(
+        subtype.source,
+        Nil,
+        subtype.canBeBounded,
+        subtype.parameterChoices,
+        false
+      )
+      val newArr = ArrayType(newElementType)
+      (
+        log.addInfo(s"concretizing $subtype to $newArr"),
+        ((config asserts a).addToPsi(newElementType).replace(subtype, newArr) :: Nil)
+          .filter(_.isDefined)
+          .map(_.get)
+      )
+    case _ =>
+      val newElementType = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+        subtype.source,
+        Nil,
+        subtype.canBeBounded,
+        subtype.parameterChoices
+      )
+      val newArr = ArrayType(newElementType)
+      (
+        log.addInfo(s"concretizing $subtype to $newArr"),
+        ((config asserts a).addToPsi(newElementType).replace(subtype, newArr) :: Nil)
+          .filter(_.isDefined)
+          .map(_.get)
+      )
 
 private def `resolve Type <: Array`(
     subtype: Type,

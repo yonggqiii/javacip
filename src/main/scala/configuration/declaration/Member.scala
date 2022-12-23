@@ -65,6 +65,8 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Attribute =
+    copy(`type` = `type`.combineTemporaryType(oldType, newType))
   def substitute(function: Substitution): Attribute =
     copy(`type` = `type`.substitute(function))
 
@@ -132,6 +134,12 @@ final case class MethodSignature(
     formalParameters: Vector[Type],
     hasVarArgs: Boolean
 ):
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): MethodSignature =
+    copy(formalParameters = formalParameters.map(_.combineTemporaryType(oldType, newType)))
+
   // make sure the values are passed in to the constructor properly
   if hasVarArgs && formalParameters.size == 0 then
     throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
@@ -227,6 +235,8 @@ sealed trait MethodLike:
     */
   def replace(i: InferenceVariable, t: Type): MethodLike
 
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): MethodLike
+
   // /** Appends some substitution lists to the types of this method-like
   //   * @param substitutionList
   //   *   the lists of substitutions to add
@@ -287,6 +297,21 @@ class Method(
   if isAbstract && (isStatic || isFinal) then
     throw new java.lang.IllegalArgumentException(
       s"$signature cannot be abstract and (static or final) at the same time!"
+    )
+
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Method =
+    new Method(
+      signature.combineTemporaryType(oldType, newType),
+      returnType = returnType.combineTemporaryType(oldType, newType),
+      typeParameterBounds.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.map(t =>
+          t.combineTemporaryType(oldType, newType)
+        ))
+      ),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal
     )
 
   def asNArgs(n: Int): Method =
@@ -443,6 +468,28 @@ class MethodWithContext(
       _callSiteParameterChoices
     ):
 
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): MethodWithContext =
+    new MethodWithContext(
+      signature.combineTemporaryType(oldType, newType),
+      returnType.combineTemporaryType(oldType, newType),
+      typeParameterBounds.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.map(t =>
+          t.combineTemporaryType(oldType, newType)
+        ))
+      ),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      callSiteParameterChoices.map(_.combineTemporaryType(oldType, newType)),
+      context.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
+      )
+    )
+
   override def asNArgs(n: Int): MethodWithContext =
     new MethodWithContext(
       signature.asNArgs(n),
@@ -542,24 +589,24 @@ class MethodWithCallSiteParameterChoices(
       _isStatic,
       _isFinal
     ):
-
-  // /** Appends some substitution lists to the types of this method
-  //   * @param substitutionList
-  //   *   the lists of substitutions to add
-  //   * @return
-  //   *   the resulting method after adding the substitution lists to its types
-  //   */
-  // override def addSubstitutionLists(subs: SubstitutionList): MethodWithCallSiteParameterChoices =
-  //   new MethodWithCallSiteParameterChoices(
-  //     signature.addSubstitutionLists(subs),
-  //     returnType.addSubstitutionLists(subs),
-  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-  //     accessModifier,
-  //     isAbstract,
-  //     isStatic,
-  //     isFinal,
-  //     callSiteParameterChoices
-  //   )
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): MethodWithCallSiteParameterChoices =
+    new MethodWithCallSiteParameterChoices(
+      signature.combineTemporaryType(oldType, newType),
+      returnType.combineTemporaryType(oldType, newType),
+      typeParameterBounds.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.map(t =>
+          t.combineTemporaryType(oldType, newType)
+        ))
+      ),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal,
+      callSiteParameterChoices.map(_.combineTemporaryType(oldType, newType))
+    )
 
   override def asNArgs(n: Int): MethodWithCallSiteParameterChoices =
     new MethodWithCallSiteParameterChoices(
@@ -614,18 +661,19 @@ class Constructor(
     val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
     val accessModifier: AccessModifier
 ) extends MethodLike:
-  // /** Appends some substitution lists to the types of this constructor
-  //   * @param substitutionList
-  //   *   the lists of substitutions to add
-  //   * @return
-  //   *   the resulting constructor after adding the substitution lists to its types
-  //   */
-  // def addSubstitutionLists(subs: SubstitutionList): Constructor =
-  //   new Constructor(
-  //     signature.addSubstitutionLists(subs),
-  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-  //     accessModifier
-  //   )
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Constructor =
+    new Constructor(
+      signature.combineTemporaryType(oldType, newType),
+      typeParameterBounds.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.map(t =>
+          t.combineTemporaryType(oldType, newType)
+        ))
+      ),
+      accessModifier
+    )
 
   def asNArgs(n: Int): Constructor =
     new Constructor(
@@ -714,6 +762,24 @@ class ConstructorWithContext(
   //     accessModifier,
   //     context ::: subs
   //   )
+
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ConstructorWithContext =
+    new ConstructorWithContext(
+      signature.combineTemporaryType(oldType, newType),
+      typeParameterBounds.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.map(t =>
+          t.combineTemporaryType(oldType, newType)
+        ))
+      ),
+      accessModifier,
+      callSiteParameterChoices.map(_.combineTemporaryType(oldType, newType)),
+      context.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
+      )
+    )
 
   override def asNArgs(n: Int): ConstructorWithContext =
     new ConstructorWithContext(

@@ -9,18 +9,18 @@ class test4 extends D {
     }
 }
 
-interface C<T extends C<T>> {
-    T get();
-}
+// interface C<T extends C<T>> {
+//     T get();
+// }
 
-class I extends C<I> {
-    I get() {
-        return null;
-    }
-}
+// class I extends C<I> {
+//     I get() {
+//         return null;
+//     }
+// }
 
-class S extends C<S> {
-    S get() {
-        return null;
-    }
-}
+// class S extends C<S> {
+//     S get() {
+//         return null;
+//     }
+// }

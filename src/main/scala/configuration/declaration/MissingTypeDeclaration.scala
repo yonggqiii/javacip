@@ -28,18 +28,68 @@ class MissingTypeDeclaration(
     val typeParameterBounds: Vector[Vector[Type]] = Vector(),
     val mustBeClass: Boolean = false,
     val mustBeInterface: Boolean = false,
-    val supertypes: Vector[ClassOrInterfaceType] = Vector(),
-    val methodTypeParameterBounds: Map[String, Vector[ClassOrInterfaceType]] = Map(),
+    val supertypes: Vector[SomeClassOrInterfaceType] = Vector(),
+    val methodTypeParameterBounds: Map[String, Vector[Type]] = Map(),
     val attributes: Map[String, Attribute] = Map(),
     val methods: Map[String, Vector[Method]] = Map().withDefaultValue(Vector()),
     val constructors: Vector[Constructor] = Vector()
 ) extends Declaration:
+  def combineWithTemporaryTypeDeclaration(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType,
+      that: MissingTypeDeclaration
+  ): Option[(MissingTypeDeclaration, List[Assertion])] =
+    if this.numParams != that.numParams || !that.constructors.isEmpty then return None
+    val newAssertions = ArrayBuffer[Assertion]()
+    val substitution: Map[TTypeParameter, Type] = (0 until this.numParams)
+      .map(i =>
+        (TypeParameterIndex(that.identifier, i) -> (TypeParameterIndex(this.identifier, i)))
+      )
+      .toMap
+    //val newDecl = that.substitute(substitution)
+    if that.mustBeClass && this.mustBeInterface then return None
+    if that.mustBeInterface && this.mustBeClass then return None
+    val newSupertypes = ArrayBuffer[SomeClassOrInterfaceType]()
+    newSupertypes.addAll(this.supertypes)
+    for (i <- that.supertypes.map(_.combineTemporaryType(oldType, newType)))
+      do
+        newSupertypes.find(x => x.identifier == i.identifier) match
+          case None    => newSupertypes.append(i)
+          case Some(x) => newAssertions += (x ~=~ i)
+    val newAttributes = MutableMap[String, Attribute]()
+    for (k, v) <- attributes do newAttributes(k) = v
+    for (k, v) <- that.attributes.map((k, v) => (k -> v.combineTemporaryType(oldType, newType))) do
+      if newAttributes.contains(k) then newAssertions += (newAttributes(k).`type` ~=~ v.`type`)
+      else newAttributes(k) = v
+    val newMethods = MutableMap[String, ArrayBuffer[Method]]()
+    for (k, v) <- methods do
+      newMethods(k) = ArrayBuffer()
+      newMethods(k).addAll(v)
+    for (k, v) <- that.methods do
+      if !newMethods.contains(k) then newMethods(k) = ArrayBuffer()
+      newMethods(k).addAll(v.map(x => x.combineTemporaryType(oldType, newType)))
+    Some(
+      (
+        new MissingTypeDeclaration(
+          identifier,
+          typeParameterBounds,
+          this.mustBeClass || that.mustBeClass,
+          this.mustBeInterface || that.mustBeInterface,
+          newSupertypes.toVector,
+          methodTypeParameterBounds,
+          newAttributes.toMap,
+          newMethods.map((k, v) => (k -> v.toVector)).toMap,
+          constructors
+        ),
+        newAssertions.toList
+      )
+    )
   def erased = new MissingTypeDeclaration(
     identifier,
     Vector(),
     mustBeClass,
     mustBeInterface,
-    supertypes.map(_.raw),
+    supertypes.map(_.raw.asInstanceOf[ClassOrInterfaceType | TemporaryType]),
     Map(),
     attributes.map((s, a) => (s -> getAttributeErasure(a))),
     methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
@@ -93,7 +143,7 @@ class MissingTypeDeclaration(
       methods.map((id, v) => (id -> v.map(m => m.substitute(function)))),
       constructors.map(_.substitute(function))
     )
-  def getDirectAncestors: Vector[ClassOrInterfaceType] = supertypes
+  def getDirectAncestors: Vector[SomeClassOrInterfaceType] = supertypes
   //  if it mustn't be an interface then best not to assume that it is
   val isInterface = mustBeInterface
   // if it musn't be an interface then there is no reason for it to be abstract
@@ -179,7 +229,7 @@ class MissingTypeDeclaration(
     */
   def merge(
       other: InferenceVariableMemberTable,
-      newType: ClassOrInterfaceType
+      newType: SomeClassOrInterfaceType
   ): (MissingTypeDeclaration, List[Assertion]) =
     var mttable       = this
     val newAssertions = ArrayBuffer[Assertion]()
@@ -275,7 +325,9 @@ class MissingTypeDeclaration(
         typeParameterBounds.map(v => v.map(t => t.replace(oldType, newType))),
         mustBeClass,
         mustBeInterface,
-        supertypes.map(_.replace(oldType, newType)),
+        supertypes.map(
+          _.replace(oldType, newType).asInstanceOf[ClassOrInterfaceType | TemporaryType]
+        ),
         methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.replace(oldType, newType)))),
         attributes.map((id, x) => id -> x.replace(oldType, newType)),
         methods.map((id, v) => (id -> v.map(m => m.replace(oldType, newType)))),

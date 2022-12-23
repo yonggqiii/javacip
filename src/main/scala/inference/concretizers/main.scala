@@ -120,7 +120,7 @@ private def concretizeToUnknown(
 ): List[Configuration] =
   val realAlpha =
     config.psi.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
-  val newArities = Vector(0, 3)
+  val newArities = Vector(0, 1, 2, 3)
   val newTypes =
     newArities.map(arity => realAlpha.concretizeToReference(s"UNKNOWN_TYPE_${realAlpha.id}", arity))
   val newDecls =

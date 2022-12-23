@@ -30,9 +30,14 @@ private[inference] def deconflict(
       // equality of duplicate supertypes
       for z <- otherSupertypes do
         if y.identifier == z.identifier then
+          println(s"wow! $y $z")
           if !(y.isSomehowUnknown && z.isSomehowUnknown) then
-            if (y.isSomehowUnknown || z.isSomehowUnknown) then newAssertions += (y ~=~ z)
+            println("here")
+            if (y.isSomehowUnknown || z.isSomehowUnknown) then
+              println("there")
+              newAssertions += (y ~=~ z)
             else if y != z then
+              println("everywhere")
               return LogWithLeft(
                 log.addWarn(s"$x <: $y and $z!").addWarn(config.toString),
                 Nil
@@ -44,6 +49,7 @@ private[inference] def deconflict(
       newAssertions += x.isClass
   // stop here
   if !newAssertions.isEmpty then
+    println("god!")
     return LogWithLeft(
       log.addWarn("fuck oyu!"),
       (config assertsAllOf newAssertions) :: Nil

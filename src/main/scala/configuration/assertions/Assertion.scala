@@ -29,9 +29,9 @@ given assertionOrdering: Ordering[Assertion] with
         case IsMissingAssertion(x)   => false
         case IsUnknownAssertion(x)   => false
         case IsPrimitiveAssertion(x) => x.isInstanceOf[DisjunctiveType]
-        case IsReferenceAssertion(x) => x.isInstanceOf[DisjunctiveType]
-        case IsIntegralAssertion(x)  => x.isInstanceOf[DisjunctiveType]
-        case IsNumericAssertion(x)   => x.isInstanceOf[DisjunctiveType]
+        //case IsReferenceAssertion(x) => x.isInstanceOf[DisjunctiveType]
+        case IsIntegralAssertion(x) => x.isInstanceOf[DisjunctiveType]
+        case IsNumericAssertion(x)  => x.isInstanceOf[DisjunctiveType]
         case CompatibilityAssertion(x, y) =>
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case WideningAssertion(x, y) =>
@@ -44,6 +44,8 @@ given assertionOrdering: Ordering[Assertion] with
 
 /** An assertion in the algorithm */
 sealed trait Assertion:
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Assertion
+
   /** Replaces one type with another type
     * @param oldType
     *   the type to replace
@@ -79,6 +81,14 @@ sealed trait Assertion:
   *   the supertype
   */
 case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): SubtypeAssertion =
+    SubtypeAssertion(
+      left.combineTemporaryType(oldType, newType),
+      right.combineTemporaryType(oldType, newType)
+    )
   override def toString = s"${left} <: ${right}"
   def replace(oldType: InferenceVariable, newType: Type): SubtypeAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
@@ -92,6 +102,14 @@ case class SubtypeAssertion(left: Type, right: Type) extends Assertion:
   */
 case class CompatibilityAssertion(target: Type, source: Type) extends Assertion:
   override def toString = s"${target} := ${source}"
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): CompatibilityAssertion =
+    CompatibilityAssertion(
+      target.combineTemporaryType(oldType, newType),
+      source.combineTemporaryType(oldType, newType)
+    )
   def replace(oldType: InferenceVariable, newType: Type): CompatibilityAssertion =
     copy(target = target.replace(oldType, newType), source = source.replace(oldType, newType))
 
@@ -103,6 +121,14 @@ case class CompatibilityAssertion(target: Type, source: Type) extends Assertion:
   */
 case class WideningAssertion(left: Type, right: Type) extends Assertion:
   override def toString = s"${left} <<~= ${right}"
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): WideningAssertion =
+    WideningAssertion(
+      left.combineTemporaryType(oldType, newType),
+      right.combineTemporaryType(oldType, newType)
+    )
   def replace(oldType: InferenceVariable, newType: Type): WideningAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
@@ -116,6 +142,14 @@ case class EquivalenceAssertion(left: Type, right: Type) extends Assertion:
   override def toString = s"${left} = ${right}"
   def replace(oldType: InferenceVariable, newType: Type): EquivalenceAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): EquivalenceAssertion =
+    EquivalenceAssertion(
+      left.combineTemporaryType(oldType, newType),
+      right.combineTemporaryType(oldType, newType)
+    )
 
 /** An assertion stating that one type is contained by another type
   * @param left
@@ -127,6 +161,14 @@ case class ContainmentAssertion(left: Type, right: Type) extends Assertion:
   override def toString = s"${left} <= ${right}"
   def replace(oldType: InferenceVariable, newType: Type): ContainmentAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ContainmentAssertion =
+    ContainmentAssertion(
+      left.combineTemporaryType(oldType, newType),
+      right.combineTemporaryType(oldType, newType)
+    )
 
 /** An assertion stating that at least one of the assertions in the disjunction must be true
   * @param assertions
@@ -138,6 +180,12 @@ case class DisjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion
   override def ||(a: Assertion): DisjunctiveAssertion =
     copy(assertions = assertions :+ a)
   override def toString = "(" + assertions.mkString(" ∨ ") + ")"
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): DisjunctiveAssertion = DisjunctiveAssertion(
+    assertions.map(_.combineTemporaryType(oldType, newType))
+  )
 
 /** An assertion stating that all of the assertions in the conjunction must be true
   * @param assertions
@@ -149,6 +197,12 @@ case class ConjunctiveAssertion(assertions: Vector[Assertion]) extends Assertion
   override def &&(a: Assertion): ConjunctiveAssertion =
     copy(assertions = assertions :+ a)
   override def toString = "(" + assertions.mkString(" ∧ ") + ")"
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ConjunctiveAssertion = ConjunctiveAssertion(
+    assertions.map(_.combineTemporaryType(oldType, newType))
+  )
 
 /** An assertion stating that a type must be a class
   * @param t
@@ -158,6 +212,10 @@ case class IsClassAssertion(t: Type) extends Assertion:
   override def toString = s"isClass($t)"
   def replace(oldType: InferenceVariable, newType: Type): IsClassAssertion =
     copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsClassAssertion = IsClassAssertion(t.combineTemporaryType(oldType, newType))
 
 /** An assertion stating that a type must be an interface
   * @param t
@@ -167,6 +225,10 @@ case class IsInterfaceAssertion(t: Type) extends Assertion:
   override def toString = s"isInterface($t)"
   def replace(oldType: InferenceVariable, newType: Type): IsInterfaceAssertion =
     copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsInterfaceAssertion = IsInterfaceAssertion(t.combineTemporaryType(oldType, newType))
 
 /** An assertion stating that a type must have a method
   * @param source
@@ -179,7 +241,7 @@ case class IsInterfaceAssertion(t: Type) extends Assertion:
   *   the return type of the method
   */
 case class HasMethodAssertion(
-    source: ClassOrInterfaceType,
+    source: SomeClassOrInterfaceType,
     methodName: String,
     args: Vector[Type],
     returnType: Type,
@@ -194,6 +256,14 @@ case class HasMethodAssertion(
       returnType = returnType.replace(oldType, newType),
       callSiteParameterChoices
     )
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Assertion =
+    copy(
+      source = source.combineTemporaryType(oldType, newType),
+      args = args.map(_.combineTemporaryType(oldType, newType)),
+      returnType = returnType.combineTemporaryType(oldType, newType),
+      callSiteParameterChoices =
+        callSiteParameterChoices.map(_.combineTemporaryType(oldType, newType))
+    )
 
 /** A predicate checking if a type is declared in the program
   * @param t
@@ -203,6 +273,10 @@ case class IsDeclaredAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} ∈ Δ"
   def replace(oldType: InferenceVariable, newType: Type): IsDeclaredAssertion =
     copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsDeclaredAssertion = IsDeclaredAssertion(t.combineTemporaryType(oldType, newType))
 
 /** A predicate checking if a type is missing in the program
   * @param t
@@ -212,6 +286,10 @@ case class IsMissingAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} ∈ Φ₁"
   def replace(oldType: InferenceVariable, newType: Type): IsMissingAssertion =
     copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsMissingAssertion = IsMissingAssertion(t.combineTemporaryType(oldType, newType))
 
 /** A predicate checking if a type is unknown
   * @param t
@@ -221,6 +299,10 @@ case class IsUnknownAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} ∈ Φ₂"
   def replace(oldType: InferenceVariable, newType: Type): IsUnknownAssertion =
     copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsUnknownAssertion = IsUnknownAssertion(t.combineTemporaryType(oldType, newType))
 
 /** An assertion stating that a type is one of the primitive types
   * @param t
@@ -230,15 +312,10 @@ case class IsPrimitiveAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is primitive"
   def replace(oldType: InferenceVariable, newType: Type): IsPrimitiveAssertion =
     copy(t = t.replace(oldType, newType))
-
-/** An assertion stating that a type is not a primitive type
-  * @param t
-  *   the type who must not be primitive
-  */
-case class IsReferenceAssertion(t: Type) extends Assertion:
-  override def toString = s"${t.identifier} is a reference type"
-  def replace(oldType: InferenceVariable, newType: Type): IsReferenceAssertion =
-    copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsPrimitiveAssertion = IsPrimitiveAssertion(t.combineTemporaryType(oldType, newType))
 
 /** An assertion stating that a type must be treated as integral (integer or smaller)
   * @param t
@@ -248,6 +325,10 @@ case class IsIntegralAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is an integral type"
   def replace(oldType: InferenceVariable, newType: Type): IsIntegralAssertion =
     copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsIntegralAssertion = IsIntegralAssertion(t.combineTemporaryType(oldType, newType))
 
 /** An assertion stating that a type must be treated as numeric (double or smaller)
   * @param t
@@ -257,3 +338,7 @@ case class IsNumericAssertion(t: Type) extends Assertion:
   override def toString = s"${t.identifier} is an integral type"
   def replace(oldType: InferenceVariable, newType: Type): IsNumericAssertion =
     copy(t = t.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): IsNumericAssertion = IsNumericAssertion(t.combineTemporaryType(oldType, newType))
