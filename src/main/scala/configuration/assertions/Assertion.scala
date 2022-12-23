@@ -44,6 +44,14 @@ given assertionOrdering: Ordering[Assertion] with
 
 /** An assertion in the algorithm */
 sealed trait Assertion:
+  /** Combine a temporary type with another class or interface type
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
   def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Assertion
 
   /** Replaces one type with another type

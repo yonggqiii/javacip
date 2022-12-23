@@ -29,15 +29,7 @@ private[inference] def deconflict(
       val otherSupertypes = supertypes - y
       // equality of duplicate supertypes
       for z <- otherSupertypes do
-        if y.identifier == z.identifier then
-          if !(y.isSomehowUnknown && z.isSomehowUnknown) then
-            if (y.isSomehowUnknown || z.isSomehowUnknown) then newAssertions += (y ~=~ z)
-            else if y != z then
-              return LogWithLeft(
-                log.addWarn(s"$x <: $y and $z!").addWarn(config.toString),
-                Nil
-              )
-      // class/interface assertions
+        if y.identifier == z.identifier then if config !|- (y ~=~ z) then newAssertions += (y ~=~ z)
       if (config |- x.isInterface) && !(config |- y.isInterface) && y != OBJECT then
         newAssertions += y.isInterface
     if supertypes.exists(x => (config |- x.isClass) && x != OBJECT) && !(config |- x.isClass) then

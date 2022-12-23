@@ -81,7 +81,20 @@ case class Configuration(
       .map((k, v) => (k -> v.map(_.combineTemporaryType(t, other))))
     if constraintStore.contains(t.identifier) then
       newOmega.addAll(constraintStore(t.identifier).map(_.combineTemporaryType(t, other)))
-    val newExclusions = exclusions.filter((k, v) => k != t.identifier)
+    // get the new exclusions
+    val newExclusions =
+      // get the exclusions of the temporary type
+      val tempExclusions =
+        if exclusions.contains(t.identifier) then exclusions(t.identifier) else Set()
+      // get the old exclusions that do not include the temporary type, and combine any
+      // occurrences of the temporary type
+      val e = exclusions
+        .filter((k, v) => k != t.identifier)
+        .map((k, v) => (k -> v.map(ex => if ex == t.identifier then other.identifier else ex)))
+      // add the temporary type's exclusions back into the old exclusions
+      if e.contains(other.identifier) then
+        e + (other.identifier    -> e(other.identifier).union(tempExclusions))
+      else e + (other.identifier -> tempExclusions)
     if this |- other.isMissing then
       // just combine the two MissingTypeDeclarations
       val otherDecl = phi1(other.identifier)
@@ -526,13 +539,7 @@ case class Configuration(
         newSet.addAll(constraintStore(id).map(_.replace(oldType, newType)))
       else
         val liftedConstraints = constraintStore(id).map(_.replace(oldType, newType))
-        // println(
-        //   s"because $oldType was replaced with $newType, the following assertions were lifted into Omega:"
-        // )
-        // println(liftedConstraints.mkString(", "))
         newAssertions ++= liftedConstraints
-
-    //val alphaTable = MutableMap[Alpha, NormalType]()
 
     for (t, ivmt) <- phi2 do
       val newSource            = t.replace(oldType, newType).upwardProjection
@@ -540,7 +547,6 @@ case class Configuration(
       newAssertions ++= newAssts
       newSource match
         case x: SomeClassOrInterfaceType =>
-          // newAssertions ++= newTable.constraintStore
           if this |- x.isMissing then
             // x is a missing type
             // merge
@@ -560,9 +566,6 @@ case class Configuration(
               val attrContainer = upcastToAttributeContainer(x, attrName)
               attrContainer match
                 case None =>
-                  // if oldType.id == 11 then
-                  //   println(this)
-                  //   println(s"$t, $newSource $attrName fucker")
                   return None // no way attribute can exist
                 case Some(ac) =>
                   // attribute belongs to some declared type
@@ -663,7 +666,6 @@ case class Configuration(
                   )
                 newAssertions += DisjunctiveAssertion(disjassts.toVector)
         case x: TTypeParameter =>
-          // newAssertions ++= newTable.constraintStore
           val sourceType = x.containingTypeIdentifier
           val (erasure, allBounds): (SomeClassOrInterfaceType, Set[SomeClassOrInterfaceType]) =
             getFixedDeclaration(
@@ -792,8 +794,6 @@ case class Configuration(
             newPhi2(x) = nt
             newAssertions ++= na
         case p: PrimitiveType =>
-          // add to constraint store
-          // newAssertions ++= newTable.constraintStore
           // primitive types cannot have any members, nor can they be asserted
           // to be a class or interface
           if !newTable.attributes.isEmpty || !newTable.methods.isEmpty || newTable.mustBeClass || newTable.mustBeInterface then
@@ -802,7 +802,6 @@ case class Configuration(
           println(x)
           ???
     val newOmega = omega.toVector ++ newAssertions
-    //if oldType.id == 11 then println("bitch")
     Some(
       Configuration(
         delta,
@@ -894,9 +893,8 @@ case class Configuration(
         case IsMissingAssertion(x)   => false
         case IsUnknownAssertion(x)   => false
         case IsPrimitiveAssertion(x) => false
-        // case IsReferenceAssertion(x) => x.isInstanceOf[PlaceholderType]
-        case IsIntegralAssertion(x) => false
-        case IsNumericAssertion(x)  => false
+        case IsIntegralAssertion(x)  => false
+        case IsNumericAssertion(x)   => false
         case CompatibilityAssertion(a, b) =>
           a.isInstanceOf[PlaceholderType] || b.isInstanceOf[PlaceholderType]
         case WideningAssertion(left, right) =>

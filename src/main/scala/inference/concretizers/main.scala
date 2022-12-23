@@ -140,30 +140,6 @@ private def concretizeToUnknown(
     }
   LogWithLeft(log.addInfo(s"or ${ea.mkString(", ")} is of an unknown type"), res.toList)
 
-// private def concretizeToUnknown(
-//     log: Log,
-//     config: Configuration,
-//     alpha: String
-// ): List[Configuration] =
-//   val realAlpha =
-//     config.psi.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
-//   val newArities = Vector(0, 1, 2, 3)
-//   val newTypes =
-//     newArities.map(arity => realAlpha.concretizeToReference(s"UNKNOWN_TYPE_${realAlpha.id}", arity))
-//   val newDecls =
-//     newTypes.map(x => (x, MissingTypeDeclaration(x.identifier).ofParameters(x.numArgs)))
-//   val newConfigs = newDecls.map { case (t, d) =>
-//     config
-//       .copy(phi1 = config.phi1 + (t.identifier -> d))
-//       .addAllToPsi(t.args)
-//       .replace(realAlpha.copy(substitutions = Nil), t)
-//   } filter { x =>
-//     x.isDefined
-//   } map { x =>
-//     x.get
-//   }
-//   newConfigs.toList
-
 private def concretizeToKnown(
     log: Log,
     config: Configuration,
@@ -198,7 +174,6 @@ def concretize(
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
   val erasureGraph = createErasureGraph(config)
-  // println(erasureGraph)
   // get all relevant vertices
   val alphas       = config.psi.filter(x => x.isInstanceOf[Alpha]).map(x => x.identifier).toSet
   val allVertices  = erasureGraph.adjList.keys.toSet
@@ -280,9 +255,10 @@ def concretize(
     .union(lowerField)
     .union(upperField)
   val exclusions = allConcretes.filter(t =>
-    c.contains(t) || c.exists(u => erasureGraph.path(t, u) || erasureGraph.path(u, t))
+    c.contains(t) || lowerField.exists(l => erasureGraph.path(t, l)) || upperField.exists(u =>
+      erasureGraph.path(u, t)
+    )
   )
-
   // concretize to each first
   val res1                        = concretizeToKnown(log, config, ea, c)
   val (newLog, configsFromKnowns) = (res1.log, res1.left)
