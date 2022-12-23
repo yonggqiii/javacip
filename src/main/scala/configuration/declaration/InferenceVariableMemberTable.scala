@@ -41,8 +41,8 @@ class InferenceVariableMemberTable(
       else newAssertions += newAttributes(attrName).`type` ~=~ otherAttr.`type`
 
     // add all methods, can be unsophisticated I guess?
-    for (id, s) <- methods do newMethods(id) = newMethods(id).union(s)
-    for (id, s) <- other.methods do newMethods(id) = newMethods(id).union(s)
+    for (id, s) <- methods do newMethods(id) = newMethods(id).concat(s)
+    for (id, s) <- other.methods do newMethods(id) = newMethods(id).concat(s)
 
     (
       InferenceVariableMemberTable(

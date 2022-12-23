@@ -17,8 +17,8 @@ private def resolveIsClassAssertion(
   else
     val substitutedType = t.upwardProjection
     substitutedType match
-      case x: TTypeParameter       => (log, config :: Nil) // why?
-      case x: ClassOrInterfaceType =>
+      case x: TTypeParameter           => (log, config :: Nil) // why?
+      case x: SomeClassOrInterfaceType =>
         // x is definitely missing
         val newPhi = config.phi1 + (x.identifier -> config.phi1(x.identifier).asClass)
         (log, config.copy(phi1 = newPhi) :: Nil)

@@ -34,13 +34,12 @@ private[inference] def resolveSubtypeAssertion(
       (log.addWarn(s"$sub cannot be a subtype of $sup as $sub is primitive"), Nil)
     case (ArrayType(m), ArrayType(n)) =>
       (log, (config asserts (m <:~ n || (m.isPrimitive && m ~=~ n))) :: Nil)
-    case (ArrayType(m), n: ClassOrInterfaceType) =>
-      val newConfig = config asserts ((n ~=~ OBJECT) || (((m in PRIMITIVES
-        .toSet[Type]) || (m ~=~ OBJECT)) && (n ~=~ ClassOrInterfaceType(
+    case (ArrayType(m), n: SomeClassOrInterfaceType) =>
+      val newConfig = config asserts (n ~=~ OBJECT || n ~=~ ClassOrInterfaceType(
         "java.lang.Cloneable"
-      ) || n ~=~ ClassOrInterfaceType("java.io.Serializable"))))
+      ) || n ~=~ ClassOrInterfaceType("java.io.Serializable"))
       (log, newConfig :: Nil)
-    case (m: ClassOrInterfaceType, n: ArrayType) =>
+    case (m: SomeClassOrInterfaceType, n: ArrayType) =>
       (log.addWarn(s"$m <: $n is trivially not true"), Nil)
     case (alpha: Alpha, arr: ArrayType) =>
       `resolve Alpha <: Array`(alpha, arr, log, config, a)
@@ -54,8 +53,26 @@ private[inference] def resolveSubtypeAssertion(
       `resolve TypeParam <: Type`(m, sup, log, config)
     case (_, m: TTypeParameter) =>
       `resolve Type <: TypeParam`(sub, m, log, config)
-    case (m: ClassOrInterfaceType, n: ClassOrInterfaceType) if m.identifier == n.identifier =>
+    case (m: SomeClassOrInterfaceType, n: SomeClassOrInterfaceType)
+        if m.identifier == n.identifier =>
       `resolve τ<...> <: τ<...>`(m, n, log, config)
+    case (m: TemporaryType, n: SomeClassOrInterfaceType) =>
+      val combineAttempt    = config.asserts(m <:~ n).combineTemporaryType(m, n)
+      val nonCombineAttempt = `resolve Reference <: Reference`(m, n, log, config.addExclusion(m, n))
+      combineAttempt match
+        case None => nonCombineAttempt
+        case Some(x) =>
+          val (log, left) = nonCombineAttempt
+          (log.addInfo(s"successfully combined $m with $n"), x :: left)
+    case (m: SomeClassOrInterfaceType, n: TemporaryType) =>
+      val combineAttempt    = config.asserts(m <:~ n).combineTemporaryType(n, m)
+      val nonCombineAttempt = `resolve Reference <: Reference`(m, n, log, config.addExclusion(n, m))
+      combineAttempt match
+        case None => nonCombineAttempt
+        case Some(x) =>
+          val (log, left) = nonCombineAttempt
+          (log.addInfo(s"successfully combined $n with $m"), x :: left)
+
     case (m: ClassOrInterfaceType, n: ClassOrInterfaceType) =>
       `resolve Reference <: Reference`(m, n, log, config)
     case (m: Alpha, n: ClassOrInterfaceType) =>
@@ -173,8 +190,8 @@ private def `resolve Type <: TypeParam`(
   )
 
 private def `resolve τ<...> <: τ<...>`(
-    subtype: ClassOrInterfaceType,
-    supertype: ClassOrInterfaceType,
+    subtype: SomeClassOrInterfaceType,
+    supertype: SomeClassOrInterfaceType,
     log: Log,
     config: Configuration
 ) =
@@ -191,13 +208,13 @@ private def `resolve τ<...> <: τ<...>`(
     (log, (config assertsAllOf newAssertions) :: Nil)
 
 private def `resolve Reference <: Reference`(
-    subtype: ClassOrInterfaceType,
-    supertype: ClassOrInterfaceType,
+    subtype: SomeClassOrInterfaceType,
+    supertype: SomeClassOrInterfaceType,
     log: Log,
     config: Configuration
 ): (Log, List[Configuration]) =
   val a                = subtype <:~ supertype
-  val (subRaw, supRaw) = (subtype.copy(args = Vector()), supertype.copy(args = Vector()))
+  val (subRaw, supRaw) = (subtype.raw, supertype.raw)
   // do not create cyclic inheritances
   if config |- supRaw <:~ subRaw then
     return (log.addWarn(s"$a is false because $supRaw <: $subRaw"), Nil)

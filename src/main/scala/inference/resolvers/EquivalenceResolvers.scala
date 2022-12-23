@@ -59,9 +59,9 @@ private[inference] def resolveEquivalenceAssertion(
         (log.addWarn(s"$a cannot be a primitive type"), Nil)
       case (b: PrimitiveType, a: Alpha) =>
         (log.addWarn(s"$a cannot be a primitive type"), Nil)
-      case (x: Alpha, y: ClassOrInterfaceType) =>
+      case (x: Alpha, y: SomeClassOrInterfaceType) =>
         concretizeAlphaToReference(log, config asserts asst, x, y)
-      case (y: ClassOrInterfaceType, x: Alpha) =>
+      case (y: SomeClassOrInterfaceType, x: Alpha) =>
         concretizeAlphaToReference(log, config asserts asst, x, y)
       case (x: ClassOrInterfaceType, y: ClassOrInterfaceType) =>
         resolveReferenceEquivalences(x, y, log, config)
@@ -99,18 +99,29 @@ private[inference] def concretizeAlphaToReference(
     log: Log,
     config: Configuration,
     a: Alpha,
-    s: ClassOrInterfaceType
-): (Log, List[Configuration]) =
-  val newType = a.concretizeToReference(s.identifier, s.numArgs)
+    t: SomeClassOrInterfaceType
+): (Log, List[Configuration]) = t match
+  case s: ClassOrInterfaceType =>
+    val newType = a.concretizeToReference(s.identifier, s.numArgs)
 
-  (
-    log.addInfo(s"concretizing $a to $newType"),
-    List(
-      config.replace(a.copy(substitutions = Nil), newType)
+    (
+      log.addInfo(s"concretizing $a to $newType"),
+      List(
+        config.replace(a.copy(substitutions = Nil), newType)
+      )
+        .filter(!_.isEmpty)
+        .map(_.get)
     )
-      .filter(!_.isEmpty)
-      .map(_.get)
-  )
+  case s: TemporaryType =>
+    val newType = a.concretizeToTemporary(s.id, s.numArgs)
+    (
+      log.addInfo(s"concretizing $a to $newType"),
+      List(
+        config.replace(a.copy(substitutions = Nil), newType)
+      )
+        .filter(!_.isEmpty)
+        .map(_.get)
+    )
 
 private def resolveReferenceEquivalences(
     x: ClassOrInterfaceType,

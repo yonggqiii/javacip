@@ -50,6 +50,20 @@ case class Configuration(
     constraintStore: Map[String, Set[Assertion]] = Map(),
     exclusions: Map[String, Set[String]] = Map()
 ):
+  def addExclusion(t: TemporaryType, toExclude: SomeClassOrInterfaceType): Configuration =
+    if !exclusions.contains(t.identifier) then
+      copy(exclusions = exclusions + (t.identifier -> Set(toExclude.identifier)))
+    else
+      copy(exclusions =
+        exclusions + (t.identifier -> (exclusions(t.identifier) + toExclude.identifier))
+      )
+  def addExclusions(t: TemporaryType, toExclude: Set[SomeClassOrInterfaceType]): Configuration =
+    if !exclusions.contains(t.identifier) then
+      copy(exclusions = exclusions + (t.identifier -> toExclude.map(_.identifier)))
+    else
+      copy(exclusions =
+        exclusions + (t.identifier -> (exclusions(t.identifier).union(toExclude.map(_.identifier))))
+      )
   def combineTemporaryType(
       t: TemporaryType,
       other: SomeClassOrInterfaceType
@@ -898,6 +912,9 @@ case class Configuration(
       omega.mkString("\n") +
       "\n\nPsi: " + psi.mkString(", ") +
       "\n\nConstraint store:\n" + constraintStore
+        .map((id, s) => s"$id: [${s.mkString(", ")}]")
+        .mkString("\n") +
+      "\n\nExclusions:\n" + exclusions
         .map((id, s) => s"$id: [${s.mkString(", ")}]")
         .mkString("\n")
 

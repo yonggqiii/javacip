@@ -23,7 +23,10 @@ private def resolveCompatibilityAssertion(
       (log, config :: Nil)
     case (s: PrimitiveType, t: PrimitiveType) =>
       (log, (config asserts (s <<~= t)) :: Nil)
-    case (s @ (_: ClassOrInterfaceType | _: Alpha), t @ (_: ClassOrInterfaceType | _: Alpha)) =>
+    case (
+          s @ (_: SomeClassOrInterfaceType | _: Alpha),
+          t @ (_: SomeClassOrInterfaceType | _: Alpha)
+        ) =>
       (log, (config asserts (s <:~ t)) :: Nil)
     case (s: Alpha, t: PrimitiveType) =>
       val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
@@ -31,7 +34,7 @@ private def resolveCompatibilityAssertion(
       val asst =
         (s <:~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
       (log, (config.addToPsi(B).addToPsi(P) asserts asst) :: Nil)
-    case (s: PrimitiveType, t: ClassOrInterfaceType) =>
+    case (s: PrimitiveType, t: SomeClassOrInterfaceType) =>
       (log, (config asserts (s.boxed <:~ t)) :: Nil)
     case (s @ (_: Alpha | _: PlaceholderType), t @ (_: Alpha | _: PlaceholderType)) =>
       val (l, c) = addToConstraintStore(s, a, log, config)

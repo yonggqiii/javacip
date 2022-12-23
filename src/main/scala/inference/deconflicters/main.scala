@@ -30,14 +30,9 @@ private[inference] def deconflict(
       // equality of duplicate supertypes
       for z <- otherSupertypes do
         if y.identifier == z.identifier then
-          println(s"wow! $y $z")
           if !(y.isSomehowUnknown && z.isSomehowUnknown) then
-            println("here")
-            if (y.isSomehowUnknown || z.isSomehowUnknown) then
-              println("there")
-              newAssertions += (y ~=~ z)
+            if (y.isSomehowUnknown || z.isSomehowUnknown) then newAssertions += (y ~=~ z)
             else if y != z then
-              println("everywhere")
               return LogWithLeft(
                 log.addWarn(s"$x <: $y and $z!").addWarn(config.toString),
                 Nil
@@ -49,9 +44,8 @@ private[inference] def deconflict(
       newAssertions += x.isClass
   // stop here
   if !newAssertions.isEmpty then
-    println("god!")
     return LogWithLeft(
-      log.addWarn("fuck oyu!"),
+      log.addInfo("adding new assertions after deconflicting..."),
       (config assertsAllOf newAssertions) :: Nil
     )
   // pointless extensions
@@ -63,7 +57,6 @@ private[inference] def deconflict(
       val res  = supertypes - candidate
       if res.exists(t => config |- t <:~ ClassOrInterfaceType(candidate.identifier)) then
         val newDecl = decl.removeSupertype(ClassOrInterfaceType(candidate.identifier))
-        // println(newDecl)
         resConfig = resConfig.copy(phi1 =
           resConfig.phi1 + (decl.identifier -> decl.removeSupertype(
             ClassOrInterfaceType(candidate.identifier)
@@ -80,4 +73,4 @@ private[inference] def deconflict(
           log.addInfo(s"either $a <: $b or $b <: $a"),
           (resConfig asserts ((a <:~ b) || (b <:~ a))) :: Nil
         )
-  LogWithRight(log.addWarn("deconflict might not be fully implemented!"), resConfig)
+  LogWithRight(log.addSuccess("deconflict complete!"), resConfig)

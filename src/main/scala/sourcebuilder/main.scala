@@ -163,6 +163,16 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
       // convert args
       val astArgs = args.map(typeToASTType(_, prohibitedNames))
       res.setTypeArguments(NodeList(astArgs: _*))
+  case z @ TemporaryType(id, args) =>
+    val x = z.identifier
+    val res =
+      if x.slice(0, 10) == "java.lang." then ASTClassOrInterfaceType(null, x.substring(10))
+      else ASTClassOrInterfaceType(null, x)
+    if args.size == 0 then res
+    else
+      // convert args
+      val astArgs = args.map(typeToASTType(_, prohibitedNames))
+      res.setTypeArguments(NodeList(astArgs: _*))
   case _ =>
     println(t)
     ???

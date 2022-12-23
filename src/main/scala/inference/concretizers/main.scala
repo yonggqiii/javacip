@@ -11,7 +11,8 @@ import scala.collection.mutable.{Map as MutableMap, Set as MutableSet}
 import inference.misc.expandDisjunctiveType
 import scala.collection.mutable.ArrayBuffer
 class ErasureGraph(
-    val adjList: MutableMap[String, MutableSet[String]] = MutableMap()
+    val adjList: MutableMap[String, MutableSet[String]] = MutableMap(),
+    val erasureGroupCache: MutableMap[String, Set[String]] = MutableMap()
 ):
   override def toString() =
     adjList.map((a, b) => s"$a: [${b.mkString(", ")}]").mkString("\n")
@@ -22,21 +23,12 @@ class ErasureGraph(
   def addVertex(node: String): Unit =
     if !adjList.contains(node) then adjList(node) = MutableSet()
   def EΔΦ(identifier: String): Set[String] =
-    def helper(current: String, acc: Set[String] = Set()): Set[String] =
-      if current == identifier then return acc
-      if acc.contains(current) then return Set()
-      val neighbours              = adjList(current)
-      val res: MutableSet[String] = MutableSet()
-      for i <- neighbours do
-        val res_i = helper(i, acc + current)
-        res.addAll(res_i)
-      return res.toSet
-    val startingNeighbours      = adjList(identifier)
-    val res: MutableSet[String] = MutableSet()
-    for i <- startingNeighbours do
-      val res_i = helper(i)
-      res.addAll(res_i)
-    return res.toSet + identifier
+    if !erasureGroupCache.contains(identifier) then
+      val vertices = adjList.keySet.toSet
+      val group =
+        vertices.filter(x => x == identifier || (path(x, identifier) && path(identifier, x)))
+      erasureGroupCache(identifier) = group
+    erasureGroupCache(identifier)
   def path(from: String, to: String): Boolean =
     val q       = ArrayBuffer[String](from)
     val visited = MutableSet[String]()
@@ -90,15 +82,18 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
     .filter(_.isDefined)
     .map(_.get)
   q.addAll(otherTypes)
+  val visited = MutableSet[String]()
   // add all the concrete types
   while !q.isEmpty do
     val c = q.remove(0)
-    if !eg.adjList.contains(c) && c != OBJECT.identifier then
+    if !visited.contains(c) then
+      visited.add(c)
       val sups =
         config
           .getSubstitutedDeclaration(ClassOrInterfaceType(c))
           .getDirectAncestors //getDirectSupertypes(NormalType(c, 0))
       for s <- sups do
+        // if s.identifier == OBJECT.identifier then println(s"$c heya")
         eg.addEdge(c, s.identifier)
         q += s.identifier
   // add the alphas
@@ -116,87 +111,103 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
 private def concretizeToUnknown(
     log: Log,
     config: Configuration,
-    alpha: String
-): List[Configuration] =
-  val realAlpha =
-    config.psi.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
-  val newArities = Vector(0, 1, 2, 3)
-  val newTypes =
-    newArities.map(arity => realAlpha.concretizeToReference(s"UNKNOWN_TYPE_${realAlpha.id}", arity))
-  val newDecls =
-    newTypes.map(x => (x, MissingTypeDeclaration(x.identifier).ofParameters(x.numArgs)))
-  val newConfigs = newDecls.map { case (t, d) =>
-    config
-      .copy(phi1 = config.phi1 + (t.identifier -> d))
-      .addAllToPsi(t.args)
-      .replace(realAlpha.copy(substitutions = Nil), t)
-  } filter { x =>
-    x.isDefined
-  } map { x =>
-    x.get
-  }
-  newConfigs.toList
+    ea: Set[String],
+    exclusions: Set[String]
+): LogWithLeft[List[Configuration]] =
+  val realAlphas = config.psi.filter(x => ea.contains(x.identifier)).map(_.asInstanceOf[Alpha])
+  val newArities = (0 to 3).toVector
+  val tempType   = InferenceVariableFactory.createTemporaryType()
+  val tempDecl   = new MissingTypeDeclaration(tempType.identifier)
+  val res: Vector[Configuration] =
+    newArities
+      .map(i => (tempType, tempDecl.ofParameters(i)))
+      .map { case (tt, mtd) =>
+        realAlphas.foldLeft(
+          Some(config.copy(phi1 = config.phi1 + (tt.identifier -> mtd))): Option[Configuration]
+        )((config, alpha) =>
+          config match
+            case None => None
+            case Some(c) =>
+              val newType = alpha.concretizeToTemporary(tt.id, mtd.numParams)
+              c.addAllToPsi(newType.args)
+                .addExclusions(tt, exclusions.map(x => ClassOrInterfaceType(x)))
+                .replace(alpha, newType)
+        )
+      } filter { x =>
+      x.isDefined
+    } map { x =>
+      x.get
+    }
+  LogWithLeft(log.addInfo(s"or ${ea.mkString(", ")} is of an unknown type"), res.toList)
 
-private def concretizeToAll(
+// private def concretizeToUnknown(
+//     log: Log,
+//     config: Configuration,
+//     alpha: String
+// ): List[Configuration] =
+//   val realAlpha =
+//     config.psi.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
+//   val newArities = Vector(0, 1, 2, 3)
+//   val newTypes =
+//     newArities.map(arity => realAlpha.concretizeToReference(s"UNKNOWN_TYPE_${realAlpha.id}", arity))
+//   val newDecls =
+//     newTypes.map(x => (x, MissingTypeDeclaration(x.identifier).ofParameters(x.numArgs)))
+//   val newConfigs = newDecls.map { case (t, d) =>
+//     config
+//       .copy(phi1 = config.phi1 + (t.identifier -> d))
+//       .addAllToPsi(t.args)
+//       .replace(realAlpha.copy(substitutions = Nil), t)
+//   } filter { x =>
+//     x.isDefined
+//   } map { x =>
+//     x.get
+//   }
+//   newConfigs.toList
+
+private def concretizeToKnown(
     log: Log,
     config: Configuration,
-    alpha: String,
+    ea: Set[String],
     types: Set[String]
 ): LogWithLeft[List[Configuration]] =
-  val realAlpha =
-    config.psi.filter(x => x.identifier == alpha).toVector(0).asInstanceOf[Alpha]
-  val res = types
+  val realAlphas = config.psi.filter(x => ea.contains(x.identifier)).map(_.asInstanceOf[Alpha])
+  val res: Set[Configuration] = types
     // get the arity of the new type
     .map(x => (x, config.getUnderlyingDeclaration(ClassOrInterfaceType(x)).numParams))
-    // concretize alpha into each of the possible types
-    .map((id, arity) => realAlpha.concretizeToReference(id, arity))
-    // replace the existing configuration with those types
-    .map(x => config.addAllToPsi(x.args).replace(realAlpha.copy(substitutions = Nil), x))
-    .filter(_.isDefined)
-    .map(_.get)
-    .toList
+    .map { case (id, arity) =>
+      realAlphas.foldLeft(Some(config): Option[Configuration])((config, alpha) =>
+        config match
+          case None => None
+          case Some(c) =>
+            val newType = alpha.concretizeToReference(id, arity)
+            c.addAllToPsi(newType.args).replace(alpha, newType)
+      )
+    }
+    .filter { x => x.isDefined }
+    .map { x => x.get }
   LogWithLeft(
     log.addInfo(
-      s"concretizing ${alpha} to one of these types",
+      s"concretizing ${realAlphas.mkString(", ")} to one of these types",
       types.mkString(", ")
     ),
-    res
+    res.toList
   )
 
 def concretize(
     log: Log,
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
-  // case of having inference variables to concretize
-  // val ivs = config.psi.filter(x => x.isInstanceOf[ReferenceOnlyDisjunctiveType]).toVector
-  // println("1")
-  // if !ivs.isEmpty then
-  //   val iv       = ivs(0)
-  //   val (lg, ls) = expandDisjunctiveType(iv.asInstanceOf[ReferenceOnlyDisjunctiveType], log, config)
-  //   return LogWithLeft(lg, ls)
-  //println(config)
-  // construct erasure graph
   val erasureGraph = createErasureGraph(config)
+  // println(erasureGraph)
   // get all relevant vertices
   val alphas       = config.psi.filter(x => x.isInstanceOf[Alpha]).map(x => x.identifier).toSet
   val allVertices  = erasureGraph.adjList.keys.toSet
   val allConcretes = allVertices.diff(alphas)
   // nothing to do!
-  //println("4")
   if alphas.isEmpty then return LogWithRight(log.addWarn("concretize not implemented!"), config)
-  // find A*
-  //println(5)
-  //println(erasureGraph)
+  // find some alpha
   val lowestAlpha = alphas.toVector(0)
-  // .filter(x =>
-  //   alphas.forall(y =>
-  //     y == x ||
-  //       erasureGraph.EΔΦ(x).contains(y) ||
-  //       !erasureGraph.path(y, x)
-  //   )
-  // )
-  // .toVector(0)
-  // println(6)
+
   // find e and partition to ec and ea
   val e  = erasureGraph.EΔΦ(lowestAlpha)
   val ec = e.filter(c => allConcretes.contains(c))
@@ -213,12 +224,13 @@ def concretize(
 
   // immediately concretize if |ec| = 1
   if ec.size == 1 then
-    return concretizeToAll(
-      log.addInfo(s"$lowestAlpha must only be of one type:"),
+    return concretizeToKnown(
+      log.addInfo(s"${ea.mkString(", ")} must only be of one type:"),
       config,
-      lowestAlpha,
+      ea,
       ec
     )
+
   // get L and U
   val lowerField = allConcretes.filter(t =>
     ea.exists(a => erasureGraph.path(t, a)) &&
@@ -226,7 +238,6 @@ def concretize(
         allConcretes.exists(s => s != t && erasureGraph.path(t, s) && erasureGraph.path(s, a))
       )
   )
-  //println(6.5)
 
   val upperField = allConcretes.filter(t =>
     ea.exists(a => erasureGraph.path(a, t)) &&
@@ -234,7 +245,6 @@ def concretize(
         allConcretes.exists(s => s != t && erasureGraph.path(a, s) && erasureGraph.path(s, t))
       )
   )
-  //println(7)
   // get lfd
   val lfd = lowerField.filter(t => config.isFullyDeclared(ClassOrInterfaceType(t)))
 
@@ -253,10 +263,10 @@ def concretize(
       )
     // otherwise, get Cfd
     val cfd = glblfd.filter(t => upperField.forall(u => t == u || erasureGraph.path(t, u)))
-    return concretizeToAll(
+    return concretizeToKnown(
       log.addInfo(s"concretizing $lowestAlpha into some fully-declared type"),
       config,
-      lowestAlpha,
+      ea,
       cfd
     )
 
@@ -269,24 +279,19 @@ def concretize(
     )
     .union(lowerField)
     .union(upperField)
+  val exclusions = allConcretes.filter(t =>
+    c.contains(t) || c.exists(u => erasureGraph.path(t, u) || erasureGraph.path(u, t))
+  )
 
   // concretize to each first
-  val res1                        = concretizeToAll(log, config, lowestAlpha, c)
+  val res1                        = concretizeToKnown(log, config, ea, c)
   val (newLog, configsFromKnowns) = (res1.log, res1.left)
 
-  // // what is the max number of parameters????
-  // val choices = e.map(a =>
-  //   val alpha        = config.phi2.keys.find(x => x.identifier == a).get.asInstanceOf[Alpha]
-  //   val paramChoices = alpha.parameterChoices.size
-  //   if alpha.canBeBounded then (paramChoices + 1) * 3
-  //   else paramChoices
-  // )
+  val res2 = concretizeToUnknown(newLog, config, ea, exclusions)
 
-  // val iStar = choices.foldLeft(0)((x, y) => (x + 1) * (y + 1) - 1)
+  return LogWithLeft(res2.log, configsFromKnowns ::: res2.left)
 
-  val res2 = concretizeToUnknown(log, config, lowestAlpha)
-
-  return LogWithLeft(
-    newLog.addInfo(s"or $lowestAlpha is of an unknown type"),
-    configsFromKnowns ::: res2
-  )
+// return LogWithLeft(
+//   newLog.addInfo(s"or $lowestAlpha is of an unknown type"),
+//   configsFromKnowns ::: res2
+// )

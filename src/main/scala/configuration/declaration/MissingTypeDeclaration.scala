@@ -143,7 +143,12 @@ class MissingTypeDeclaration(
       methods.map((id, v) => (id -> v.map(m => m.substitute(function)))),
       constructors.map(_.substitute(function))
     )
-  def getDirectAncestors: Vector[SomeClassOrInterfaceType] = supertypes
+  def getDirectAncestors: Vector[SomeClassOrInterfaceType] =
+    if identifier == "java.lang.Object" || identifier == "Object" then Vector()
+    else
+      val a = supertypes
+      if a.isEmpty then Vector(OBJECT)
+      else a
   //  if it mustn't be an interface then best not to assume that it is
   val isInterface = mustBeInterface
   // if it musn't be an interface then there is no reason for it to be abstract
