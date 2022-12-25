@@ -210,7 +210,7 @@ case class Configuration(
           for rmethod <- relevantMethods do
             val relevantMethod = rmethod.asNArgs(paramTypes.size).substitute(context)
             val (realTypeParams, realParamTypes, realRt) = (
-              relevantMethod.typeParameterBounds.keys,
+              relevantMethod.typeParameterBounds.map(_._1).toSet,
               relevantMethod.signature.formalParameters,
               relevantMethod.returnType
             )
@@ -435,7 +435,8 @@ case class Configuration(
       (l, r) match
         case (ll: PrimitiveType, rr: PrimitiveType) => ll.widened.contains(rr)
         case _                                      => false
-    case x: CompatibilityAssertion => false
+    case x: CompatibilityAssertion    => false
+    case x: ImplementsMethodAssertion => false
     case x =>
       println(x)
       ???
@@ -627,7 +628,7 @@ case class Configuration(
                   for rmethod <- relevantMethods do
                     val relevantMethod = rmethod.asNArgs(paramTypes.size)
                     val (realTypeParams, realParamTypes, realRt) = (
-                      relevantMethod.typeParameterBounds.keys,
+                      relevantMethod.typeParameterBounds.map(_._1).toSet,
                       relevantMethod.signature.formalParameters,
                       relevantMethod.returnType
                     )
@@ -748,7 +749,7 @@ case class Configuration(
                 for rmethod <- relevantMethods do
                   val relevantMethod = rmethod.asNArgs(paramTypes.size)
                   val (realTypeParams, realParamTypes, realRt) = (
-                    relevantMethod.typeParameterBounds.keys,
+                    relevantMethod.typeParameterBounds.map(_._1).toSet,
                     relevantMethod.signature.formalParameters,
                     relevantMethod.returnType
                   )

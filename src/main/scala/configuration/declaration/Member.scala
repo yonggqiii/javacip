@@ -4,7 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.github.javaparser.ast.AccessSpecifier
 import com.github.javaparser.ast.Modifier
 import com.github.javaparser.ast.NodeList
-
+import configuration.Configuration
 import configuration.types.*
 
 /** An access modifier in a Java program */
@@ -212,7 +212,7 @@ sealed trait MethodLike:
   val signature: MethodSignature
 
   /** The type parameter bounds of the method */
-  val typeParameterBounds: Map[TTypeParameter, Vector[Type]]
+  val typeParameterBounds: Vector[(TTypeParameter, Vector[Type])]
 
   /** The access modifier tied to the method */
   val accessModifier: AccessModifier
@@ -287,7 +287,7 @@ sealed trait MethodLike:
 class Method(
     val signature: MethodSignature,
     val returnType: Type,
-    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    val typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
     val accessModifier: AccessModifier,
     val isAbstract: Boolean,
     val isStatic: Boolean,
@@ -298,6 +298,13 @@ class Method(
     throw new java.lang.IllegalArgumentException(
       s"$signature cannot be abstract and (static or final) at the same time!"
     )
+
+  def overrides(m: Method, config: Configuration): Boolean =
+    if m.typeParameterBounds.size != typeParameterBounds.size then return false
+    if accessModifier < m.accessModifier then return false
+    val reordering = m.typeParameterBounds.map(_._1).zip(typeParameterBounds.map(_._1)).toMap
+    val reorderedM = m.reorderTypeParameters(reordering)
+    return (typeParameterBounds == reorderedM.typeParameterBounds && reorderedM.signature == signature && (config |- ((returnType <:~ reorderedM.returnType) || (returnType ~=~ reorderedM.returnType))))
 
   def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Method =
     new Method(
@@ -416,7 +423,7 @@ object Method:
       identifier: String,
       formalParameters: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
@@ -450,7 +457,7 @@ object Method:
 class MethodWithContext(
     _signature: MethodSignature,
     _returnType: Type,
-    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
     _accessModifier: AccessModifier,
     _isAbstract: Boolean,
     _isStatic: Boolean,
@@ -475,11 +482,11 @@ class MethodWithContext(
     new MethodWithContext(
       signature.combineTemporaryType(oldType, newType),
       returnType.combineTemporaryType(oldType, newType),
-      typeParameterBounds.map((k, v) =>
+      typeParameterBounds.map { case (k, v) =>
         (k.combineTemporaryType(oldType, newType) -> v.map(t =>
           t.combineTemporaryType(oldType, newType)
         ))
-      ),
+      },
       accessModifier,
       isAbstract,
       isStatic,
@@ -574,7 +581,7 @@ class MethodWithContext(
 class MethodWithCallSiteParameterChoices(
     _signature: MethodSignature,
     _returnType: Type,
-    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
     _accessModifier: AccessModifier,
     _isAbstract: Boolean,
     _isStatic: Boolean,
@@ -658,7 +665,7 @@ class MethodWithCallSiteParameterChoices(
   */
 class Constructor(
     val signature: MethodSignature,
-    val typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    val typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
     val accessModifier: AccessModifier
 ) extends MethodLike:
   def combineTemporaryType(
@@ -743,7 +750,7 @@ class Constructor(
   */
 class ConstructorWithContext(
     _signature: MethodSignature,
-    _typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+    _typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
     _accessModifier: AccessModifier,
     val callSiteParameterChoices: Set[TTypeParameter],
     val context: Substitution
@@ -829,7 +836,7 @@ object Constructor:
   def apply(
       containingTypeIdentifier: String,
       formalParameters: Vector[Type],
-      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
       accessModifier: AccessModifier,
       hasVarArgs: Boolean
   ): Constructor =

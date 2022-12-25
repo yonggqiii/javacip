@@ -2,7 +2,7 @@ package configuration.declaration
 
 import configuration.types.*
 import configuration.Configuration
-import scala.collection.mutable.{Map as MutableMap}
+import scala.collection.mutable.{Map as MutableMap, ArrayBuffer}
 
 /** A declaration of a type in the program.
   */
@@ -75,6 +75,36 @@ trait Declaration:
     // return the attributes
     // there should be only one direct ancestor to inherit from
     if y.isEmpty then Map() else y(0)
+
+  def getAllInheritedMethods(config: Configuration): Map[String, Vector[Method]] =
+    val supertypeDeclarations = getDirectAncestors.map(x => config.getSubstitutedDeclaration(x))
+    val methods = supertypeDeclarations.map(x => x.getAccessibleMethods(config, PROTECTED))
+    methods.foldLeft(Map[String, Vector[Method]]())((om, nm) =>
+      nm.foldLeft(om)((m, sm) =>
+        if !m.contains(sm._1) then m + sm else m + (sm._1 -> (m(sm._1) ++ sm._2))
+      )
+    )
+
+  def getAccessibleMethods(
+      config: Configuration,
+      accessLevel: AccessModifier
+  ): Map[String, Vector[Method]] =
+    val superMethods = getAllInheritedMethods(config)
+    val res          = MutableMap(methods.toSeq.map((k, v) => (k -> ArrayBuffer(v: _*))): _*)
+    // val tempMethods  = MutableMap(methods.toSeq.map((k, v) => (k -> ArrayBuffer(v: _*))): _*)
+    for (id, vm) <- superMethods do
+      for method <- vm do
+        // nothing to override, just add
+        if !methods.contains(id) then
+          if !res.contains(id) then res(id) = ArrayBuffer()
+          res(id) += method
+        else
+        // no overriding method
+        if methods(id).forall(myMethod => !myMethod.overrides(method, config)) then
+          res(id) += method
+    res.map((k, v) => (k -> v.toVector)).toMap
+
+  def getMethodErasure(m: Method): Method
 
   /** Gets all the attributes (including inherited ones) that are accessible and/or inheritable
     * based on a minimum access level

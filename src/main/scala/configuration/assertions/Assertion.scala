@@ -1,6 +1,6 @@
 package configuration.assertions
 
-import configuration.declaration.MethodSignature
+import configuration.declaration.*
 import configuration.types.*
 
 /** assertions to be delayed by Replaceable types are given the lowest priority, followed by
@@ -36,6 +36,7 @@ given assertionOrdering: Ordering[Assertion] with
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case WideningAssertion(x, y) =>
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
+        case ImplementsMethodAssertion(t, m) => t.isInstanceOf[DisjunctiveType]
     val (xdisj, ydisj) =
       (disjunctiveTester(x), disjunctiveTester(y))
     if xdisj && !ydisj then -1
@@ -350,3 +351,13 @@ case class IsNumericAssertion(t: Type) extends Assertion:
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsNumericAssertion = IsNumericAssertion(t.combineTemporaryType(oldType, newType))
+
+case class ImplementsMethodAssertion(t: Type, m: Method) extends Assertion:
+  override def toString = s"$t implements $m"
+  def replace(oldType: InferenceVariable, newType: Type): ImplementsMethodAssertion =
+    copy(t = t.replace(oldType, newType), m = m.replace(oldType, newType))
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ImplementsMethodAssertion =
+    copy(t = t.combineTemporaryType(oldType, newType), m = m.combineTemporaryType(oldType, newType))

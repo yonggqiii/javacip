@@ -119,7 +119,7 @@ class MissingTypeDeclaration(
       new Method(
         m.signature.erased(this),
         getErasure(m.returnType),
-        Map(),
+        Vector(),
         m.accessModifier,
         m.isAbstract,
         m.isStatic,
@@ -128,7 +128,7 @@ class MissingTypeDeclaration(
 
   def getConstructorErasure(c: Constructor): Constructor =
     if c.isInstanceOf[ConstructorWithContext] then c
-    else new Constructor(c.signature.erased(this), Map(), c.accessModifier)
+    else new Constructor(c.signature.erased(this), Vector(), c.accessModifier)
 
   def getLeftmostReferenceTypeBoundOfTypeParameter(t: Type): ClassOrInterfaceType = ???
   def substitute(function: Substitution): MissingTypeDeclaration =
@@ -340,34 +340,6 @@ class MissingTypeDeclaration(
       ),
       Nil
     )
-  // val newAssertions = ArrayBuffer[Assertion]()
-  // val newMethods    = MutableMap[String, Vector[Method]]()
-  // for (identifier, mmethods) <- methods do
-  //   val newMethodSet = ArrayBuffer[MethodWithContext]()
-  //   for method <- mmethods do
-  //     val replacedMethod = method.replace(oldType, newType)
-  //     newMethodSet.find(x =>
-  //       x.context == replacedMethod.context && x.signature == replacedMethod.signature
-  //     ) match
-  //       case Some(m) =>
-  //         newAssertions += m.returnType ~=~ replacedMethod.returnType
-  //       case None =>
-  //         newMethodSet += replacedMethod
-  //   newMethods(identifier) = newMethodSet.toSet
-  // (
-  //   MissingTypeDeclaration(
-  //     identifier,
-  //     typeParameterBounds.map(v => v.map(t => t.replace(oldType, newType))),
-  //     mustBeClass,
-  //     mustBeInterface,
-  //     supertypes.map(_.replace(oldType, newType)),
-  //     methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.replace(oldType, newType)))),
-  //     attributes.map((id, x) => id -> x.replace(oldType, newType)),
-  //     newMethods.toMap,
-  //     constructors.map(c => c.replace(oldType, newType))
-  //   ),
-  //   newAssertions.toList
-  // )
 
   /** Change the parameters of this declaration
     * @param i
@@ -504,7 +476,7 @@ class MissingTypeDeclaration(
       identifier: String,
       paramTypes: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,

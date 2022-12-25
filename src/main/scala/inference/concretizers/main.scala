@@ -265,7 +265,10 @@ def concretize(
 
   val res2 = concretizeToUnknown(newLog, config, ea, exclusions)
 
-  return LogWithLeft(res2.log, configsFromKnowns ::: res2.left)
+  return LogWithLeft(
+    res2.log.addInfo(s"${(res2.left ::: configsFromKnowns).size}"),
+    configsFromKnowns ::: res2.left
+  )
 
 // return LogWithLeft(
 //   newLog.addInfo(s"or $lowestAlpha is of an unknown type"),

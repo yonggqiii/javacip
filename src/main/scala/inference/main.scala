@@ -29,7 +29,7 @@ private def infer(
   getConfig(configs) match
     case None => LogWithNone(log.addError(s"Terminating as type errors exist"))
     case Some((x, xs)) =>
-      if a > 1000000 then return LogWithNone(log.addError("max hit", x.toString))
+      if a > 1000 then return LogWithNone(log.addError("max hit", x.toString))
       if a % 1000 == 0 && !log.appConfig.debug && !log.appConfig.verbose then
         print(
           "\r" + f"$a%18d | ${configs.map((k, v) => v.size).sum}%11d | ${x.maxBreadth}%15d | ${x.maxDepth}%14d"

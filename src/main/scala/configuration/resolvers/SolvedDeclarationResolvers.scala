@@ -181,7 +181,7 @@ def getMethods(
       methodName,
       args,
       returnType,
-      typeParamBounds.toMap,
+      typeParamBounds,
       accessModifier,
       isAbstract,
       isStatic,
@@ -203,14 +203,13 @@ def getConstructors(
     val typeParamDecls = constructorDeclaration.getTypeParameters.asScala.toVector
     val typeParams =
       typeParamDecls.map(x => TypeParameterName(identifier, x.getContainerId, x.getName))
-    val typeParamBounds: Map[TTypeParameter, Vector[Type]] = typeParams
+    val typeParamBounds: Vector[(TTypeParameter, Vector[Type])] = typeParams
       .zip(
         typeParamDecls.map(tp =>
           tp.getBounds.asScala.toVector
             .map(x => resolveSolvedType(x.getType)) // safe
         )
       )
-      .toMap
     val numParams = constructorDeclaration.getNumberOfParams
     val args = (0 until numParams)
       .map(x => resolveSolvedType(constructorDeclaration.getParam(x).getType))

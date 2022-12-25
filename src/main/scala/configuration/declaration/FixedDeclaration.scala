@@ -163,7 +163,7 @@ class FixedDeclaration(
     new Method(
       m.signature.erased(this),
       getErasure(m.returnType),
-      Map(),
+      Vector(),
       m.accessModifier,
       m.isAbstract,
       m.isStatic,
@@ -171,7 +171,7 @@ class FixedDeclaration(
     )
 
   def getConstructorErasure(c: Constructor): Constructor =
-    new Constructor(c.signature.erased(this), Map(), c.accessModifier)
+    new Constructor(c.signature.erased(this), Vector(), c.accessModifier)
 
   /** Gets the erasure of a type which is the erasure leftmost bound, where the erasure of a
     * non-type parameter is itself (not its raw type)

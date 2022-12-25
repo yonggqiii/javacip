@@ -269,14 +269,7 @@ private def `resolve Reference <: Reference`(
             else Vector(a)
           (
             log
-              .addInfo(s"$subtype greedily extends $newSupertype")
-              .addInfo(
-                config
-                  .copy(phi1 = newPhi1)
-                  .addAllToPsi(newSupertype.args)
-                  .assertsAllOf(newAssts)
-                  .toString
-              ),
+              .addInfo(s"$subtype greedily extends $newSupertype"),
             config.copy(phi1 = newPhi1).addAllToPsi(newSupertype.args).assertsAllOf(newAssts) :: Nil
           )
       else

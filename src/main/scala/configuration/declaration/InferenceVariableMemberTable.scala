@@ -94,7 +94,7 @@ class InferenceVariableMemberTable(
       identifier: String,
       paramTypes: Vector[Type],
       returnType: Type,
-      typeParameterBounds: Map[TTypeParameter, Vector[Type]],
+      typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
       accessModifier: AccessModifier,
       isAbstract: Boolean,
       isStatic: Boolean,
