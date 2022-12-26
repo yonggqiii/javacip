@@ -14,6 +14,16 @@ private[inference] def resolveSubtypeAssertion(
 ): (Log, List[Configuration]) =
   val SubtypeAssertion(x, y) = a
   val (sub, sup)             = (x.upwardProjection, y.downwardProjection)
+  if config |- sup <:~ sub then
+    //println(s"hmm? $a")
+    if sub ⊂ sup || sup ⊂ sub then
+      //println(s"$a must be true but ${sup <:~ sub} is true but either $sup ⊂ $sub or $sub ⊂ $sup")
+      return (
+        log.addWarn(
+          s"$a must be true but ${sup <:~ sub} is true but either $sup ⊂ $sub or $sub ⊂ $sup"
+        ),
+        Nil
+      )
   // trivial cases
   (sub, sup) match
     case (Bottom, _) =>

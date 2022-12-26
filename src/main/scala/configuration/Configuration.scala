@@ -464,9 +464,17 @@ case class Configuration(
     val (sub, sup) = (left.upwardProjection, right.downwardProjection)
     if sup == OBJECT then true
     else if sub == Bottom then true
-    else if sub.isSomehowUnknown || sup.isSomehowUnknown then false
+    //else if sub.isSomehowUnknown || sup.isSomehowUnknown then false
     else
       (sub, sup) match
+        case (x @ (_: Alpha | _: PlaceholderType), _) =>
+          constraintStore.contains(x.identifier) && constraintStore(x.identifier).contains(
+            left <:~ right
+          )
+        case (_, x @ (_: Alpha | _: PlaceholderType)) =>
+          constraintStore.contains(x.identifier) && constraintStore(x.identifier).contains(
+            left <:~ right
+          )
         case (x: TTypeParameter, y: TTypeParameter) =>
           if x == y then true
           else
