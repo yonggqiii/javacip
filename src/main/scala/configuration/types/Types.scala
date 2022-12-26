@@ -217,14 +217,14 @@ sealed trait Type:
     *   true if this strictly occurs in that, false otherwise
     */
   def ⊂(that: Type): Boolean = that match
-    case ArrayType(x)           => this ⊆ x
-    case x: PrimitiveType       => false
-    case Bottom | Wildcard      => false
-    case x: ExtendsWildcardType => this ⊆ x.upper
-    case x: SuperWildcardType   => this ⊆ x.lower
-    case x: TTypeParameter      => false
-    case x: InferenceVariable   => false
-    case x: ClassOrInterfaceType => x.args.exists(y => x ⊆ y) // why not possible?
+    case x: SomeClassOrInterfaceType => x.args.exists(y => this ⊆ y) // why not possible?
+    case ArrayType(x)                => this ⊆ x
+    case x: PrimitiveType            => false
+    case Bottom | Wildcard           => false
+    case x: ExtendsWildcardType      => this ⊆ x.upper
+    case x: SuperWildcardType        => this ⊆ x.lower
+    case x: TTypeParameter           => false
+    case x: InferenceVariable        => false
 
   /** Checks if this type occurs in or is equal to another type
     * @param that
