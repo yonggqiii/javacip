@@ -85,12 +85,45 @@ trait Declaration:
       )
     )
 
+  def getAllMethodsWithErasures(
+      config: Configuration
+  ): Map[String, Vector[(Method, MethodSignature)]] =
+    val res = MutableMap[String, ArrayBuffer[(Method, MethodSignature)]](
+      getAllInheritedMethodsWithErasures(config).map((k, v) => (k -> ArrayBuffer(v: _*))).toSeq: _*
+    )
+    for
+      (id, v) <- methods
+        .map((k, v) => (k -> v.filter(m => !m.isInstanceOf[MethodWithContext])))
+        .filter((k, v) => !v.isEmpty)
+    do
+      if !res.contains(id) then res(id) = ArrayBuffer()
+      for method <- v do res(id) += ((method, method.signature.erased(this)))
+    res.map((k, v) => (k -> v.toVector)).toMap
+
+  def getAllInheritedMethodsWithErasures(
+      config: Configuration
+  ): Map[String, Vector[(Method, MethodSignature)]] =
+    val res = MutableMap[String, ArrayBuffer[(Method, MethodSignature)]]()
+    for s <- getDirectAncestors do
+      val ud           = config.getUnderlyingDeclaration(s)
+      val (_, context) = s.expansion
+      for (id, v) <- ud.getAllMethodsWithErasures(config) do
+        if !res.contains(id) then res(id) = ArrayBuffer()
+        for (method, erasure) <- v do res(id) += ((method.substitute(context), erasure))
+    res.map((k, v) => (k -> v.toVector)).toMap
+
   def getAccessibleMethods(
       config: Configuration,
       accessLevel: AccessModifier
   ): Map[String, Vector[Method]] =
     val superMethods = getAllInheritedMethods(config)
-    val res          = MutableMap(methods.toSeq.map((k, v) => (k -> ArrayBuffer(v: _*))): _*)
+    val res = MutableMap(
+      methods
+        .map((k, v) => (k -> v.filter(m => !m.isInstanceOf[MethodWithContext])))
+        .filter((k, v) => !v.isEmpty)
+        .toSeq
+        .map((k, v) => (k -> ArrayBuffer(v: _*))): _*
+    )
     // val tempMethods  = MutableMap(methods.toSeq.map((k, v) => (k -> ArrayBuffer(v: _*))): _*)
     for (id, vm) <- superMethods do
       for method <- vm do
@@ -101,6 +134,7 @@ trait Declaration:
         else
         // no overriding method
         if methods(id).forall(myMethod => !myMethod.overrides(method, config)) then
+          if !res.contains(id) then res(id) = ArrayBuffer()
           res(id) += method
     res.map((k, v) => (k -> v.toVector)).toMap
 

@@ -68,6 +68,8 @@ private[inference] def resolve(
           resolveCompatibilityAssertion(newLog, newConfig, x)
         case x: ImplementsMethodAssertion =>
           resolveImplementsMethodAssertion(newLog, newConfig, x)
+        case x: OverridesAssertion =>
+          resolveOverridesAssertion(newLog, newConfig, x)
         case _ =>
           ???
       LogWithLeft(res._1, res._2)

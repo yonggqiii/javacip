@@ -34,6 +34,42 @@ class MissingTypeDeclaration(
     val methods: Map[String, Vector[Method]] = Map().withDefaultValue(Vector()),
     val constructors: Vector[Constructor] = Vector()
 ) extends Declaration:
+  def addFinalizedMethod(m: Method): MissingTypeDeclaration =
+    new MissingTypeDeclaration(
+      identifier,
+      typeParameterBounds,
+      mustBeClass,
+      mustBeInterface,
+      supertypes,
+      methodTypeParameterBounds ++ m.typeParameterBounds.map((x, y) => (x.toString -> y)),
+      attributes,
+      if !methods.contains(m.signature.identifier) then
+        methods + (m.signature.identifier    -> Vector(m))
+      else methods + (m.signature.identifier -> (methods(m.signature.identifier) :+ m)),
+      constructors
+    )
+
+  def removeMethodWithContext(m: MethodWithContext): MissingTypeDeclaration =
+    if !methods.contains(m.signature.identifier) then this
+    else
+      new MissingTypeDeclaration(
+        identifier,
+        typeParameterBounds,
+        mustBeClass,
+        mustBeInterface,
+        supertypes,
+        methodTypeParameterBounds,
+        attributes,
+        methods + (m.signature.identifier -> methods(m.signature.identifier).filter(other =>
+          if !other.isInstanceOf[MethodWithContext] then true
+          else
+            val othermcc = other.asInstanceOf[MethodWithContext]
+            othermcc.signature != m.signature || othermcc.returnType != m.returnType ||
+            othermcc.context != m.context || othermcc.callSiteParameterChoices != m.callSiteParameterChoices || othermcc.typeParameterBounds != m.typeParameterBounds
+        )),
+        constructors
+      )
+
   def combineWithTemporaryTypeDeclaration(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType,

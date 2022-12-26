@@ -27,10 +27,12 @@ private def infer(
     a: Int = 0
 ): LogWithOption[Configuration] =
   getConfig(configs) match
-    case None => LogWithNone(log.addError(s"Terminating as type errors exist"))
+    case None =>
+      if !log.appConfig.debug then println("cannot be compiled")
+      LogWithNone(log.addError(s"Terminating as type errors exist"))
     case Some((x, xs)) =>
-      if a > 1000 then return LogWithNone(log.addError("max hit", x.toString))
-      if a % 1000 == 0 && !log.appConfig.debug && !log.appConfig.verbose then
+      if a > 30000 then return LogWithNone(log.addError("max hit", x.toString))
+      if a % 1000 == 0 && !log.appConfig.debug then
         print(
           "\r" + f"$a%18d | ${configs.map((k, v) => v.size).sum}%11d | ${x.maxBreadth}%15d | ${x.maxDepth}%14d"
         )
@@ -38,9 +40,10 @@ private def infer(
       else
         val res = resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers
         if res.isLeft then
-          val allConfigs = addAllToConfigs(xs, res.left)
+          val allConfigs = addAllToConfigs(xs, res.left.reverse)
           infer(res.log, allConfigs, a + 1)
         else
+          if !log.appConfig.debug then println(res.right)
           LogWithSome(
             res.log
               .addSuccess(s"successfully inferred compilable configuration", res.right.toString),
@@ -58,7 +61,7 @@ private def getConfig(
     val second = x + (minKey -> x(minKey).tail)
     Some((first, second))
 
-@tailrec
+//@tailrec
 private def addAllToConfigs(
     configs: Map[Int, List[Configuration]],
     newConfigs: List[Configuration]

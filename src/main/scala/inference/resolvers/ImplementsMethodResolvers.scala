@@ -14,11 +14,18 @@ private[inference] def resolveImplementsMethodAssertion(
     config: Configuration,
     asst: ImplementsMethodAssertion
 ): (Log, List[Configuration]) =
-  val ImplementsMethodAssertion(t, m) = asst
+  val ImplementsMethodAssertion(t, m, canBeAbstract) = asst
   t match
-    case x: Alpha => addToConstraintStore(x, asst, log, config asserts x.isClass)
+    case x: Alpha =>
+      addToConstraintStore(
+        x,
+        asst,
+        log,
+        if canBeAbstract then config else (config asserts x.isClass)
+      )
     case x: SomeClassOrInterfaceType =>
       if config |- x.isMissing then
+        // println(asst)
         // missing type; suppose one of the relevant methods is actually an overriding declaration
         val existingOverrider = generateOverrideAssertion(config, x, m)
         // otherwise add such method to the underlying declaration
@@ -91,25 +98,12 @@ private[inference] def resolveImplementsMethodAssertion(
           MethodSignature(methodName, newMethodFormalParameters.toVector, m.signature.hasVarArgs),
           newMethodReturnType,
           newMethodTypeParameterBounds.map((k, v) => (k -> v.toVector)),
-          m.accessModifier,
+          PUBLIC,
           false,
           false,
           false
         )
-        val newUD = MissingTypeDeclaration(
-          ud.identifier,
-          ud.typeParameterBounds,
-          ud.mustBeClass,
-          ud.mustBeInterface,
-          ud.supertypes,
-          ud.methodTypeParameterBounds ++ newMethodTypeParameterBounds.map((k, v) =>
-            (k.toString -> v.toVector)
-          ),
-          ud.attributes,
-          if !ud.methods.contains(methodName) then ud.methods + (methodName -> Vector(newMethod))
-          else ud.methods + (methodName -> (ud.methods(methodName) :+ newMethod)),
-          ud.constructors
-        )
+        val newUD = ud.asInstanceOf[MissingTypeDeclaration].addFinalizedMethod(newMethod)
         val newConfig = config.copy(
           phi1 = config.phi1 + (ud.identifier -> newUD),
           psi = config.psi ++ newTypes
@@ -117,9 +111,11 @@ private[inference] def resolveImplementsMethodAssertion(
         (
           log.addInfo(
             s"either ${x.identifier} already has an overriding method for $m, or a new method is added to ${x.identifier} such that it overrides it:",
-            newConfig.toString
+            s"new method: $newMethod\nnew assertions: ${newAssertions
+              .mkString(", ")}\nnew types: ${newTypes.mkString(", ")}"
           ),
-          (config asserts existingOverrider) :: newConfig :: Nil
+          newConfig :: Nil
+          //(config asserts existingOverrider) :: newConfig :: Nil
         )
       else
         // declared type
@@ -139,9 +135,9 @@ private def generateOverrideAssertion(
   val methodFormalParameters     = m.signature.formalParameters
   val methodReturnType           = m.returnType
   val methodTypeParametersBounds = m.typeParameterBounds
-  if !ud.methods.contains(methodName) then return DisjunctiveAssertion(Vector())
-  val potentialCandidates = ud
-    .methods(methodName)
+  val allUDMethods               = ud.getAccessibleMethods(config, PUBLIC)
+  if !allUDMethods.contains(methodName) then return DisjunctiveAssertion(Vector())
+  val potentialCandidates = allUDMethods(methodName)
     .filter(candidate =>
       !candidate.isInstanceOf[MethodWithContext] &&
         candidate.typeParameterBounds.size == methodTypeParametersBounds.size &&

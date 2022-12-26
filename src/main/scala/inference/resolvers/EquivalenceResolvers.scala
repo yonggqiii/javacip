@@ -2,7 +2,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
-import inference.misc.expandDisjunctiveType
+import inference.misc.*
 import utils.*
 
 private[inference] def resolveEquivalenceAssertion(
@@ -16,6 +16,8 @@ private[inference] def resolveEquivalenceAssertion(
   else
     (x, y) match
       case (Bottom, Bottom)     => (log, config :: Nil)
+      case (Bottom, _)          => (log.addWarn(s"$x != $y"), Nil)
+      case (_, Bottom)          => (log.addWarn(s"$x != $y"), Nil)
       case (Wildcard, Wildcard) => (log, config :: Nil)
       case (a: PlaceholderType, b) =>
         (
@@ -32,9 +34,9 @@ private[inference] def resolveEquivalenceAssertion(
       case (a: SuperWildcardType, b: SuperWildcardType) =>
         (log, (config asserts (a.lower ~=~ b.lower)) :: Nil)
       case (a: ExtendsWildcardType, b: SuperWildcardType) =>
-        (log, (config asserts (Bottom ~=~ b.lower && a.upper ~=~ OBJECT)) :: Nil)
+        (log.addWarn(s"$a != $Wildcard"), Nil)
       case (a: SuperWildcardType, b: ExtendsWildcardType) =>
-        (log, (config asserts (a.lower ~=~ Bottom && OBJECT ~=~ b.upper)) :: Nil)
+        (log.addWarn(s"$a != $Wildcard"), Nil)
       case (a: ExtendsWildcardType, Wildcard) =>
         (log, (config asserts a.upper ~=~ OBJECT) :: Nil)
       case (a: SuperWildcardType, Wildcard) =>
@@ -42,15 +44,51 @@ private[inference] def resolveEquivalenceAssertion(
       case (Wildcard, a: ExtendsWildcardType) =>
         (log, (config asserts a.upper ~=~ OBJECT) :: Nil)
       case (Wildcard, a: SuperWildcardType) =>
-        (log.addWarn(s"$a != $Wildcard"), Nil)
+        (log.addWarn(s"$x != $y"), Nil)
       case (a: ArrayType, b: ArrayType) =>
         (log, (config asserts (a.base ~=~ b.base)) :: Nil)
       case (a: PrimitiveType, b: PrimitiveType) =>
         // definitely false
         (log.addWarn(s"$x != $y"), Nil)
+      case (PRIMITIVE_VOID, b: VoidableDisjunctiveType) =>
+        (
+          log.addInfo(s"$b must be void"),
+          (config :: Nil).map(x => x.replace(b, PRIMITIVE_VOID)).filter(_.isDefined).map(_.get)
+        )
+      case (b: VoidableDisjunctiveType, PRIMITIVE_VOID) =>
+        (
+          log.addInfo(s"$b must be void"),
+          (config :: Nil).map(x => x.replace(b, PRIMITIVE_VOID)).filter(_.isDefined).map(_.get)
+        )
+      case (PRIMITIVE_VOID, _) =>
+        (log.addWarn(s"$x != $y"), Nil)
+      case (_, PRIMITIVE_VOID) =>
+        (log.addWarn(s"$x != $y"), Nil)
       case (a: TTypeParameter, b: TTypeParameter) =>
         // definitely false
         (log.addWarn(s"$x != $y"), Nil)
+      case (
+            a @ (_: BoxesOnlyDisjunctiveType | _: ReferenceOnlyDisjunctiveType),
+            _: PrimitiveType
+          ) =>
+        (log.addWarn(s"$x != $y"), Nil)
+      case (
+            _: PrimitiveType,
+            a @ (_: BoxesOnlyDisjunctiveType | _: ReferenceOnlyDisjunctiveType)
+          ) =>
+        (log.addWarn(s"$x != $y"), Nil)
+      case (a: DisjunctiveType, b: PrimitiveType) =>
+        expandDisjunctiveTypeToPrimitive(a, log, config asserts asst)
+      case (b: PrimitiveType, a: DisjunctiveType) =>
+        expandDisjunctiveTypeToPrimitive(a, log, config asserts asst)
+      case (a: PrimitivesOnlyDisjunctiveType, b: SomeClassOrInterfaceType) =>
+        (log.addWarn(s"$x != $y"), Nil)
+      case (b: SomeClassOrInterfaceType, a: PrimitivesOnlyDisjunctiveType) =>
+        (log.addWarn(s"$x != $y"), Nil)
+      case (b: SomeClassOrInterfaceType, a: DisjunctiveType) =>
+        expandDisjunctiveTypeToReference(a, log, config asserts asst)
+      case (a: DisjunctiveType, b: SomeClassOrInterfaceType) =>
+        expandDisjunctiveTypeToReference(a, log, config asserts asst)
       case (a: DisjunctiveType, _) =>
         expandDisjunctiveType(a, log, config asserts asst)
       case (_, a: DisjunctiveType) =>
@@ -65,6 +103,23 @@ private[inference] def resolveEquivalenceAssertion(
         concretizeAlphaToReference(log, config asserts asst, x, y)
       case (x: ClassOrInterfaceType, y: ClassOrInterfaceType) =>
         resolveReferenceEquivalences(x, y, log, config)
+      case (x: TemporaryType, y: SomeClassOrInterfaceType) =>
+        if x.identifier == y.identifier then resolveReferenceEquivalences(x, y, log, config)
+        else
+          config.asserts(asst).combineTemporaryType(x, y) match
+            case Some(x) =>
+              (log.addInfo(s"$x was combined with $y"), x :: Nil)
+            case None =>
+              (log.addWarn(s"$x cannot be combined with $y"), Nil)
+      case (y: SomeClassOrInterfaceType, x: TemporaryType) =>
+        if x.identifier == y.identifier then resolveReferenceEquivalences(x, y, log, config)
+        else
+          config.asserts(asst).combineTemporaryType(x, y) match
+            case Some(x) =>
+              (log.addInfo(s"$x was combined with $y"), x :: Nil)
+            case None =>
+              (log.addWarn(s"$x cannot be combined with $y"), Nil)
+
       case (x: Alpha, y: TTypeParameter) =>
         (log.addWarn(s"$x != $y"), Nil)
       case (x: TTypeParameter, y: Alpha) =>
@@ -79,7 +134,10 @@ private[inference] def resolveEquivalenceAssertion(
         (log.addWarn(s"$x != $y"), Nil)
       case (_, y: PrimitiveType) =>
         (log.addWarn(s"$x != $y"), Nil)
-
+      case (Wildcard | _: ExtendsWildcardType | _: SuperWildcardType, _) =>
+        (log.addWarn(s"$x != $y"), Nil)
+      case (_, Wildcard | _: ExtendsWildcardType | _: SuperWildcardType) =>
+        (log.addWarn(s"$x != $y"), Nil)
 // case _ => ???
 
 // private[inference] def concretizeAlphaToPrimitive(
@@ -124,13 +182,13 @@ private[inference] def concretizeAlphaToReference(
     )
 
 private def resolveReferenceEquivalences(
-    x: ClassOrInterfaceType,
-    y: ClassOrInterfaceType,
+    x: SomeClassOrInterfaceType,
+    y: SomeClassOrInterfaceType,
     log: Log,
     config: Configuration
 ) =
   if x.identifier != y.identifier || x.numArgs != y.numArgs then (log.addWarn(s"$x != $y"), Nil)
-  else if x.numArgs == 0 then (log, Nil)
+  else if x.numArgs == 0 then (log.addWarn(s"$x != $y"), Nil)
   else
     val newAsst = x.args.zip(y.args).map(_ ~=~ _)
     (log, (config assertsAllOf newAsst) :: Nil)

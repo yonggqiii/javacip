@@ -301,7 +301,7 @@ class Method(
 
   def overrides(m: Method, config: Configuration): Boolean =
     if m.typeParameterBounds.size != typeParameterBounds.size then return false
-    if accessModifier < m.accessModifier then return false
+    // if accessModifier < m.accessModifier then return false
     val reordering = m.typeParameterBounds.map(_._1).zip(typeParameterBounds.map(_._1)).toMap
     val reorderedM = m.reorderTypeParameters(reordering)
     return (typeParameterBounds == reorderedM.typeParameterBounds && reorderedM.signature == signature && (config |- ((returnType <:~ reorderedM.returnType) || (returnType ~=~ reorderedM.returnType))))

@@ -36,7 +36,7 @@ given assertionOrdering: Ordering[Assertion] with
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case WideningAssertion(x, y) =>
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
-        case ImplementsMethodAssertion(t, m) => t.isInstanceOf[DisjunctiveType]
+        case ImplementsMethodAssertion(t, m, _) => t.isInstanceOf[DisjunctiveType]
     val (xdisj, ydisj) =
       (disjunctiveTester(x), disjunctiveTester(y))
     if xdisj && !ydisj then -1
@@ -352,7 +352,8 @@ case class IsNumericAssertion(t: Type) extends Assertion:
       newType: SomeClassOrInterfaceType
   ): IsNumericAssertion = IsNumericAssertion(t.combineTemporaryType(oldType, newType))
 
-case class ImplementsMethodAssertion(t: Type, m: Method) extends Assertion:
+case class ImplementsMethodAssertion(t: Type, m: Method, canBeAbstract: Boolean = false)
+    extends Assertion:
   override def toString = s"$t implements $m"
   def replace(oldType: InferenceVariable, newType: Type): ImplementsMethodAssertion =
     copy(t = t.replace(oldType, newType), m = m.replace(oldType, newType))
@@ -361,3 +362,19 @@ case class ImplementsMethodAssertion(t: Type, m: Method) extends Assertion:
       newType: SomeClassOrInterfaceType
   ): ImplementsMethodAssertion =
     copy(t = t.combineTemporaryType(oldType, newType), m = m.combineTemporaryType(oldType, newType))
+
+case class OverridesAssertion(overriding: Method, overridden: Method) extends Assertion:
+  override def toString = s"$overriding overrides $overridden"
+  def replace(oldType: InferenceVariable, newType: Type): OverridesAssertion =
+    copy(
+      overriding = overriding.replace(oldType, newType),
+      overridden = overridden.replace(oldType, newType)
+    )
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): OverridesAssertion =
+    copy(
+      overriding = overriding.combineTemporaryType(oldType, newType),
+      overridden = overridden.combineTemporaryType(oldType, newType)
+    )

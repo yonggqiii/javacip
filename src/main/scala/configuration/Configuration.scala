@@ -437,6 +437,7 @@ case class Configuration(
         case _                                      => false
     case x: CompatibilityAssertion    => false
     case x: ImplementsMethodAssertion => false
+    case OverridesAssertion(x, y)     => x.overrides(y, this)
     case x =>
       println(x)
       ???
@@ -540,6 +541,17 @@ case class Configuration(
 
     val newConstraintStore = MutableMap[String, MutableSet[Assertion]]()
 
+    val newTypes = ArrayBuffer[Type]()
+    for tt <- psi do
+      val x = tt.replace(oldType, newType)
+      newTypes += x
+      x match
+        case ExtendsWildcardType(upper)  => newTypes += upper
+        case SuperWildcardType(lower)    => newTypes += lower
+        case ArrayType(base)             => newTypes += base
+        case y: SomeClassOrInterfaceType => newTypes ++= y.args
+        case _                           => ()
+
     // populate the new constraint store
     for (id, set) <- constraintStore do
       if id != oldType.identifier then
@@ -596,6 +608,7 @@ case class Configuration(
                             .map(i => TypeParameterIndex(ac.identifier, i))
                             .toSet
                         )
+                      newTypes += createdAttrType
                       // update table in phi
                       newPhi1(ac.identifier) = newPhi1(ac.identifier).addAttribute(
                         attrName,
@@ -653,6 +666,7 @@ case class Configuration(
                           )
                         )
                         .toMap
+                    newTypes ++= tpMap.map((k, v) => v)
                     val conjAssertion = ArrayBuffer[Assertion]()
                     for i <- (0 until paramTypes.size) do
                       conjAssertion += paramTypes(i) <:~ realParamTypes(i).substitute(tpMap)
@@ -716,6 +730,7 @@ case class Configuration(
                           .map(i => TypeParameterIndex(ac.identifier, i))
                           .toSet
                       )
+                    newTypes += createdAttrType
                     // update table in phi
                     newPhi1(ac.identifier) = newPhi1(ac.identifier).addAttribute(
                       attrName,
@@ -774,6 +789,7 @@ case class Configuration(
                         )
                       )
                       .toMap
+                  newTypes ++= tpMap.map((k, v) => v)
                   val conjAssertion = ArrayBuffer[Assertion]()
                   for i <- (0 until paramTypes.size) do
                     conjAssertion += paramTypes(i) <:~ realParamTypes(i).substitute(tpMap)
@@ -817,7 +833,7 @@ case class Configuration(
         newPhi1.toMap,
         newPhi2.toMap,
         PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*),
-        psi.map(_.replace(oldType, newType)),
+        newTypes.toSet[Type],
         cu,
         _cache,
         newConstraintStore.map((s, v) => (s -> v.toSet)).toMap,
