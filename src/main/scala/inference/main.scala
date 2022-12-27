@@ -9,6 +9,7 @@ import inference.resolvers.resolve
 import inference.concretizers.concretize
 import inference.deconflicters.deconflict
 import inference.parameterizers.parameterizeMembers
+import inference.typecheckers.typecheck
 
 import scala.util.{Try, Success, Failure, Either, Left, Right}
 
@@ -38,7 +39,8 @@ private def infer(
         )
       if x.maxBreadth > 3 || x.maxDepth > 3 then infer(log, xs, a + 1)
       else
-        val res = resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers
+        val res =
+          resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers >>= typecheck
         if res.isLeft then
           val allConfigs = addAllToConfigs(xs, res.left.reverse)
           infer(res.log, allConfigs, a + 1)

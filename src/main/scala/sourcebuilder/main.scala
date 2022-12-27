@@ -7,7 +7,7 @@ import scala.jdk.OptionConverters.*
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.Modifier
-import com.github.javaparser.ast.body.FieldDeclaration
+import com.github.javaparser.ast.body.{FieldDeclaration, MethodDeclaration, Parameter}
 import com.github.javaparser.ast.`type`.{
   Type as ASTType,
   PrimitiveType as ASTPrimitiveType,
@@ -23,6 +23,7 @@ import configuration.Configuration
 import configuration.declaration.*
 import configuration.types.*
 import utils.*
+import com.github.javaparser.ast.expr.SimpleName
 
 val paramNameMemo = ArrayBuffer[String]()
 
@@ -64,7 +65,6 @@ def buildSource(log: Log, configuration: Configuration): (Log, Vector[Compilatio
     case None => ()
     case Some(x) =>
       res._2.foreach(y => y.setPackageDeclaration(x))
-
   (res._1, res._2 :+ originalCompilationUnit)
 
 def buildType(
@@ -124,6 +124,40 @@ def buildType(
         typeToASTType(attr.`type`, prohibitedNames),
         identifier
       )
+    )
+  )
+  decl.methods.foreach((identifier, v) =>
+    v.foreach(m =>
+      val methodTypeParameters = NodeList(
+        m.typeParameterBounds
+          .map(_._1)
+          .map(t => numToLetter(t.asInstanceOf[TypeParameterIndex].index, prohibitedNames))
+          .map(ASTTypeParameter(_)): _*
+      )
+
+      val md = MethodDeclaration()
+      md.setModifiers(m.getNodeListModifiers)
+      md.setName(SimpleName(identifier))
+      if !methodTypeParameters.isEmpty() then md.setTypeParameters(methodTypeParameters)
+      // create formal parameters
+      val params = (0 until m.signature.formalParameters.size).map(i =>
+        val t = m.signature.formalParameters(i)
+        Parameter(typeToASTType(t, prohibitedNames), s"arg$i")
+      )
+      if !params.isEmpty && m.signature.hasVarArgs then params(params.size - 1).setVarArgs(true)
+      if !params.isEmpty then md.setParameters(NodeList(params: _*))
+      md.setType(typeToASTType(m.returnType, prohibitedNames))
+      if !decl.mustBeClass then
+        md.setAbstract(true)
+        md.removeBody()
+      else
+        val bd = md.getBody().toScala.get // safe
+        if m.returnType != PRIMITIVE_VOID then
+          if m.returnType == PRIMITIVE_BOOLEAN then bd.addStatement("return false;")
+          else if m.returnType == PRIMITIVE_CHAR then bd.addStatement("return 'a';")
+          else if m.returnType.isInstanceOf[PrimitiveType] then bd.addStatement("return 0;")
+          else bd.addStatement("return null;")
+      classOrInterfaceDeclaration.addMember(md)
     )
   )
 

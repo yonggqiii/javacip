@@ -14,10 +14,12 @@ import scala.jdk.OptionConverters.*
 import scala.collection.mutable.Map as MutableMap
 import scala.collection.mutable.Set as MutableSet
 import scala.collection.mutable.{Queue, ArrayBuffer}
+import configuration.Configuration
 import configuration.MutableConfiguration
 import configuration.declaration.*
 import configuration.assertions.*
 import configuration.types.*
+import configuration.Invocation
 import utils.*
 import scala.annotation.tailrec
 
@@ -98,6 +100,37 @@ private def resolveScope(
       case x => x.upwardProjection
   )
 
+private def getAttributeTypeOrContainer(
+    config: MutableConfiguration,
+    currentType: ClassOrInterfaceType,
+    attributeName: String
+): Option[Either[Type, ClassOrInterfaceType]] =
+  if config._2._1.contains(currentType.identifier) then return Some(Right(currentType))
+  // is declared
+  if !config._1.contains(currentType.identifier) then
+    // is reflection type
+    try
+      val emptyConfig = Configuration.createEmptyConfiguration()
+      val x = emptyConfig
+        .getSubstitutedDeclaration(currentType)
+      val attributes = x.getAccessibleAttributes(emptyConfig, PUBLIC)
+      if !attributes.contains(attributeName) then return None
+      return Some(Left(attributes(attributeName).`type`))
+    catch
+      case _: Throwable =>
+        return None
+  // in delta
+  val (_, context) = currentType.expansion
+  val ud           = config._1(currentType.identifier)
+  if !ud.attributes.contains(attributeName) then
+    if !ud.isClass || ud.extendedTypes.isEmpty then return None
+    return getAttributeTypeOrContainer(
+      config,
+      ud.extendedTypes(0).substitute(context),
+      attributeName
+    )
+  return Some(Left(ud.attributes(attributeName).`type`.substitute(context)))
+
 private def resolveFieldAccessExpr(
     log: Log,
     expr: FieldAccessExpr,
@@ -107,31 +140,102 @@ private def resolveFieldAccessExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
-  catch
-    case _ =>
-      // If it gets here, then obviously either 1) the scope is declared
-      // and resolvable but doesnt have such field, or the scope is
-      // undeclared
-      // get the scope, and if its a type parameter, get its erasure
-      // if its a type parameter, it must definitely be in the source file
-      val logWithScope =
-        resolveScope(log, expr.getScope, config, memo)
-          .flatMap((l, t) =>
-            if t.isInstanceOf[InferenceVariable] && !config._2._2.contains(t) then
-              config._2._2(t) = InferenceVariableMemberTable(t)
-            if !config._2._1.contains(t.identifier) && !config._2._2
-                .contains(t)
-            then
-              LogWithOption(
-                l.addError(
-                  s"${t} is declared to not contain ${expr.getName.getIdentifier}"
-                ),
-                None
-              )
-            else LogWithOption(l, Some(t))
-          )
-      getAttrTypeFromMissingScope(logWithScope, expr, config, memo)
+  resolveScope(log, expr.getScope, config, memo).flatMap((log, uncapturedScope) =>
+    val scope = uncapturedScope.captured
+    if !scope.isInstanceOf[InferenceVariable] then
+      val attrTypeOrContainer = getAttributeTypeOrContainer(
+        config,
+        scope.asInstanceOf[ClassOrInterfaceType],
+        expr.getNameAsString
+      )
+      attrTypeOrContainer match
+        case None => LogWithNone(log.addError(s"cannot find ${expr.getNameAsString()} in $scope!"))
+        case Some(x) =>
+          x match
+            case Left(attrType) => LogWithSome(log, attrType)
+            case Right(missingType) =>
+              getAttrTypeFromMissingScope(LogWithSome(log, missingType), expr, config, memo)
+    else
+      if !config._2._2.contains(scope) then
+        config._2._2(scope) = InferenceVariableMemberTable(scope)
+      getAttrTypeFromMissingScope(LogWithSome(log, scope), expr, config, memo)
+  )
+//     // might be a declared type
+//     var shouldntBreak = true
+//     var curr = scope
+//     var found = false
+//     var res: Type = null
+//     while shouldntBreak do
+//       if !config._2._1.contains(curr.identifier) then
+//         // must be declared
+//         // is it a reflection type?
+//         if !config._1.contains(curr.identifier) then
+//           // is reflection type
+//           try
+//             val emptyConfig = Configuration.createEmptyConfiguration()
+//             val x = emptyConfig
+//               .getSubstitutedDeclaration(curr.asInstanceOf[ClassOrInterfaceType])
+//             val attributes    = x.getAccessibleAttributes(emptyConfig, PUBLIC)
+//             val attributeName = expr.getNameAsString()
+//             if !attributes.contains(attributeName) then
+//               shouldntBreak = false
+//               LogWithNone(log.addError(s"$curr was not declared to have $attributeName!"))
+//             else
+//               shouldntBreak = false
+//               LogWithSome(log, attributes(attributeName))
+//           catch
+//             case _: Throwable =>
+//               shouldntBreak = false
+//               LogWithNone(log.addError(s"no such reflection type $curr!"))
+//         else
+//           // in delta
+//           val (_, context) = curr.expansion
+//           val ud = config._1(curr.identifier)
+//           val attributeName = expr.getNameAsString()
+//           if !ud.attributes.contains(attributeName) then
+//             if !ud.isClass || ud.extendedTypes.isEmpty then
+//               shouldntBreak = false
+//               LogWithNone(log.addError(s"$curr is not a class and shouldnt have attributes, or it does not extend any class and itself does not have $attributeName"))
+//             else
+//               curr = ud.extendedTypes(0).substitute(context)
+//           else LogWithSome(log, ud.attributes(attributeName))
+
+//     else
+//       // missing
+//       ???
+//   else
+//     // unknown
+// //     ???
+// //   println(scope)
+// // )
+// println(expr.calculateResolvedType())
+// try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
+// catch
+//   case _ =>
+//     // If it gets here, then obviously either 1) the scope is declared
+//     // and resolvable but doesnt have such field, or the scope is
+//     // undeclared
+//     // get the scope, and if its a type parameter, get its erasure
+//     // if its a type parameter, it must definitely be in the source file
+//     val logWithScope =
+//       resolveScope(log, expr.getScope, config, memo)
+//         .flatMap((l, t) =>
+//           println(t)
+//           val tt = t.captured
+//           if tt.isInstanceOf[InferenceVariable] && !config._2._2.contains(tt) then
+//             config._2._2(tt) = InferenceVariableMemberTable(tt)
+//           if !config._2._1.contains(tt.identifier) && !config._2._2
+//               .contains(tt)
+//           then
+//             LogWithOption(
+//               l.addError(
+//                 s"${tt} is declared to not contain ${expr.getName.getIdentifier}"
+//               ),
+//               None
+//             )
+//           else LogWithOption(l, Some(tt))
+//         )
+//     getAttrTypeFromMissingScope(logWithScope, expr, config, memo)
 
 private def getAttrTypeFromMissingScope(
     logWithScope: LogWithOption[Type],
@@ -147,7 +251,6 @@ private def getAttrTypeFromMissingScope(
     config._3 += IsClassAssertion(scope)
     // get substitutions in scope
     val (_, context) = scope.expansion
-//    val context = scope.substitutions
     // get identifier of attribute
     val attributeIdentifier = expr.getName.getIdentifier
     // get type declaration of scope
@@ -496,29 +599,36 @@ private def resolveMethodFromResolvedType(
     ],
     scope: ResolvedType
 ): LogWithOption[Type] =
-  if scope.isPrimitive then
-    // LogWithOption(log.addError(s"${scope} cannot have methods!"), None)
+  if scope.isPrimitive then LogWithOption(log.addError(s"${scope} cannot have methods!"), None)
+  // resolveMethodFromABunchOfResolvedReferenceTypes(
+  //   log,
+  //   expr,
+  //   config,
+  //   memo,
+  //   Vector(
+  //     com.github.javaparser.symbolsolver.resolution.typeinference.TypeHelper
+  //       .toBoxedType(scope.asPrimitive)
+  //       .asReferenceType
+  //   )
+  // )
+  else if scope.isTypeVariable then
+    val bounds = getAllBoundsOfResolvedTypeParameterDeclaration(scope.asTypeParameter)
     resolveMethodFromABunchOfResolvedReferenceTypes(
       log,
       expr,
       config,
       memo,
-      Vector(
-        com.github.javaparser.symbolsolver.resolution.typeinference.TypeHelper
-          .toBoxedType(scope.asPrimitive)
-          .asReferenceType
-      )
+      bounds,
+      resolveSolvedType(scope)
     )
-  else if scope.isTypeVariable then
-    val bounds = getAllBoundsOfResolvedTypeParameterDeclaration(scope.asTypeParameter)
-    resolveMethodFromABunchOfResolvedReferenceTypes(log, expr, config, memo, bounds)
   else
     resolveMethodFromABunchOfResolvedReferenceTypes(
       log,
       expr,
       config,
       memo,
-      Vector(scope.asReferenceType)
+      Vector(scope.asReferenceType),
+      resolveSolvedType(scope)
     )
 
 private def getMethodsFromResolvedReferenceType(t: ResolvedReferenceType): Set[MethodUsage] =
@@ -542,7 +652,8 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
       (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
       Option[Type]
     ],
-    scope: Vector[ResolvedReferenceType]
+    scope: Vector[ResolvedReferenceType],
+    originalScope: Type
 ): LogWithOption[Type] =
   // get all the supertypes where methods may be defined
   val allSupertypes = scope
@@ -560,7 +671,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         .hasVariadicParameter() && x.getParamTypes.size < numOfArguments))
     )
     .toVector
-
+  val paramChoices = getParamChoicesFromExpression(expr)
   // get all of the missing supertypes
   val missingSupertypes = allSupertypes
     .filter(x => config._2._1.contains(x.getId))
@@ -586,11 +697,13 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     // to this method
     val method = relevantMethods(0)
     originalArguments
-      .rightmap(matchMethodCallToMethodUsage(method, _, expr, config))
-      .rightmap(x =>
+      .rightmap(v => (v -> matchMethodCallToMethodUsage(method, v, expr, config)))
+      .rightmap((args, x) =>
         x._1.foreach(y => config._3 += y)
+        config._5 += Invocation(originalScope, nameOfMethod, args, x._2, paramChoices)
         x._2
       )
+
   // case of no methods and only one missing supertype
   else if relevantMethods.size == 0 && missingSupertypes.size == 1 then
     // get and/or add the method to the declaration since we must be
@@ -601,7 +714,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     val missingDeclaration = config._2._1(missingTType.identifier)
     // the context (type arguments) of this type
     val (_, context) = missingTType.expansion
-    val paramChoices = getParamChoicesFromExpression(expr)
+
     val z = originalArguments.rightflatMap(argTypes =>
       missingDeclaration.getMethodReturnType(nameOfMethod, argTypes, paramChoices, context)
     )
@@ -627,6 +740,13 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
               paramChoices,
               context
             ))
+          config._5 += Invocation(
+            originalScope,
+            nameOfMethod,
+            args,
+            returnType,
+            paramChoices
+          )
           returnType
         )
   else
@@ -634,6 +754,9 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     // and encode the choices using a dijunctive assertion of conjuctive assertions
     val returnType = createReturnTypeFromContext(expr, config)
     config._4 += returnType
+    originalArguments.rightmap(v =>
+      config._5 += Invocation(originalScope, nameOfMethod, v, returnType, paramChoices)
+    )
     // assertions from the bunch of declared methods (might be empty)
     val ambiguousDeclaredMethods = originalArguments
       .rightmap(args =>
@@ -643,7 +766,6 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         val (assts, rt) = tp
         ConjunctiveAssertion(assts :+ (returnType ~=~ rt))
       )
-    val paramChoices = getParamChoicesFromExpression(expr)
     val ambiguousMissingTypes = originalArguments.rightmap(args =>
       // create conjunctive assertions
       missingSupertypes.map(rrt =>
@@ -729,7 +851,7 @@ private def createTypeArgumentFromContext(
   )
 
   val iv = InferenceVariableFactory
-    .createDisjunctiveType(source, Nil, true, parameterChoices, false)
+    .createDisjunctiveType(source, Nil, true, parameterChoices, true)
   config._2._2(iv) = InferenceVariableMemberTable(iv)
   iv
 
@@ -862,6 +984,13 @@ private def resolveMethodFromDisjunctiveType(
           callSiteParameterChoices
         )
         config._2._2(scope) = newTable
+        config._5 += Invocation(
+          scope,
+          methodName,
+          v,
+          returnType,
+          callSiteParameterChoices
+        )
         returnType
   )
 

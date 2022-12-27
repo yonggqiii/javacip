@@ -19,6 +19,8 @@ private[inference] def resolveEquivalenceAssertion(
       case (Bottom, _)          => (log.addWarn(s"$x != $y"), Nil)
       case (_, Bottom)          => (log.addWarn(s"$x != $y"), Nil)
       case (Wildcard, Wildcard) => (log, config :: Nil)
+      case (x: Capture, _)      => (log.addWarn(s"$x != $y!"), Nil)
+      case (_, x: Capture)      => (log.addWarn(s"$x != $y!"), Nil)
       case (a: PlaceholderType, b) =>
         (
           log.addInfo(s"replacing $a with $b"),

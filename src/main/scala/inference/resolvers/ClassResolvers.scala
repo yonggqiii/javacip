@@ -31,3 +31,4 @@ private def resolveIsClassAssertion(
       case x: PrimitiveType =>
         (log.addWarn(s"$x cannot be a class"), Nil)
       case (Bottom | Wildcard | _: ExtendsWildcardType | _: SuperWildcardType) => ???
+      case x: ArrayType => (log.addInfo(s"assume arrays are classes"), config :: Nil)

@@ -45,6 +45,7 @@ case class Configuration(
     phi2: Map[Type, InferenceVariableMemberTable],
     omega: PriorityQueue[Assertion],
     psi: Set[Type],
+    theta: Set[Invocation],
     cu: CompilationUnit,
     _cache: MutableMap[String, FixedDeclaration] = MutableMap(),
     constraintStore: Map[String, Set[Assertion]] = Map(),
@@ -110,6 +111,7 @@ case class Configuration(
           phi2.map((k, v) => k.combineTemporaryType(t, other) -> v.combineTemporaryType(t, other)),
           PriorityQueue(newOmega.toSeq: _*),
           newPsi,
+          theta.map(_.combineTemporaryType(t, other)),
           cu,
           _cache,
           newConstraintStore,
@@ -255,6 +257,7 @@ case class Configuration(
         phi2.map((k, v) => k.combineTemporaryType(t, other) -> v.combineTemporaryType(t, other)),
         PriorityQueue(newOmega.toSeq: _*),
         newPsi,
+        theta.map(_.combineTemporaryType(t, other)),
         cu,
         _cache,
         newConstraintStore,
@@ -443,6 +446,10 @@ case class Configuration(
       ???
   private def proveEquivalence(a: Type, b: Type): Boolean =
     (a, b) match
+      case (x: Capture, y: Capture) =>
+        x == y
+      case (x: Capture, _) => false
+      case (_, x: Capture) => false
       case (x @ (_: Alpha | _: PlaceholderType), _) =>
         constraintStore.contains(x.identifier) && constraintStore(x.identifier).contains(a ~=~ b)
       case (_, x @ (_: Alpha | _: PlaceholderType)) =>
@@ -834,6 +841,7 @@ case class Configuration(
         newPhi2.toMap,
         PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*),
         newTypes.toSet[Type],
+        theta.map(_.replace(oldType, newType)),
         cu,
         _cache,
         newConstraintStore.map((s, v) => (s -> v.toSet)).toMap,
@@ -934,6 +942,7 @@ case class Configuration(
       "\n\nOmega:\n" +
       omega.mkString("\n") +
       "\n\nPsi: " + psi.mkString(", ") +
+      "\n\nTheta: " + theta.mkString(", ") +
       "\n\nConstraint store:\n" + constraintStore
         .map((id, s) => s"$id: [${s.mkString(", ")}]")
         .mkString("\n") +
@@ -990,7 +999,7 @@ case class Configuration(
         throw RuntimeException(
           s"$t and its underlying declaration have different number of parameters!"
         )
-      val (_, substitution) = t.expansion
+      val (_, substitution) = t.captured.expansion
       ud.substitute(substitution)
 
   /** Obtains the declaration of some declared type
@@ -1055,3 +1064,7 @@ case class Configuration(
   def getMissingDeclaration(t: SomeClassOrInterfaceType): Option[MissingTypeDeclaration] =
     if phi1.contains(t.identifier) then Some(phi1(t.identifier))
     else None
+
+object Configuration:
+  def createEmptyConfiguration() =
+    Configuration(Map(), Map(), Map(), PriorityQueue(), Set(), Set(), null)

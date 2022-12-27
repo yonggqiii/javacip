@@ -293,6 +293,16 @@ class Method(
     val isStatic: Boolean,
     val isFinal: Boolean
 ) extends MethodLike:
+  def getNodeListModifiers: NodeList[Modifier] =
+    val res: NodeList[Modifier] = NodeList()
+    accessModifier match
+      case DEFAULT   => ()
+      case PUBLIC    => res.add(Modifier.publicModifier())
+      case PROTECTED => res.add(Modifier.protectedModifier())
+      case PRIVATE   => res.add(Modifier.privateModifier())
+    if isStatic then res.add(Modifier.staticModifier())
+    if isFinal then res.add(Modifier.finalModifier())
+    res
   // make sure the modifiers make sense
   if isAbstract && (isStatic || isFinal) then
     throw new java.lang.IllegalArgumentException(

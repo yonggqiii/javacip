@@ -14,14 +14,16 @@ private def checkNoDuplicates(
   for (k, v) <- decl.methods do
     for i <- 0 until v.size do
       for j <- (i + 1) until v.size do
+        //if x == "B" then println(s"checking ${v(i)} and ${v(j)}")
         if !v(i).isInstanceOf[MethodWithContext] &&
           !v(j).isInstanceOf[MethodWithContext] &&
-          v(i).signature.erased == v(j).signature.erased
+          v(i).signature.erased(decl) == v(j).signature.erased(decl)
         then
-          // println(s"$x failed")
+          println(s"$x failed")
           return LogWithLeft(
             log.addWarn(s"$x has two methods of the same erasure: ${v(i)} and ${v(j)}"),
             Nil
           )
-  // println(x)
-  return LogWithRight(log, config)
+  //else if x == "B" then println(s"${v(i)} and ${v(j)} passed")
+  //if x == "B" then println(decl)
+  return LogWithRight(log.addInfo(s"seriously?"), config)

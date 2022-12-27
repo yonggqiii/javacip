@@ -48,9 +48,11 @@ private type MutablePhi = (
     MutableMap[String, MissingTypeDeclaration],
     MutableMap[Type, InferenceVariableMemberTable]
 )
-private type MutableOmega         = MutableSet[Assertion]
-private type MutablePsi           = MutableSet[Type]
-private type MutableConfiguration = (MutableDelta, MutablePhi, MutableOmega, MutablePsi)
+private type MutableOmega = MutableSet[Assertion]
+private type MutablePsi   = MutableSet[Type]
+private type MutableTheta = MutableSet[Invocation]
+private type MutableConfiguration =
+  (MutableDelta, MutablePhi, MutableOmega, MutablePsi, MutableTheta)
 
 /** Parses the configuration of the algorithm given the file path of the Java source code
   * @param log
@@ -89,7 +91,7 @@ def parseConfiguration(
   ///////// Step 3 /////////
   // 3a
   val c: MutableConfiguration =
-    (MutableMap(), (MutableMap(), MutableMap()), MutableSet(), MutableSet())
+    (MutableMap(), (MutableMap(), MutableMap()), MutableSet(), MutableSet(), MutableSet())
   val decls =
     s.rightmap(x => (x, x.findAll(classOf[ClassOrInterfaceDeclaration]).asScala.toVector))
   // 3b and 3c
@@ -103,10 +105,14 @@ def parseConfiguration(
         x._2._2.toMap,
         PriorityQueue(x._3.toList: _*),
         x._4.toSet,
+        x._5.toSet,
         o.opt.get // safe since decls already depends on s
       )
     )
-    .map((l, c) => (l.addSuccess("Successfully built configuration", c.toString), c))
+    .map((l, c) =>
+      println(c)
+      (l.addSuccess("Successfully built configuration", c.toString), c)
+    )
 
 private def visitAll(
     log: Log,

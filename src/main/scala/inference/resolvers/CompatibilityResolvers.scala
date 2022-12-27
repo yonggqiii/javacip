@@ -18,7 +18,7 @@ private def resolveCompatibilityAssertion(
    * 3) boxed(source) <: target
    * 4) unboxed(source) <<~= target
    */
-  (source.upwardProjection, target.downwardProjection) match
+  (source.captured.upwardProjection, target.downwardProjection) match
     case (s, t) if t == OBJECT =>
       (log, config :: Nil)
     case (s: PrimitiveType, t: PrimitiveType) =>
@@ -28,6 +28,8 @@ private def resolveCompatibilityAssertion(
           t @ (_: SomeClassOrInterfaceType | _: Alpha)
         ) =>
       (log, (config asserts (s <:~ t)) :: Nil)
+    case (PRIMITIVE_VOID, s) =>
+      (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
     case (s: Alpha, t: PrimitiveType) =>
       val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
       val P = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
@@ -74,7 +76,7 @@ private def resolveCompatibilityAssertion(
       // case 4
       val case4Assertion =
         (s ~=~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
-      println(s"case: $a")
+      // println(s"case: $a, $s, $t")
       (
         log,
         (config asserts case1Assertion) ::

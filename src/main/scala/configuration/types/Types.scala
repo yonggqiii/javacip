@@ -67,6 +67,8 @@ sealed trait Type:
 
   def breadth: Int
   def depth: Int
+  def captured: Type
+  def wildcardCaptured: Type
 
   /** Asserts that this type is compatible with another type
     * @param that
@@ -277,8 +279,43 @@ sealed trait Type:
 
   def expansion: (Type, Substitution)
 
+case class Capture(id: Int, lowerBound: Type, upperBound: Type) extends Type:
+  override def toString()       = s"$identifier extends $upperBound super $lowerBound"
+  val args                      = Vector()
+  val numArgs                   = 0
+  def breadth                   = lowerBound.breadth.max(upperBound.breadth)
+  def depth                     = lowerBound.depth.max(upperBound.depth) + 1
+  def captured: Capture         = this
+  def wildcardCaptured: Capture = this
+  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Capture =
+    copy(
+      lowerBound = lowerBound.combineTemporaryType(oldType, newType),
+      upperBound = upperBound.combineTemporaryType(oldType, newType)
+    )
+  val upwardProjection   = upperBound.upwardProjection
+  val downwardProjection = lowerBound.downwardProjection
+  def expansion          = (this, Map())
+  val identifier         = s"CAP$id"
+  def raw                = this
+  def substitute(function: Substitution): Capture = copy(
+    lowerBound = lowerBound.substitute(function),
+    upperBound = upperBound.substitute(function)
+  )
+  def isSomehowUnknown: Boolean = lowerBound.isSomehowUnknown || upperBound.isSomehowUnknown
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Capture = copy(
+    lowerBound = lowerBound.reorderTypeParameters(scheme),
+    upperBound = upperBound.reorderTypeParameters(scheme)
+  )
+
+  def replace(oldType: InferenceVariable, newType: Type): Capture = copy(
+    lowerBound = lowerBound.replace(oldType, newType),
+    upperBound = upperBound.replace(oldType, newType)
+  )
+
 /** The primitive types */
 sealed trait PrimitiveType extends Type:
+  def captured: Type         = this
+  def wildcardCaptured: Type = this
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
@@ -319,8 +356,10 @@ sealed trait PrimitiveType extends Type:
 final case class ArrayType(
     base: Type
 ) extends Type:
-  def breadth = 0
-  def depth   = base.depth
+  def captured: ArrayType         = copy(base = base.captured)
+  def wildcardCaptured: ArrayType = copy(base = base.wildcardCaptured)
+  def breadth                     = 0
+  def depth                       = base.depth
   override def toString =
     base.toString + "[]"
   val identifier                    = base.identifier + "[]"
@@ -366,7 +405,9 @@ final case class ClassOrInterfaceType(
     identifier: String,
     args: Vector[Type]
 ) extends SomeClassOrInterfaceType:
-  def breadth = args.size
+  def wildcardCaptured: ClassOrInterfaceType = this
+  def captured: ClassOrInterfaceType         = copy(identifier, args.map(_.wildcardCaptured))
+  def breadth                                = args.size
   def depth   = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
   val numArgs = args.size
   override def toString =
@@ -547,6 +588,8 @@ case object PRIMITIVE_VOID extends PrimitiveType:
 
 /** The bottom type, usually a null */
 case object Bottom extends Type:
+  def captured: Bottom.type                                                           = this
+  def wildcardCaptured: Bottom.type                                                   = this
   def breadth                                                                         = 0
   def depth                                                                           = 0
   val upwardProjection: Bottom.type                                                   = this
@@ -565,8 +608,10 @@ case object Bottom extends Type:
 
 /** the `?` type */
 case object Wildcard extends Type:
-  def breadth                                                                           = 0
-  def depth                                                                             = 0
+  def captured: Wildcard.type = this
+  def wildcardCaptured: Type  = InferenceVariableFactory.createCapture(Bottom, OBJECT)
+  def breadth                 = 0
+  def depth                   = 0
   val upwardProjection: ClassOrInterfaceType                                            = OBJECT
   val downwardProjection: Bottom.type                                                   = Bottom
   val identifier                                                                        = "?"
@@ -588,6 +633,8 @@ case object Wildcard extends Type:
 final case class ExtendsWildcardType(
     upper: Type
 ) extends Type:
+  def captured: ExtendsWildcardType   = this
+  def wildcardCaptured: Capture       = InferenceVariableFactory.createCapture(Bottom, upper)
   def breadth                         = upper.breadth
   def depth                           = upper.depth
   val identifier                      = ""
@@ -619,6 +666,8 @@ final case class ExtendsWildcardType(
 final case class SuperWildcardType(
     lower: Type
 ) extends Type:
+  def captured: SuperWildcardType            = this
+  def wildcardCaptured: Capture              = InferenceVariableFactory.createCapture(lower, OBJECT)
   def breadth                                = lower.breadth
   def depth                                  = lower.depth
   val identifier                             = ""
@@ -650,8 +699,10 @@ final case class SuperWildcardType(
 
 /** A type parameter of some sort */
 sealed trait TTypeParameter extends Type:
-  def breadth = 0
-  def depth   = 0
+  def captured: TTypeParameter         = this
+  def wildcardCaptured: TTypeParameter = this
+  def breadth                          = 0
+  def depth                            = 0
   val upwardProjection: TTypeParameter
   val downwardProjection: TTypeParameter
   def replace(oldType: InferenceVariable, newType: Type): TTypeParameter
@@ -731,6 +782,9 @@ final case class TypeParameterName(
 
 /** Some placeholder for inference */
 sealed trait InferenceVariable extends Type:
+  val toBeCaptured: Boolean
+  val toBeWildcardCaptured: Boolean
+
   /** the ID of this type */
   val id: Int
   def isSomehowUnknown = true
@@ -757,10 +811,14 @@ final case class TemporaryType(
     args: Vector[Type]
 ) extends InferenceVariable,
       SomeClassOrInterfaceType:
-  override def breadth = args.size
-  override def depth   = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
-  val numArgs          = args.size
-  val identifier       = s"ξ$id"
+  val toBeCaptured: Boolean           = false
+  val toBeWildcardCaptured: Boolean   = false
+  def captured                        = copy(args = args.map(_.wildcardCaptured))
+  def wildcardCaptured: TemporaryType = this
+  override def breadth                = args.size
+  override def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
+  val numArgs        = args.size
+  val identifier     = s"ξ$id"
   override def toString =
     val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
     s"$identifier$a"
@@ -793,7 +851,11 @@ final case class TemporaryType(
   * @param id
   *   the ID of this type
   */
-final case class PlaceholderType(id: Int) extends InferenceVariable:
+final case class PlaceholderType(
+    id: Int,
+    toBeCaptured: Boolean = false,
+    toBeWildcardCaptured: Boolean = false
+) extends InferenceVariable:
   val substitutions                       = Nil
   val numArgs                             = 0
   val identifier                          = s"δ$id"
@@ -801,8 +863,12 @@ final case class PlaceholderType(id: Int) extends InferenceVariable:
   val downwardProjection: PlaceholderType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this
+    else if toBeCaptured then newType.captured
+    else if toBeWildcardCaptured then newType.wildcardCaptured
     else newType
-  val args                                                                                = Vector()
+  def captured: PlaceholderType         = copy(toBeCaptured = true)
+  def wildcardCaptured: PlaceholderType = copy(toBeWildcardCaptured = true)
+  val args                              = Vector()
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PlaceholderType = this
   def substitute(function: Substitution): PlaceholderType                                 = this
   def combineTemporaryType(
@@ -832,9 +898,13 @@ final case class ReferenceOnlyDisjunctiveType(
     substitutions: SubstitutionList = Nil,
     canBeSubsequentlyBounded: Boolean = false,
     parameterChoices: Set[TTypeParameter] = Set(),
-    choices: Vector[Type] = Vector()
+    choices: Vector[Type] = Vector(),
+    toBeCaptured: Boolean = false,
+    toBeWildcardCaptured: Boolean = false
 ) extends DisjunctiveType:
-  val numArgs = 0
+  def captured: Type         = copy(toBeCaptured = true)
+  def wildcardCaptured: Type = copy(toBeWildcardCaptured = true)
+  val numArgs                = 0
   val identifier =
     val str = choices.mkString(", ")
     s"τ$id=V{$str}"
@@ -852,6 +922,9 @@ final case class ReferenceOnlyDisjunctiveType(
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then
       copy(source = newSource, substitutions = newSubstitutions, choices = newChoices)
+    else if toBeCaptured then substitutions.foldLeft(newType)((t, s) => t.substitute(s)).captured
+    else if toBeWildcardCaptured then
+      substitutions.foldLeft(newType)((t, s) => t.substitute(s)).wildcardCaptured
     else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
   val args = Vector()
   override def ⊆(that: Type): Boolean = that match
@@ -897,8 +970,12 @@ final case class PrimitivesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
   ): PrimitivesOnlyDisjunctiveType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
-  val choices = PRIMITIVES.toVector
-  val args    = Vector()
+  val choices                                         = PRIMITIVES.toVector
+  val toBeCaptured: Boolean                           = false
+  val toBeWildcardCaptured: Boolean                   = false
+  def captured: PrimitivesOnlyDisjunctiveType         = this
+  def wildcardCaptured: PrimitivesOnlyDisjunctiveType = this
+  val args                                            = Vector()
   def reorderTypeParameters(
       scheme: Map[TTypeParameter, TTypeParameter]
   ): PrimitivesOnlyDisjunctiveType = this
@@ -917,6 +994,10 @@ final case class BoxesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): BoxesOnlyDisjunctiveType = this
+  val toBeCaptured: Boolean                      = false
+  val toBeWildcardCaptured: Boolean              = false
+  def captured: BoxesOnlyDisjunctiveType         = this
+  def wildcardCaptured: BoxesOnlyDisjunctiveType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
   val choices = BOXES.toVector
@@ -938,8 +1019,12 @@ final case class DisjunctiveTypeWithPrimitives(
     id: Int,
     substitutions: SubstitutionList = Nil,
     parameterChoices: Set[TTypeParameter] = Set(),
-    choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES
+    choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES,
+    toBeCaptured: Boolean = false,
+    toBeWildcardCaptured: Boolean = true
 ) extends DisjunctiveType:
+  def captured: DisjunctiveTypeWithPrimitives         = copy(toBeCaptured = true)
+  def wildcardCaptured: DisjunctiveTypeWithPrimitives = copy(toBeWildcardCaptured = true)
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
@@ -960,6 +1045,9 @@ final case class DisjunctiveTypeWithPrimitives(
     val newChoices       = choices.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then copy(substitutions = newSubstitutions, choices = newChoices)
+    else if toBeCaptured then substitutions.foldLeft(newType)((t, s) => t.substitute(s)).captured
+    else if toBeWildcardCaptured then
+      substitutions.foldLeft(newType)((t, s) => t.substitute(s)).wildcardCaptured
     else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
   val args = Vector()
   def reorderTypeParameters(
@@ -989,8 +1077,12 @@ final case class VoidableDisjunctiveType(
     id: Int,
     substitutions: SubstitutionList = Nil,
     parameterChoices: Set[TTypeParameter] = Set(),
-    choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES :+ PRIMITIVE_VOID
+    choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES :+ PRIMITIVE_VOID,
+    toBeCaptured: Boolean = false,
+    toBeWildcardCaptured: Boolean = false
 ) extends DisjunctiveType:
+  def captured: VoidableDisjunctiveType         = copy(toBeCaptured = true)
+  def wildcardCaptured: VoidableDisjunctiveType = copy(toBeWildcardCaptured = true)
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
@@ -1011,6 +1103,10 @@ final case class VoidableDisjunctiveType(
     val newChoices       = choices.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then copy(substitutions = newSubstitutions, choices = newChoices)
+    //else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
+    else if toBeCaptured then substitutions.foldLeft(newType)((t, s) => t.substitute(s)).captured
+    else if toBeWildcardCaptured then
+      substitutions.foldLeft(newType)((t, s) => t.substitute(s)).wildcardCaptured
     else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
   val args = Vector()
   def reorderTypeParameters(
@@ -1053,8 +1149,12 @@ final case class Alpha(
     source: Either[String, Type],
     substitutions: SubstitutionList = Nil,
     canBeBounded: Boolean = false,
-    parameterChoices: Set[TTypeParameter] = Set()
+    parameterChoices: Set[TTypeParameter] = Set(),
+    toBeCaptured: Boolean = false
 ) extends InferenceVariable:
+  val toBeWildcardCaptured: Boolean = false
+  def captured: Alpha               = copy(toBeCaptured = true)
+  def wildcardCaptured: Alpha       = this
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
@@ -1102,6 +1202,9 @@ final case class Alpha(
     val newSource        = source.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
     if id != oldType.id then copy(source = newSource, substitutions = newSubstitutions)
+    else if toBeCaptured then substitutions.foldLeft(newType)((t, s) => t.substitute(s)).captured
+    else if toBeWildcardCaptured then
+      substitutions.foldLeft(newType)((t, s) => t.substitute(s)).wildcardCaptured
     else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
   def substituted = this
   val args        = Vector()
@@ -1150,16 +1253,6 @@ final case class Alpha(
         .toVector
     )
 
-  // def concretizeToArray(): ArrayType =
-  //   ArrayType(
-  //     InferenceVariableFactory.createDisjunctiveType(
-  //       source,
-  //       Nil,
-  //       canBeBounded,
-  //       parameterChoices,
-  //       false
-  //     )
-  //   )
   override def ⊆(that: Type): Boolean = that match
     case x: Alpha => this.id == x.id
     case _        => super.⊆(that)
@@ -1237,6 +1330,10 @@ object InferenceVariableFactory:
         parameterChoices
       )
     DisjunctiveTypeWithPrimitives(myID, substitutions, parameterChoices, choices)
+
+  def createCapture(lowerBound: Type, upperBound: Type) =
+    id += 1
+    Capture(id, lowerBound, upperBound)
 
   def createVoidableDisjunctiveType(
       source: scala.util.Either[String, Type],
