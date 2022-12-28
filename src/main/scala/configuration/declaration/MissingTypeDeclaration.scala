@@ -187,8 +187,8 @@ class MissingTypeDeclaration(
       else a
   //  if it mustn't be an interface then best not to assume that it is
   val isInterface = mustBeInterface
-  // if it musn't be an interface then there is no reason for it to be abstract
-  val isAbstract = mustBeInterface
+  // if it is not a class then it is abstract
+  val isAbstract = !mustBeClass
   // there is never a reason for this type declaration to be false
   val isFinal = false
 

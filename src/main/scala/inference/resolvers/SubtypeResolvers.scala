@@ -98,6 +98,16 @@ private[inference] def resolveSubtypeAssertion(
       addToConstraintStore(delta, a, log, config)
     case (_, delta: PlaceholderType) =>
       addToConstraintStore(delta, a, log, config)
+    case (iv: JavaInferenceVariable, b) =>
+      (
+        log.addInfo(s"adding $b as supertype of $iv"),
+        config.addSupertypeToJavaInferenceVariable(iv, b) :: Nil
+      )
+    case (b, iv: JavaInferenceVariable) =>
+      (
+        log.addInfo(s"adding $b as subtype of $iv"),
+        config.addSubtypeToJavaInferenceVariable(iv, b) :: Nil
+      )
     case x =>
       println(x)
       println(a)

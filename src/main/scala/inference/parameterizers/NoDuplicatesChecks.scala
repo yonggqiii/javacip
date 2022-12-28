@@ -26,4 +26,4 @@ private def checkNoDuplicates(
           )
   //else if x == "B" then println(s"${v(i)} and ${v(j)} passed")
   //if x == "B" then println(decl)
-  return LogWithRight(log.addInfo(s"seriously?"), config)
+  return LogWithRight(log, config)

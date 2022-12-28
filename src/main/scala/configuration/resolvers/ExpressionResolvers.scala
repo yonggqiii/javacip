@@ -542,7 +542,7 @@ private def resolveMethodCallExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
+  try ??? //LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
   catch
     case e: Throwable =>
       expr.getScope.toScala match
@@ -563,7 +563,13 @@ private def resolveMethodCallExpr(
               resolveExpression(log, x, config, memo).flatMap((newLog, t) =>
                 t match
                   case x: InferenceVariable =>
-                    resolveMethodFromDisjunctiveType(newLog, expr, config, memo, x)
+                    resolveMethodFromDisjunctiveType(
+                      newLog,
+                      expr,
+                      config,
+                      memo,
+                      x.captured.asInstanceOf[InferenceVariable]
+                    )
                   case _ => ???
               )
         case None =>
@@ -600,17 +606,6 @@ private def resolveMethodFromResolvedType(
     scope: ResolvedType
 ): LogWithOption[Type] =
   if scope.isPrimitive then LogWithOption(log.addError(s"${scope} cannot have methods!"), None)
-  // resolveMethodFromABunchOfResolvedReferenceTypes(
-  //   log,
-  //   expr,
-  //   config,
-  //   memo,
-  //   Vector(
-  //     com.github.javaparser.symbolsolver.resolution.typeinference.TypeHelper
-  //       .toBoxedType(scope.asPrimitive)
-  //       .asReferenceType
-  //   )
-  // )
   else if scope.isTypeVariable then
     val bounds = getAllBoundsOfResolvedTypeParameterDeclaration(scope.asTypeParameter)
     resolveMethodFromABunchOfResolvedReferenceTypes(
@@ -619,7 +614,7 @@ private def resolveMethodFromResolvedType(
       config,
       memo,
       bounds,
-      resolveSolvedType(scope)
+      resolveSolvedType(scope).captured
     )
   else
     resolveMethodFromABunchOfResolvedReferenceTypes(
@@ -628,21 +623,69 @@ private def resolveMethodFromResolvedType(
       config,
       memo,
       Vector(scope.asReferenceType),
-      resolveSolvedType(scope)
+      resolveSolvedType(scope).captured
     )
 
-private def getMethodsFromResolvedReferenceType(t: ResolvedReferenceType): Set[MethodUsage] =
-  val tpMap   = t.getTypeParametersMap.asScala.toList
-  val methods = t.getDeclaredMethods.asScala.toSet
-  methods.map(substituteTypeParametersInMethodUsage(tpMap, _))
+// private def getMethodsFromResolvedReferenceType(t: ResolvedReferenceType): Set[MethodUsage] =
+//   val tpMap   = t.getTypeParametersMap.asScala.toList
+//   val methods = t.getDeclaredMethods.asScala.toSet
+//   methods.map(substituteTypeParametersInMethodUsage(tpMap, _))
 
-@tailrec
-private def substituteTypeParametersInMethodUsage(
-    tpMap: List[Pair[ResolvedTypeParameterDeclaration, ResolvedType]],
-    m: MethodUsage
-): MethodUsage = tpMap match
-  case x :: xs => substituteTypeParametersInMethodUsage(xs, m.replaceTypeParameter(x.a, x.b))
-  case Nil     => m
+// @tailrec
+// private def substituteTypeParametersInMethodUsage(
+//     tpMap: List[Pair[ResolvedTypeParameterDeclaration, ResolvedType]],
+//     m: MethodUsage
+// ): MethodUsage = tpMap match
+//   case x :: xs => substituteTypeParametersInMethodUsage(xs, m.replaceTypeParameter(x.a, x.b))
+//   case Nil     => m
+
+// private def getAllKnownSupertypes(
+//     config: MutableConfiguration,
+//     types: Vector[ClassOrInterfaceType],
+//     exclusions: Set[String] = Set()
+// ): Set[ClassOrInterfaceType] =
+//   types.toSet.flatMap(x => getAllKnownSuperTypesOfOneType(config, x))
+
+private def getAllKnownSuperTypesOfOneType(
+    config: MutableConfiguration,
+    t: ClassOrInterfaceType,
+    exclusions: Set[String]
+): Set[ClassOrInterfaceType] =
+  if exclusions.contains(t.identifier) then return Set()
+  // is it declared?
+  if !config._2._1.contains(t.identifier) && !config._1.contains(t.identifier) then
+    // reflection
+    val ec = Configuration.createEmptyConfiguration()
+    return ec.getAllKnownSupertypes(t).map(_.asInstanceOf[ClassOrInterfaceType]) + t
+  val decl: Declaration =
+    if config._2._1.contains(t.identifier) then config._2._1(t.identifier)
+    else config._1(t.identifier)
+  val (_, context) = t.expansion
+  val s =
+    decl.getDirectAncestors
+      .map(_.asInstanceOf[ClassOrInterfaceType])
+      .map(_.substitute(context))
+      .toSet
+  //getAllKnownSupertypes(config, s, exclusions + t.identifier)
+  s.flatMap(x => getAllKnownSuperTypesOfOneType(config, x, exclusions + (t.identifier))) + t
+
+def getAllRelevantMethods(
+    t: ClassOrInterfaceType,
+    config: MutableConfiguration,
+    nameOfMethod: String,
+    numArgs: Int
+): Vector[Method] =
+  val sd =
+    if !config._1.contains(t.identifier) then
+      val c = Configuration.createEmptyConfiguration()
+      c.getSubstitutedDeclaration(t)
+    else
+      val ud           = config._1(t.identifier)
+      val (_, context) = t.expansion
+      ud.substitute(context)
+  val methods = sd.methods
+  if !methods.contains(nameOfMethod) then Vector()
+  else methods(nameOfMethod).filter(m => m.callableWithNArgs(numArgs))
 
 private def resolveMethodFromABunchOfResolvedReferenceTypes(
     log: Log,
@@ -656,60 +699,80 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     originalScope: Type
 ): LogWithOption[Type] =
   // get all the supertypes where methods may be defined
-  val allSupertypes = scope
-    .flatMap(x => x.getAllAncestors.asScala.toVector :+ x)
-    .toSet
+  val capturedScopes = scope
+    .map(resolveSolvedType(_))
+    .map(_.captured)
+    .map(_.asInstanceOf[ClassOrInterfaceType])
+    .toSet[ClassOrInterfaceType]
+    .flatMap(x => getAllKnownSuperTypesOfOneType(config, x, Set()))
+  val (missingScopes, fixedScopes) =
+    capturedScopes.partition(x => config._2._1.contains(x.identifier))
+  // val allSupertypes = scope
+  //   .flatMap(x => x.getAllAncestors.asScala.toVector :+ x)
+  //   .toSet
   val nameOfMethod   = expr.getNameAsString
   val numOfArguments = expr.getArguments.size
   // get all the relevant methods, i.e. the methods in the supertypes
   // that are of the same name and arity
-  val relevantMethods = allSupertypes.toSet
-    .flatMap(getMethodsFromResolvedReferenceType(_))
-    .filter(x =>
-      x.getName == nameOfMethod && (x.getParamTypes.size == numOfArguments || (x
-        .getDeclaration()
-        .hasVariadicParameter() && x.getParamTypes.size < numOfArguments))
-    )
+  // val relevantMethods = allSupertypes.toSet
+  //   .flatMap(getMethodsFromResolvedReferenceType(_))
+  //   .filter(x =>
+  //     x.getName == nameOfMethod && (x.getParamTypes.size == numOfArguments || (x
+  //       .getDeclaration()
+  //       .hasVariadicParameter() && x.getParamTypes.size < numOfArguments))
+  //   )
+  //   .toVector
+  val relevantMethods = fixedScopes
+    .flatMap(getAllRelevantMethods(_, config, nameOfMethod, numOfArguments))
     .toVector
   val paramChoices = getParamChoicesFromExpression(expr)
   // get all of the missing supertypes
-  val missingSupertypes = allSupertypes
-    .filter(x => config._2._1.contains(x.getId))
-    .toVector
+  // val missingSupertypes = allSupertypes
+  //   .filter(x => config._2._1.contains(x.getId))
+  //   .toVector
 
   // get the types of the arguments suplied to the method
   val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
     resolveExpression(_, _, config, memo)
   )
   // case of no methods and no missing supertypes
-  if relevantMethods.size == 0 && missingSupertypes.size == 0 then
+  if relevantMethods.size == 0 && missingScopes.size == 0 then
     LogWithOption(
       log.addError(
         s"$expr cannot be resolved",
         s"method declaration for ${nameOfMethod} cannot be" +
-          s" found in fully-declared ${if scope.size == 1 then scope(0) else scope}"
+          s" found in fully-declared ${originalScope}"
       ),
       None
     )
   // case of only one method and no missing supertypes
-  else if relevantMethods.size == 1 && missingSupertypes.size == 0 then
+  else if relevantMethods.size == 1 && missingScopes.size == 0 then
     // get the method in question since we unambiguously must be referring
     // to this method
     val method = relevantMethods(0)
     originalArguments
-      .rightmap(v => (v -> matchMethodCallToMethodUsage(method, v, expr, config)))
+      .rightmap(v => (v -> method.callWith(v, paramChoices)))
       .rightmap((args, x) =>
         x._1.foreach(y => config._3 += y)
         config._5 += Invocation(originalScope, nameOfMethod, args, x._2, paramChoices)
         x._2
       )
 
+  // originalArguments
+  //   .rightmap(v => (v -> matchMethodCallToMethodUsage(method, v, expr, config)))
+  //   .rightmap((args, x) =>
+  //     x._1.foreach(y => config._3 += y)
+  //     config._5 += Invocation(originalScope, nameOfMethod, args, x._2, paramChoices)
+  //     x._2
+  //   )
+
   // case of no methods and only one missing supertype
-  else if relevantMethods.size == 0 && missingSupertypes.size == 1 then
+  else if relevantMethods.size == 0 && missingScopes.size == 1 then
     // get and/or add the method to the declaration since we must be
     // umambiguously referring to this method
     // the type itself; safe since its a missing type, must be a ClassOrInterfaceType
-    val missingTType = resolveSolvedType(missingSupertypes(0)).asInstanceOf[ClassOrInterfaceType]
+    val missingTType = missingScopes.toVector(0)
+    //resolveSolvedType(missingScopes(0)).asInstanceOf[ClassOrInterfaceType]
     // the declaration of the type
     val missingDeclaration = config._2._1(missingTType.identifier)
     // the context (type arguments) of this type
@@ -751,26 +814,44 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         )
   else
     // we're not sure what the return type should be, so we have a placeholder
-    // and encode the choices using a dijunctive assertion of conjuctive assertions
-    val returnType = createReturnTypeFromContext(expr, config)
+    // and encode the choices using a disjunctive assertion of conjuctive assertions
+    val returnType = InferenceVariableFactory.createPlaceholderType()
     config._4 += returnType
     originalArguments.rightmap(v =>
       config._5 += Invocation(originalScope, nameOfMethod, v, returnType, paramChoices)
     )
+    val missingReturnType = createReturnTypeFromContext(expr, config)
+    config._4 += missingReturnType
+    // val returnType = createReturnTypeFromContext(expr, config)
+    // config._4 += returnType
+    // originalArguments.rightmap(v =>
+    //   config._5 += Invocation(originalScope, nameOfMethod, v, returnType, paramChoices)
+    // )
     // assertions from the bunch of declared methods (might be empty)
+    // val ambiguousDeclaredMethods = originalArguments
+    //   .rightmap(args => relevantMethods.map(method => matchMethodCallToMethodUsage(method, args, expr, config))
+    //   )
+    //   .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion](tp =>
+    //     val (assts, rt) = tp
+    //     ConjunctiveAssertion(assts :+ (returnType ~=~ rt))
+    //   )
     val ambiguousDeclaredMethods = originalArguments
-      .rightmap(args =>
-        relevantMethods.map(method => matchMethodCallToMethodUsage(method, args, expr, config))
+      .rightmap(args => relevantMethods.map(method => method.callWith(args, paramChoices)))
+      .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion]((argsAssts, rt) =>
+        ConjunctiveAssertion(argsAssts :+ (returnType ~=~ rt))
       )
-      .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion](tp =>
-        val (assts, rt) = tp
-        ConjunctiveAssertion(assts :+ (returnType ~=~ rt))
-      )
+
     val ambiguousMissingTypes = originalArguments.rightmap(args =>
       // create conjunctive assertions
-      missingSupertypes.map(rrt =>
-        val missingTType = resolveSolvedType(rrt).asInstanceOf[ClassOrInterfaceType]
-        HasMethodAssertion(missingTType, nameOfMethod, args, returnType, paramChoices)
+      missingScopes.map(rrt =>
+        // val missingTType = resolveSolvedType(rrt).asInstanceOf[ClassOrInterfaceType]
+        HasMethodAssertion(
+          rrt,
+          nameOfMethod,
+          args,
+          missingReturnType,
+          paramChoices
+        ) && returnType ~=~ missingReturnType
       )
     )
     (ambiguousDeclaredMethods, ambiguousMissingTypes) match
@@ -877,47 +958,47 @@ def getParamChoicesFromExpression(expr: Expression) =
           .map(i => TypeParameterIndex(x.getName.getIdentifier, i))
   methodTypeParams.map(resolveSolvedTypeVariable(_)).toSet ++ classTypeParams
 
-private def matchMethodCallToMethodUsage(
-    method: MethodUsage,
-    arguments: Vector[Type],
-    expr: MethodCallExpr,
-    config: MutableConfiguration
-): (Vector[Assertion], Type) =
-  // get the type parameters of the method
-  val methodDeclaration = method.getDeclaration
-  val containingType    = methodDeclaration.declaringType
-  val typeParams        = methodDeclaration.getTypeParameters.asScala.toVector
-  // substitute type parameters with inference variables
-  val substitution: Substitution = typeParams
-    .map(tpd =>
-      // create the type parameter
-      val p = TypeParameterName(
-        containingType.getQualifiedName,
-        tpd.getContainerId,
-        tpd.getName
-      )
-      // create the inference variable
-      val iv = createTypeArgumentFromContext(expr, config)
-      config._4 += iv
-      // add new inference variable to phi
-      config._2._2(iv) = InferenceVariableMemberTable(iv)
-      // return mapping
-      p -> iv
-    )
-    .toMap
-  // get the types of the formal parameters
-  val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
-  // size of originalArguments may not be the same as actualMethodTypes, because it is
-  // of variable arity
-  val ab: ArrayBuffer[Assertion] = ArrayBuffer()
-  val x = (0 until arguments.size)
-    .map(i =>
-      if i >= actualMethodTypes.size then
-        arguments(i) =:~ actualMethodTypes(actualMethodTypes.size - 1)
-      else arguments(i) =:~ actualMethodTypes(i)
-    )
-    .toVector
-  (x, resolveSolvedType(method.returnType).substitute(substitution))
+// private def matchMethodCallToMethodUsage(
+//     method: MethodUsage,
+//     arguments: Vector[Type],
+//     expr: MethodCallExpr,
+//     config: MutableConfiguration
+// ): (Vector[Assertion], Type) =
+//   // get the type parameters of the method
+//   val methodDeclaration = method.getDeclaration
+//   val containingType    = methodDeclaration.declaringType
+//   val typeParams        = methodDeclaration.getTypeParameters.asScala.toVector
+//   // substitute type parameters with inference variables
+//   val substitution: Substitution = typeParams
+//     .map(tpd =>
+//       // create the type parameter
+//       val p = TypeParameterName(
+//         containingType.getQualifiedName,
+//         tpd.getContainerId,
+//         tpd.getName
+//       )
+//       // create the inference variable
+//       val iv = createTypeArgumentFromContext(expr, config)
+//       config._4 += iv
+//       // add new inference variable to phi
+//       config._2._2(iv) = InferenceVariableMemberTable(iv)
+//       // return mapping
+//       p -> iv
+//     )
+//     .toMap
+//   // get the types of the formal parameters
+//   val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
+//   // size of originalArguments may not be the same as actualMethodTypes, because it is
+//   // of variable arity
+//   val ab: ArrayBuffer[Assertion] = ArrayBuffer()
+//   val x = (0 until arguments.size)
+//     .map(i =>
+//       if i >= actualMethodTypes.size then
+//         arguments(i) =:~ actualMethodTypes(actualMethodTypes.size - 1)
+//       else arguments(i) =:~ actualMethodTypes(i)
+//     )
+//     .toVector
+//   (x, resolveSolvedType(method.returnType).substitute(substitution))
 
 private def getAllBoundsOfResolvedTypeParameterDeclaration(
     tp: ResolvedTypeParameterDeclaration

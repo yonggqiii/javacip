@@ -30,14 +30,21 @@ private def resolveCompatibilityAssertion(
       (log, (config asserts (s <:~ t)) :: Nil)
     case (PRIMITIVE_VOID, s) =>
       (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
+    case (s, PRIMITIVE_VOID) =>
+      (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
     case (s: Alpha, t: PrimitiveType) =>
       val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
       val P = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
       val asst =
         (s <:~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
       (log, (config.addToPsi(B).addToPsi(P) asserts asst) :: Nil)
-    case (s: PrimitiveType, t: SomeClassOrInterfaceType) =>
+    case (
+          s: PrimitiveType,
+          t @ (_: SomeClassOrInterfaceType | _: Alpha | _: JavaInferenceVariable)
+        ) =>
       (log, (config asserts (s.boxed <:~ t)) :: Nil)
+    case (s: JavaInferenceVariable, t: PrimitiveType) =>
+      (log, config.addCompatibileTargetToJavaInferenceVariable(s, t) :: Nil)
     case (s @ (_: Alpha | _: PlaceholderType), t @ (_: Alpha | _: PlaceholderType)) =>
       val (l, c) = addToConstraintStore(s, a, log, config)
       addToConstraintStore(t, a, l, c.head)
@@ -50,12 +57,12 @@ private def resolveCompatibilityAssertion(
       else (log.addWarn(s"$s does not unbox to something that widens to $t"), Nil)
     case (s: TTypeParameter, t: ClassOrInterfaceType) =>
       (log, (config asserts s <:~ t) :: Nil)
-    case (Bottom, t: ClassOrInterfaceType) =>
-      (log, config :: Nil)
-    case (Bottom, Bottom) =>
+    case (Bottom, _) =>
       (log, config :: Nil)
     case (s, Bottom) =>
       (log.addWarn(s"$Bottom := $s will always be false"), Nil)
+    case (s: SomeClassOrInterfaceType, t: JavaInferenceVariable) =>
+      (log, config.asserts(s <:~ t) :: Nil)
     case (s: ArrayType, t) =>
       (log, (config asserts (s <:~ t)) :: Nil)
     case (s, t: ArrayType) =>
@@ -76,7 +83,7 @@ private def resolveCompatibilityAssertion(
       // case 4
       val case4Assertion =
         (s ~=~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
-      // println(s"case: $a, $s, $t")
+      println(s"case: $a, $s, $t")
       (
         log,
         (config asserts case1Assertion) ::

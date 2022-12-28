@@ -24,7 +24,13 @@ private[inference] def resolve(
             .map(_.get)
             .toList
         )
-      case None => LogWithRight(log, config)
+      case None =>
+        if config.javaIVBounds.isEmpty then LogWithRight(log, config)
+        else
+          LogWithLeft(
+            log,
+            (config.liftOneJavaInferenceVariable() :: Nil).filter(_.isDefined).map(_.get)
+          )
   //if config.isComplete then LogWithRight(log, config)
   else
     val (asst, newConfig) = config.pop()

@@ -312,6 +312,31 @@ case class Capture(id: Int, lowerBound: Type, upperBound: Type) extends Type:
     upperBound = upperBound.replace(oldType, newType)
   )
 
+case class JavaInferenceVariable(
+    id: Int,
+    paramChoices: Set[TTypeParameter],
+    canBeSubsequentlyBounded: Boolean
+) extends InferenceVariable:
+  val identifier = s"iv$id"
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): JavaInferenceVariable = this
+  def replace(oldType: InferenceVariable, newType: Type): Type =
+    if oldType == this then newType else this
+  def substitute(function: Substitution): JavaInferenceVariable = this
+  val substitutions: SubstitutionList                           = Nil
+  val toBeCaptured: Boolean                                     = false
+  val toBeWildcardCaptured: Boolean                             = false
+  def captured: JavaInferenceVariable                           = this
+  def wildcardCaptured: JavaInferenceVariable                   = this
+  val args: Vector[Type]                                        = Vector()
+  val numArgs: Int                                              = 0
+  val upwardProjection: JavaInferenceVariable                   = this
+  val downwardProjection: JavaInferenceVariable                 = this
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): JavaInferenceVariable =
+    this
+
 /** The primitive types */
 sealed trait PrimitiveType extends Type:
   def captured: Type         = this
@@ -1150,7 +1175,8 @@ final case class Alpha(
     substitutions: SubstitutionList = Nil,
     canBeBounded: Boolean = false,
     parameterChoices: Set[TTypeParameter] = Set(),
-    toBeCaptured: Boolean = false
+    toBeCaptured: Boolean = false,
+    canBeTemporaryType: Boolean = true
 ) extends InferenceVariable:
   val toBeWildcardCaptured: Boolean = false
   def captured: Alpha               = copy(toBeCaptured = true)
@@ -1190,14 +1216,7 @@ final case class Alpha(
     val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
     val subsstring = substitutions.map(subs => s"{${subsFn(subs)}}").mkString
     s"$identifier$subsstring"
-  def addSubstitutionLists(substitutions: SubstitutionList) =
-    Alpha(
-      id,
-      source,
-      (this.substitutions ::: substitutions).filter(!_.isEmpty),
-      canBeBounded,
-      parameterChoices
-    )
+
   def replace(oldType: InferenceVariable, newType: Type): Type =
     val newSource        = source.map(_.replace(oldType, newType))
     val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
@@ -1287,7 +1306,8 @@ object InferenceVariableFactory:
       substitutions: SubstitutionList = Nil,
       canBeSubsequentlyBounded: Boolean = false,
       parameterChoices: Set[TTypeParameter] = Set(),
-      canBeBounded: Boolean = false
+      canBeBounded: Boolean = false,
+      canBeUnknown: Boolean = true
   ) =
     id += 1
     val myID = id
@@ -1300,7 +1320,7 @@ object InferenceVariableFactory:
           parameterChoices
         )
       else
-        val alpha       = createAlpha(source, Nil, true, parameterChoices)
+        val alpha       = createAlpha(source, Nil, true, parameterChoices, canBeUnknown)
         val baseChoices = parameterChoices.toVector :+ alpha
         val supers      = baseChoices.map(SuperWildcardType(_))
         val extend      = baseChoices.map(ExtendsWildcardType(_))
@@ -1318,16 +1338,18 @@ object InferenceVariableFactory:
       source: scala.util.Either[String, Type],
       substitutions: SubstitutionList = Nil,
       canBeSubsequentlyBounded: Boolean = false,
-      parameterChoices: Set[TTypeParameter] = Set()
+      parameterChoices: Set[TTypeParameter] = Set(),
+      canBeUnknown: Boolean = true
   ) =
     id += 1
     val myID = id
     val choices: Vector[Type] =
-      parameterChoices.toVector ++ PRIMITIVES.toVector :+ createAlpha(
+      PRIMITIVES_ASCENDING_NO_VOID ++ parameterChoices.toVector :+ createAlpha(
         source,
         Nil,
         canBeSubsequentlyBounded,
-        parameterChoices
+        parameterChoices,
+        canBeUnknown
       )
     DisjunctiveTypeWithPrimitives(myID, substitutions, parameterChoices, choices)
 
@@ -1339,17 +1361,26 @@ object InferenceVariableFactory:
       source: scala.util.Either[String, Type],
       substitutions: SubstitutionList = Nil,
       canBeSubsequentlyBounded: Boolean = false,
-      parameterChoices: Set[TTypeParameter] = Set()
+      parameterChoices: Set[TTypeParameter] = Set(),
+      canBeUnknown: Boolean = true
   ) =
     id += 1
     val myID = id
     val choices: Vector[Type] =
-      (parameterChoices.toVector ++ PRIMITIVES.toVector :+ PRIMITIVE_VOID :+ createAlpha(
+      PRIMITIVES_DESCENDING ++ parameterChoices.toVector :+ createAlpha(
         source,
         Nil,
         canBeSubsequentlyBounded,
-        parameterChoices
-      ))
+        parameterChoices,
+        canBeUnknown
+      )
+    // ((PRIMITIVE_VOID +: (parameterChoices.toVector ++ PRIMITIVES.toVector)) :+ createAlpha(
+    //   source,
+    //   Nil,
+    //   canBeSubsequentlyBounded,
+    //   parameterChoices,
+    //   canBeUnknown
+    // ))
     VoidableDisjunctiveType(myID, substitutions, parameterChoices, choices)
 
   def createPrimitivesOnlyDisjunctiveType() =
@@ -1359,6 +1390,13 @@ object InferenceVariableFactory:
   def createBoxesOnlyDisjunctiveType() =
     id += 1
     BoxesOnlyDisjunctiveType(id)
+
+  def createJavaInferenceVariable(
+      paramChoices: Set[TTypeParameter],
+      canBeSubsequentlyBounded: Boolean = false
+  ) =
+    id += 1
+    JavaInferenceVariable(id, paramChoices, canBeSubsequentlyBounded)
 
   /** Creates a new alpha
     * @param source
@@ -1377,10 +1415,11 @@ object InferenceVariableFactory:
       source: scala.util.Either[String, Type],
       substitutions: SubstitutionList = Nil,
       canBeBounded: Boolean = false,
-      parameterChoices: Set[TTypeParameter] = Set()
+      parameterChoices: Set[TTypeParameter] = Set(),
+      canBeUnknown: Boolean = true
   ) =
     id += 1
-    Alpha(id, source, substitutions, canBeBounded, parameterChoices)
+    Alpha(id, source, substitutions, canBeBounded, parameterChoices, false, canBeUnknown)
 
   /** Creates a generic placeholder type
     * @return
@@ -1423,13 +1462,15 @@ val WIDENING_RELATION: Set[(Type, Type)] = Set(
   (PRIMITIVE_LONG, PRIMITIVE_FLOAT),
   (PRIMITIVE_LONG, PRIMITIVE_DOUBLE), // transitive
   (PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE),
-  (PRIMITIVE_BYTE, PRIMITIVE_BYTE),    // reflexive
-  (PRIMITIVE_SHORT, PRIMITIVE_SHORT),  // reflexive
-  (PRIMITIVE_CHAR, PRIMITIVE_CHAR),    // reflexive
-  (PRIMITIVE_INT, PRIMITIVE_INT),      // reflexive
-  (PRIMITIVE_LONG, PRIMITIVE_LONG),    // reflexive
-  (PRIMITIVE_FLOAT, PRIMITIVE_FLOAT),  // reflexive
-  (PRIMITIVE_DOUBLE, PRIMITIVE_DOUBLE) // reflexive
+  (PRIMITIVE_BYTE, PRIMITIVE_BYTE),      // reflexive
+  (PRIMITIVE_SHORT, PRIMITIVE_SHORT),    // reflexive
+  (PRIMITIVE_CHAR, PRIMITIVE_CHAR),      // reflexive
+  (PRIMITIVE_INT, PRIMITIVE_INT),        // reflexive
+  (PRIMITIVE_LONG, PRIMITIVE_LONG),      // reflexive
+  (PRIMITIVE_FLOAT, PRIMITIVE_FLOAT),    // reflexive
+  (PRIMITIVE_DOUBLE, PRIMITIVE_DOUBLE),  // reflexive
+  (PRIMITIVE_VOID, PRIMITIVE_VOID),      // reflexive
+  (PRIMITIVE_BOOLEAN, PRIMITIVE_BOOLEAN) // reflexive
 )
 
 val BOX_RELATION: Set[(PrimitiveType, ClassOrInterfaceType)] = Set(
@@ -1440,8 +1481,32 @@ val BOX_RELATION: Set[(PrimitiveType, ClassOrInterfaceType)] = Set(
   (PRIMITIVE_LONG, BOXED_LONG),
   (PRIMITIVE_FLOAT, BOXED_FLOAT),
   (PRIMITIVE_DOUBLE, BOXED_DOUBLE),
-  (PRIMITIVE_BOOLEAN, BOXED_BOOLEAN)
+  (PRIMITIVE_BOOLEAN, BOXED_BOOLEAN),
+  (PRIMITIVE_VOID, BOXED_VOID)
 )
 val UNBOX_RELATION: Set[(ClassOrInterfaceType, PrimitiveType)] = BOX_RELATION.map { case (x, y) =>
   (y, x)
 }
+
+val PRIMITIVES_ASCENDING_NO_VOID = Vector(
+  PRIMITIVE_BOOLEAN,
+  PRIMITIVE_BYTE,
+  PRIMITIVE_SHORT,
+  PRIMITIVE_CHAR,
+  PRIMITIVE_INT,
+  PRIMITIVE_LONG,
+  PRIMITIVE_FLOAT,
+  PRIMITIVE_DOUBLE
+)
+
+val PRIMITIVES_DESCENDING = Vector(
+  PRIMITIVE_VOID,
+  PRIMITIVE_BOOLEAN,
+  PRIMITIVE_DOUBLE,
+  PRIMITIVE_FLOAT,
+  PRIMITIVE_LONG,
+  PRIMITIVE_INT,
+  PRIMITIVE_CHAR,
+  PRIMITIVE_SHORT,
+  PRIMITIVE_BYTE
+)

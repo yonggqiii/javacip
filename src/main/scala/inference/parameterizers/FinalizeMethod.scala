@@ -37,7 +37,8 @@ private def finalizeMethod(
         .map(_.asNArgs(methodToFinalize.signature.formalParameters.size))
   val configsFromExistingMethods = candidates
     .map(m => generateCompatibleAssertion(methodToFinalize, m))
-    .map((assts, types) => newConfig.assertsAllOf(assts).addAllToPsi(types))
+    .map(assts => newConfig.assertsAllOf(assts))
+  // .map((assts, types) => newConfig.assertsAllOf(assts).addAllToPsi(types))
   val newMethods =
     (0 to 3).map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
   val configWithAddedMethod = newMethods.map((mtd, types) =>
@@ -52,7 +53,7 @@ private def finalizeMethod(
   )
   val configWithAddedAssertionsAndTypes = configWithAddedMethod.map((cfg, mtd) =>
     val res = generateCompatibleAssertion(methodToFinalize, mtd)
-    cfg.assertsAllOf(res._1).addAllToPsi(res._2)
+    cfg.assertsAllOf(res) //.addAllToPsi(res._2)
   )
   LogWithLeft(
     log.addInfo(s"combining $methodToFinalize"),
@@ -67,8 +68,11 @@ private def generateNewMethod(
   val classTP = (0 until decl.numParams).map(i => TypeParameterIndex(decl.identifier, i))
   val numFPs  = methodToFinalize.signature.formalParameters.size
   val newTPs =
-    ((decl.numParams + decl.methodTypeParameterBounds.size) until numTypeParams).map(i =>
-      TypeParameterIndex(decl.identifier, i)
+    (0 until numTypeParams).map(i =>
+      TypeParameterIndex(
+        decl.identifier,
+        i + (decl.numParams + decl.methodTypeParameterBounds.size)
+      )
     )
   val newTPBounds: Vector[(TTypeParameter, Vector[Type])] =
     newTPs.map(x => (x, Vector())).toVector
@@ -82,7 +86,7 @@ private def generateNewMethod(
       )
     )
     .toVector
-  val newReturnType = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+  val newReturnType = InferenceVariableFactory.createVoidableDisjunctiveType(
     scala.util.Left(""),
     Nil,
     true,
@@ -104,28 +108,32 @@ private def generateNewMethod(
 private def generateCompatibleAssertion(
     source: MethodWithContext,
     target: Method
-): (Vector[Assertion], Vector[Type]) =
-  val methodTypeParameters = target.typeParameterBounds.map(_._1)
-  val newIVs = (0 until methodTypeParameters.size).map(i =>
-    InferenceVariableFactory.createDisjunctiveType(
-      scala.util.Left(""),
-      Nil,
-      true,
-      source.callSiteParameterChoices,
-      true
-    )
-  )
-  val methodTPMap = methodTypeParameters.zip(newIVs).toMap
-  val boundsAssertions = newIVs
-    .zip(target.typeParameterBounds.map(_._2))
-    .flatMap((v, b) => b.map(t => v <:~ (t.substitute(methodTPMap).substitute(source.context))))
-  val fpAssertions = source.signature.formalParameters
-    .zip(
-      target.signature.formalParameters.map(t =>
-        t substitute methodTPMap substitute (source.context)
-      )
-    )
-    .map(_ =:~ _)
-  val returnTypeAssertion =
-    target.returnType.substitute(methodTPMap).substitute(source.context) =:~ source.returnType
-  (fpAssertions ++ boundsAssertions :+ returnTypeAssertion, newIVs.toVector)
+): Vector[Assertion] =
+  val res = target
+    .substitute(source.context)
+    .callWith(source.signature.formalParameters, source.callSiteParameterChoices)
+  res._1 :+ ((res._2 <:~ source.returnType) || (res._2 <<~= source.returnType))
+// val methodTypeParameters = target.typeParameterBounds.map(_._1)
+// val newIVs = (0 until methodTypeParameters.size).map(i =>
+//   InferenceVariableFactory.createDisjunctiveType(
+//     scala.util.Left(""),
+//     Nil,
+//     true,
+//     source.callSiteParameterChoices,
+//     true
+//   )
+// )
+// val methodTPMap = methodTypeParameters.zip(newIVs).toMap
+// val boundsAssertions = newIVs
+//   .zip(target.typeParameterBounds.map(_._2))
+//   .flatMap((v, b) => b.map(t => v <:~ (t.substitute(methodTPMap).substitute(source.context))))
+// val fpAssertions = source.signature.formalParameters
+//   .zip(
+//     target.signature.formalParameters.map(t =>
+//       t substitute methodTPMap substitute (source.context)
+//     )
+//   )
+//   .map(_ =:~ _)
+// val returnTypeAssertion =
+//   target.returnType.substitute(methodTPMap).substitute(source.context) =:~ source.returnType
+// (fpAssertions ++ boundsAssertions :+ returnTypeAssertion, newIVs.toVector)

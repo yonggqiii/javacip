@@ -6,6 +6,7 @@ import com.github.javaparser.ast.Modifier
 import com.github.javaparser.ast.NodeList
 import configuration.Configuration
 import configuration.types.*
+import configuration.assertions.*
 
 /** An access modifier in a Java program */
 sealed trait AccessModifier:
@@ -293,6 +294,24 @@ class Method(
     val isStatic: Boolean,
     val isFinal: Boolean
 ) extends MethodLike:
+  def callWith(
+      args: Vector[Type],
+      callSiteParameterChoices: Set[TTypeParameter]
+  ): (Vector[Assertion], Type) =
+    if !this.callableWithNArgs(args.size) then ???
+    val tps = typeParameterBounds.map(_._1)
+    val tpMap = tps
+      .map(x =>
+        (x -> InferenceVariableFactory.createJavaInferenceVariable(callSiteParameterChoices, true))
+      )
+      .toMap
+    val subtpBounds =
+      typeParameterBounds.map((k, v) => (k.substitute(tpMap) -> v.map(x => x.substitute(tpMap))))
+    val boundsAssts  = subtpBounds.flatMap((k, v) => v.map(b => k <:~ b))
+    val formalParams = signature.asNArgs(args.size).formalParameters.map(_.substitute(tpMap))
+    val paramAssts   = args.zip(formalParams).map((l, r) => l =:~ r)
+    (boundsAssts ++ paramAssts, returnType.substitute(tpMap))
+
   def getNodeListModifiers: NodeList[Modifier] =
     val res: NodeList[Modifier] = NodeList()
     accessModifier match
