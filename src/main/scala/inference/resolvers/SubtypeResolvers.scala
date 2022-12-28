@@ -66,6 +66,15 @@ private[inference] def resolveSubtypeAssertion(
     case (m: SomeClassOrInterfaceType, n: SomeClassOrInterfaceType)
         if m.identifier == n.identifier =>
       `resolve τ<...> <: τ<...>`(m, n, log, config)
+    case (m: TemporaryType, n: TemporaryType) =>
+      val combineAttempt = config.asserts(m <:~ n).combineTemporaryType(m, n)
+      val nonCombineAttempt =
+        `resolve Reference <: Reference`(m, n, log, config.addExclusion(m, n).addExclusion(n, m))
+      combineAttempt match
+        case None => nonCombineAttempt
+        case Some(x) =>
+          val (log, left) = nonCombineAttempt
+          (log.addInfo(s"successfully combined $m with $n"), x :: left)
     case (m: TemporaryType, n: SomeClassOrInterfaceType) =>
       val combineAttempt    = config.asserts(m <:~ n).combineTemporaryType(m, n)
       val nonCombineAttempt = `resolve Reference <: Reference`(m, n, log, config.addExclusion(m, n))
@@ -189,7 +198,7 @@ private def `resolve TypeParam <: Type`(
     config: Configuration
 ) =
   val source = subtype.containingTypeIdentifier
-  val decl   = config.getUnderlyingDeclaration(ClassOrInterfaceType(source))
+  val decl   = config.getUnderlyingDeclaration(SomeClassOrInterfaceType(source))
   val bounds = decl.getAllReferenceTypeBoundsOfTypeParameter(subtype)
   (
     log.addInfo(s"expanding assertion on $subtype to assertions on its bounds"),
@@ -264,7 +273,7 @@ private def `resolve Reference <: Reference`(
         else
           // make greedily extend
           val supertypeNumParams = config.getUnderlyingDeclaration(supertype).numParams
-          val newSupertype = ClassOrInterfaceType(
+          val newSupertype = SomeClassOrInterfaceType(
             supertype.identifier,
             (0 until supertypeNumParams)
               .map(i =>
@@ -307,7 +316,7 @@ private def `resolve Reference <: Reference`(
 
 private def `resolve Alpha <: Ref`(
     subtype: Alpha,
-    supertype: ClassOrInterfaceType,
+    supertype: SomeClassOrInterfaceType,
     log: Log,
     config: Configuration
 ) =

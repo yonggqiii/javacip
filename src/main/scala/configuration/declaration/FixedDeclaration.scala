@@ -189,10 +189,10 @@ class FixedDeclaration(
       case ArrayType(base)            => ArrayType(getErasure(base))
       case Bottom                     => Bottom
       case ExtendsWildcardType(upper) => getErasure(upper)
-      case x: ClassOrInterfaceType    => x.raw
-      case SuperWildcardType(lower)   => OBJECT
-      case Wildcard                   => OBJECT
-      case x                          => x
+      case x: SomeClassOrInterfaceType => x.raw
+      case SuperWildcardType(lower)    => OBJECT
+      case Wildcard                    => OBJECT
+      case x                           => x
 
   /** Obtains the vector of methods that have conflicting signatures
     * @return

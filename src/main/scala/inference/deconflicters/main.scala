@@ -13,8 +13,8 @@ private[inference] def deconflict(
 ): LogWithEither[List[Configuration], Configuration] =
   val newAssertions: ArrayBuffer[Assertion] = ArrayBuffer()
   val allBaseTypes = (config.delta.keys ++ config.phi1.keys).toSet.map(i =>
-    val arity = config.getUnderlyingDeclaration(ClassOrInterfaceType(i)).numParams
-    ClassOrInterfaceType(i, (0 until arity).map(n => TypeParameterIndex(i, n)).toVector)
+    val arity = config.getUnderlyingDeclaration(SomeClassOrInterfaceType(i)).numParams
+    SomeClassOrInterfaceType(i, (0 until arity).map(n => TypeParameterIndex(i, n)).toVector)
   )
   // detect cyclic inheritance
   for x <- allBaseTypes do
@@ -47,11 +47,11 @@ private[inference] def deconflict(
     for candidate <- supertypes do
       val decl = resConfig.phi1(i)
       val res  = supertypes - candidate
-      if res.exists(t => config |- t <:~ ClassOrInterfaceType(candidate.identifier)) then
-        val newDecl = decl.removeSupertype(ClassOrInterfaceType(candidate.identifier))
+      if res.exists(t => config |- t <:~ SomeClassOrInterfaceType(candidate.identifier)) then
+        val newDecl = decl.removeSupertype(SomeClassOrInterfaceType(candidate.identifier))
         resConfig = resConfig.copy(phi1 =
           resConfig.phi1 + (decl.identifier -> decl.removeSupertype(
-            ClassOrInterfaceType(candidate.identifier)
+            SomeClassOrInterfaceType(candidate.identifier)
           ))
         )
   // double class extensions

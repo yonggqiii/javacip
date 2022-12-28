@@ -90,7 +90,7 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
       visited.add(c)
       val sups =
         config
-          .getSubstitutedDeclaration(ClassOrInterfaceType(c))
+          .getSubstitutedDeclaration(SomeClassOrInterfaceType(c))
           .getDirectAncestors //getDirectSupertypes(NormalType(c, 0))
       for s <- sups do
         // if s.identifier == OBJECT.identifier then println(s"$c heya")
@@ -130,7 +130,7 @@ private def concretizeToUnknown(
             case Some(c) =>
               val newType = alpha.concretizeToTemporary(tt.id, mtd.numParams)
               c.addAllToPsi(newType.args)
-                .addExclusions(tt, exclusions.map(x => ClassOrInterfaceType(x)))
+                .addExclusions(tt, exclusions.map(x => SomeClassOrInterfaceType(x)))
                 .replace(alpha, newType)
         )
       } filter { x =>
@@ -149,7 +149,7 @@ private def concretizeToKnown(
   val realAlphas = config.psi.filter(x => ea.contains(x.identifier)).map(_.asInstanceOf[Alpha])
   val res: Set[Configuration] = types
     // get the arity of the new type
-    .map(x => (x, config.getUnderlyingDeclaration(ClassOrInterfaceType(x)).numParams))
+    .map(x => (x, config.getUnderlyingDeclaration(SomeClassOrInterfaceType(x)).numParams))
     .map { case (id, arity) =>
       realAlphas.foldLeft(Some(config): Option[Configuration])((config, alpha) =>
         config match
@@ -221,7 +221,7 @@ def concretize(
       )
   )
   // get lfd
-  val lfd = lowerField.filter(t => config.isFullyDeclared(ClassOrInterfaceType(t)))
+  val lfd = lowerField.filter(t => config.isFullyDeclared(SomeClassOrInterfaceType(t)))
 
   // subtype is fully-declared, we know exactly what A* must be
   if lfd.size > 0 then
@@ -260,7 +260,12 @@ def concretize(
     )
   )
   // concretize to each first
-  val res1                        = concretizeToKnown(log, config, ea, c)
+  val res1 = concretizeToKnown(log, config, ea, c)
+  val realEA = config.psi
+    .filter(x => x.isInstanceOf[Alpha])
+    .map(x => x.asInstanceOf[Alpha])
+    .filter(x => ea.contains(x.identifier))
+  if realEA.exists(x => !x.canBeTemporaryType) then return res1
   val (newLog, configsFromKnowns) = (res1.log, res1.left)
 
   val res2 = concretizeToUnknown(newLog, config, ea, exclusions)

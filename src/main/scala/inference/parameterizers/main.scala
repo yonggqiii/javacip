@@ -37,7 +37,7 @@ private def getTopologicalOrdering(config: Configuration): List[String] =
       vertices
         .map(i =>
           i -> config
-            .getUnderlyingDeclaration(ClassOrInterfaceType(i))
+            .getUnderlyingDeclaration(SomeClassOrInterfaceType(i))
             .getDirectAncestors
             .map(_.identifier)
             .filter(x => vertices.contains(x))

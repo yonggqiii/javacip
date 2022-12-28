@@ -1,5 +1,6 @@
 package configuration.declaration
 
+import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
@@ -34,6 +35,24 @@ class MissingTypeDeclaration(
     val methods: Map[String, Vector[Method]] = Map().withDefaultValue(Vector()),
     val constructors: Vector[Constructor] = Vector()
 ) extends Declaration:
+  // def fix(config: Configuration): FixedDeclaration =
+  //   if supertypes.filter(x => config |- x.isClass).size > 1 then ???
+  //   val extendedTypes =
+  //     if !mustBeClass then supertypes else supertypes.filter(x => config |- x.isClass)
+  //   val implementedTypes = supertypes.filter(x => !extendedTypes.contains(x))
+  //   new FixedDeclaration(
+  //     identifier,
+  //     typeParameterBounds,
+  //     false,
+  //     !mustBeClass,
+  //     !mustBeClass,
+  //     extendedTypes,
+  //     implementedTypes,
+  //     methodTypeParameterBounds,
+  //     attributes,
+  //     methods,
+  //     constructors
+  //   )
   def addFinalizedMethod(m: Method): MissingTypeDeclaration =
     new MissingTypeDeclaration(
       identifier,
@@ -125,7 +144,7 @@ class MissingTypeDeclaration(
     Vector(),
     mustBeClass,
     mustBeInterface,
-    supertypes.map(_.raw.asInstanceOf[ClassOrInterfaceType | TemporaryType]),
+    supertypes.map(_.raw.asInstanceOf[SomeClassOrInterfaceType]),
     Map(),
     attributes.map((s, a) => (s -> getAttributeErasure(a))),
     methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
@@ -166,7 +185,7 @@ class MissingTypeDeclaration(
     if c.isInstanceOf[ConstructorWithContext] then c
     else new Constructor(c.signature.erased(this), Vector(), c.accessModifier)
 
-  def getLeftmostReferenceTypeBoundOfTypeParameter(t: Type): ClassOrInterfaceType = ???
+  def getLeftmostReferenceTypeBoundOfTypeParameter(t: Type): SomeClassOrInterfaceType = ???
   def substitute(function: Substitution): MissingTypeDeclaration =
     new MissingTypeDeclaration(
       identifier,
@@ -201,7 +220,7 @@ class MissingTypeDeclaration(
     * @param t
     *   the type to extend
     */
-  def removeSupertype(t: ClassOrInterfaceType) =
+  def removeSupertype(t: SomeClassOrInterfaceType) =
     MissingTypeDeclaration(
       identifier,
       typeParameterBounds,
@@ -218,7 +237,7 @@ class MissingTypeDeclaration(
     * @param t
     *   the type to extend
     */
-  def greedilyExtends(t: ClassOrInterfaceType) =
+  def greedilyExtends(t: SomeClassOrInterfaceType) =
     MissingTypeDeclaration(
       identifier,
       typeParameterBounds,
@@ -367,7 +386,7 @@ class MissingTypeDeclaration(
         mustBeClass,
         mustBeInterface,
         supertypes.map(
-          _.replace(oldType, newType).asInstanceOf[ClassOrInterfaceType | TemporaryType]
+          _.replace(oldType, newType).asInstanceOf[SomeClassOrInterfaceType]
         ),
         methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.replace(oldType, newType)))),
         attributes.map((id, x) => id -> x.replace(oldType, newType)),

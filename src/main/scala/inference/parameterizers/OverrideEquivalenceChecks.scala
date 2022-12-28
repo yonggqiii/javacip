@@ -11,7 +11,7 @@ private def checkOverrideEquivalence(
     config: Configuration,
     x: String
 ): LogWithEither[List[Configuration], Configuration] =
-  val decl = config.getUnderlyingDeclaration(ClassOrInterfaceType(x))
+  val decl = config.getUnderlyingDeclaration(SomeClassOrInterfaceType(x))
   // get the declaration's finalized methods
   val declMethods = decl.methods
     .map((k, v) => (k -> v.filter(m => !m.isInstanceOf[MethodWithContext])))

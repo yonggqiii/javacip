@@ -13,18 +13,13 @@ private def checkImplements(
     config: Configuration,
     x: String
 ): LogWithEither[List[Configuration], Configuration] =
-  val decl = config.getUnderlyingDeclaration(ClassOrInterfaceType(x))
-  val baseType =
-    if x(0) == 'ξ' then
-      TemporaryType(
-        java.lang.Integer.parseInt(x.substring(1)),
-        (0 until decl.numParams).map(i => TypeParameterIndex(x, i)).toVector
-      )
-    else
-      ClassOrInterfaceType(
-        x,
-        (0 until decl.numParams).map(i => TypeParameterIndex(x, i)).toVector
-      )
+  val decl = config.getUnderlyingDeclaration(SomeClassOrInterfaceType(x))
+  val baseType = SomeClassOrInterfaceType(
+    x,
+    (0 until decl.numParams)
+      .map(i => TypeParameterIndex(x, i))
+      .toVector
+  )
   if !decl.isAbstract then
     // concrete class
     // get the inherited methods

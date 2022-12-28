@@ -19,19 +19,19 @@ private def resolveCompatibilityAssertion(
    * 4) unboxed(source) <<~= target
    */
   (source.captured.upwardProjection, target.downwardProjection) match
-    case (s, t) if t == OBJECT =>
-      (log, config :: Nil)
+    // case (s, t) if t == OBJECT =>
+    //   (log, config :: Nil)
     case (s: PrimitiveType, t: PrimitiveType) =>
       (log, (config asserts (s <<~= t)) :: Nil)
+    case (PRIMITIVE_VOID, s) =>
+      (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
+    case (s, PRIMITIVE_VOID) =>
+      (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
     case (
           s @ (_: SomeClassOrInterfaceType | _: Alpha),
           t @ (_: SomeClassOrInterfaceType | _: Alpha)
         ) =>
       (log, (config asserts (s <:~ t)) :: Nil)
-    case (PRIMITIVE_VOID, s) =>
-      (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
-    case (s, PRIMITIVE_VOID) =>
-      (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
     case (s: Alpha, t: PrimitiveType) =>
       val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
       val P = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()

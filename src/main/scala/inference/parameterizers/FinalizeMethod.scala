@@ -11,7 +11,7 @@ private def finalizeMethod(
     config: Configuration,
     x: String
 ): LogWithEither[List[Configuration], Configuration] =
-  val decl = config.getUnderlyingDeclaration(ClassOrInterfaceType(x))
+  val decl = config.getUnderlyingDeclaration(SomeClassOrInterfaceType(x))
   // partition all methods to those that are finalized, and those that are not
   val finalizedMethods = decl.getAccessibleMethods(config, PRIVATE)
   val unfinalizedMethods = decl.methods

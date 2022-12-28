@@ -191,7 +191,7 @@ private def visit(
   val statements          = c.findAll(classOf[Statement]).asScala.toVector
   val variableDeclarators = c.findAll(classOf[VariableDeclarator]).asScala.toVector
   expressions
-    .foldLeft(LogWithOption(finalLog, Some(ClassOrInterfaceType(""): Type)))((lgi, expr) =>
+    .foldLeft(LogWithOption(finalLog, Some(ClassOrInterfaceType("lol"): Type)))((lgi, expr) =>
       lgi.flatMap((lg, i) => resolveExpression(lg, expr, arg, expressionTypeMemo))
     )
     .rightmap(_ => arg)

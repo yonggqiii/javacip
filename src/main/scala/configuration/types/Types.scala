@@ -426,10 +426,20 @@ sealed trait SomeClassOrInterfaceType extends Type:
       newType: SomeClassOrInterfaceType
   ): SomeClassOrInterfaceType
 
+object SomeClassOrInterfaceType:
+  def apply(identifier: String, args: Vector[Type] = Vector()): SomeClassOrInterfaceType =
+    if identifier.length() == 0 then ClassOrInterfaceType(identifier, args)
+    else if identifier.charAt(0) == 'ξ' then
+      TemporaryType(Integer.parseInt(identifier.substring(1)), args)
+    else ClassOrInterfaceType(identifier, args)
+
 final case class ClassOrInterfaceType(
     identifier: String,
     args: Vector[Type]
 ) extends SomeClassOrInterfaceType:
+  if identifier.size == 0 || identifier.charAt(0) == 'ξ' then
+    println(identifier)
+    ???
   def wildcardCaptured: ClassOrInterfaceType = this
   def captured: ClassOrInterfaceType         = copy(identifier, args.map(_.wildcardCaptured))
   def breadth                                = args.size
@@ -870,7 +880,10 @@ final case class TemporaryType(
   ): SomeClassOrInterfaceType =
     if oldType.id != id then copy(args = args.map(_.combineTemporaryType(oldType, newType)))
     else
-      ClassOrInterfaceType(newType.identifier, args.map(_.combineTemporaryType(oldType, newType)))
+      SomeClassOrInterfaceType(
+        newType.identifier,
+        args.map(_.combineTemporaryType(oldType, newType))
+      )
 
 /** Some random placeholder type
   * @param id
@@ -1240,8 +1253,8 @@ final case class Alpha(
     * @return
     *   the resulting type
     */
-  def concretizeToReference(identifier: String, numArgs: Int): ClassOrInterfaceType =
-    ClassOrInterfaceType(
+  def concretizeToReference(identifier: String, numArgs: Int): SomeClassOrInterfaceType =
+    SomeClassOrInterfaceType(
       identifier,
       (0 until numArgs)
         .map(i =>
@@ -1481,8 +1494,7 @@ val BOX_RELATION: Set[(PrimitiveType, ClassOrInterfaceType)] = Set(
   (PRIMITIVE_LONG, BOXED_LONG),
   (PRIMITIVE_FLOAT, BOXED_FLOAT),
   (PRIMITIVE_DOUBLE, BOXED_DOUBLE),
-  (PRIMITIVE_BOOLEAN, BOXED_BOOLEAN),
-  (PRIMITIVE_VOID, BOXED_VOID)
+  (PRIMITIVE_BOOLEAN, BOXED_BOOLEAN)
 )
 val UNBOX_RELATION: Set[(ClassOrInterfaceType, PrimitiveType)] = BOX_RELATION.map { case (x, y) =>
   (y, x)

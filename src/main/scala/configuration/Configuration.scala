@@ -127,19 +127,34 @@ case class Configuration(
   // copy(javaIVBounds = newIVBounds).assertsAllOf(newAssertions)
 
   def addExclusion(t: TemporaryType, toExclude: SomeClassOrInterfaceType): Configuration =
-    if !exclusions.contains(t.identifier) then
-      copy(exclusions = exclusions + (t.identifier -> Set(toExclude.identifier)))
-    else
-      copy(exclusions =
-        exclusions + (t.identifier -> (exclusions(t.identifier) + toExclude.identifier))
-      )
+    toExclude match
+      case _: ClassOrInterfaceType =>
+        if !exclusions.contains(t.identifier) then
+          copy(exclusions = exclusions + (t.identifier -> Set(toExclude.identifier)))
+        else
+          copy(exclusions =
+            exclusions + (t.identifier -> (exclusions(t.identifier) + toExclude.identifier))
+          )
+      case m: TemporaryType =>
+        if !exclusions.contains(t.identifier) then
+          copy(exclusions = exclusions + (t.identifier -> Set(toExclude.identifier)))
+        else if !exclusions(t.identifier).contains(toExclude.identifier) then
+          copy(exclusions =
+            exclusions + (t.identifier -> (exclusions(t.identifier) + toExclude.identifier))
+          ).addExclusion(m, t)
+        else this
   def addExclusions(t: TemporaryType, toExclude: Set[SomeClassOrInterfaceType]): Configuration =
-    if !exclusions.contains(t.identifier) then
-      copy(exclusions = exclusions + (t.identifier -> toExclude.map(_.identifier)))
+    if toExclude.isEmpty then this
     else
-      copy(exclusions =
-        exclusions + (t.identifier -> (exclusions(t.identifier).union(toExclude.map(_.identifier))))
-      )
+      val other = toExclude.head
+      this.addExclusion(t, other).addExclusions(t, toExclude - other)
+
+  // if !exclusions.contains(t.identifier) then
+  //   copy(exclusions = exclusions + (t.identifier -> toExclude.map(_.identifier)))
+  // else
+  //   copy(exclusions =
+  //     exclusions + (t.identifier -> (exclusions(t.identifier).union(toExclude.map(_.identifier))))
+  //   )
   def combineTemporaryType(
       t: TemporaryType,
       other: SomeClassOrInterfaceType
@@ -202,7 +217,7 @@ case class Configuration(
     // do isClass and isInterface checks
     if tempDecl.mustBeClass then newOmega += other.isClass
     if tempDecl.mustBeInterface then newOmega += other.isInterface
-    val x = ClassOrInterfaceType(
+    val x = SomeClassOrInterfaceType(
       other.identifier,
       (0 until getUnderlyingDeclaration(other).numParams)
         .map(i => TypeParameterIndex(other.identifier, i))
@@ -449,7 +464,7 @@ case class Configuration(
         // the leftmost bound of a type parameter must be a class
         case x: TTypeParameter =>
           val id         = x.containingTypeIdentifier
-          val pseudotype = ClassOrInterfaceType(id)
+          val pseudotype = SomeClassOrInterfaceType(id)
           this |- getUnderlyingDeclaration(pseudotype)
             .getLeftmostReferenceTypeBoundOfTypeParameter(x)
             .isClass
@@ -471,7 +486,7 @@ case class Configuration(
         // the leftmost bound of a type parameter must be an interface
         case x: TTypeParameter =>
           val id         = x.containingTypeIdentifier
-          val pseudotype = ClassOrInterfaceType(id)
+          val pseudotype = SomeClassOrInterfaceType(id)
           this |- getUnderlyingDeclaration(pseudotype)
             .getLeftmostReferenceTypeBoundOfTypeParameter(x)
             .isInterface
@@ -564,24 +579,24 @@ case class Configuration(
       (sub, sup) match
         case (x @ (_: Alpha | _: PlaceholderType), _) =>
           constraintStore.contains(x.identifier) && constraintStore(x.identifier).contains(
-            left <:~ right
+            sub <:~ sup
           )
         case (_, x @ (_: Alpha | _: PlaceholderType)) =>
           constraintStore.contains(x.identifier) && constraintStore(x.identifier).contains(
-            left <:~ right
+            sub <:~ sup
           )
         case (x: TTypeParameter, y: TTypeParameter) =>
           if x == y then true
           else
             val source = x.containingTypeIdentifier
-            getFixedDeclaration(ClassOrInterfaceType(source)) match
+            getFixedDeclaration(SomeClassOrInterfaceType(source)) match
               case None => false
               case Some(decl) =>
                 val bounds = decl.getBoundsAsTypeParameters(x)
                 bounds.contains(y)
         case (x: TTypeParameter, y: SomeClassOrInterfaceType) =>
           val source = x.containingTypeIdentifier
-          getFixedDeclaration(ClassOrInterfaceType(source)) match
+          getFixedDeclaration(SomeClassOrInterfaceType(source)) match
             case None => false
             case Some(decl) =>
               val bounds = decl.getAllReferenceTypeBoundsOfTypeParameter(x)
@@ -805,7 +820,7 @@ case class Configuration(
           val sourceType = x.containingTypeIdentifier
           val (erasure, allBounds): (SomeClassOrInterfaceType, Set[SomeClassOrInterfaceType]) =
             getFixedDeclaration(
-              ClassOrInterfaceType(sourceType)
+              SomeClassOrInterfaceType(sourceType)
             ) match
               case None =>
                 (OBJECT, Set(OBJECT))
@@ -1198,7 +1213,7 @@ case class Configuration(
       case None => false
       case Some(decl) =>
         val a = decl.getDirectAncestors
-        a.forall(x => isFullyDeclared(ClassOrInterfaceType(x.identifier)))
+        a.forall(x => isFullyDeclared(SomeClassOrInterfaceType(x.identifier)))
 
   def getMissingDeclaration(t: SomeClassOrInterfaceType): Option[MissingTypeDeclaration] =
     if phi1.contains(t.identifier) then Some(phi1(t.identifier))
