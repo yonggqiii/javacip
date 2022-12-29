@@ -66,6 +66,8 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
+  def fix: Attribute =
+    copy(`type` = `type`.fix)
   def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Attribute =
     copy(`type` = `type`.combineTemporaryType(oldType, newType))
   def substitute(function: Substitution): Attribute =
@@ -135,6 +137,7 @@ final case class MethodSignature(
     formalParameters: Vector[Type],
     hasVarArgs: Boolean
 ):
+  def fix: MethodSignature = copy(formalParameters = formalParameters.map(_.fix))
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
@@ -209,6 +212,8 @@ final case class MethodSignature(
 
 /** A method or constructor */
 sealed trait MethodLike:
+  def fix: MethodLike
+
   /** The signature of the method */
   val signature: MethodSignature
 
@@ -294,6 +299,16 @@ class Method(
     val isStatic: Boolean,
     val isFinal: Boolean
 ) extends MethodLike:
+  def fix: Method =
+    new Method(
+      signature.fix,
+      returnType.fix,
+      typeParameterBounds.map((k, v) => (k.fix -> v.map(_.fix))),
+      accessModifier,
+      isAbstract,
+      isStatic,
+      isFinal
+    )
   def callWith(
       args: Vector[Type],
       callSiteParameterChoices: Set[TTypeParameter]
@@ -697,6 +712,12 @@ class Constructor(
     val typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
     val accessModifier: AccessModifier
 ) extends MethodLike:
+  def fix: Constructor =
+    new Constructor(
+      signature.fix,
+      typeParameterBounds.map((k, v) => (k.fix -> v.map(t => t.fix))),
+      accessModifier
+    )
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType

@@ -54,6 +54,29 @@ case class Configuration(
     // right bounds may be compatibility or subtype assertions
     javaIVBounds: Map[JavaInferenceVariable, (Vector[Type], Vector[(String, Type)])] = Map()
 ):
+  def fix: Configuration =
+    if !phi2.isEmpty then ???
+    if !omega.isEmpty then ???
+    if !constraintStore.isEmpty then ???
+    if !javaIVBounds.isEmpty then ???
+    val newDelta = MutableMap[String, FixedDeclaration]()
+    for (k, v) <- delta do newDelta(k) = v
+    for (k, v) <- phi1 do
+      val decl = v.fix(this)
+      newDelta(decl.identifier) = decl
+    Configuration(
+      newDelta.toMap,
+      Map(),
+      Map(),
+      PriorityQueue(),
+      psi.map(_.fix),
+      theta.map(_.fix),
+      cu,
+      _cache,
+      Map(),
+      Map(),
+      Map()
+    )
   def addCompatibileTargetToJavaInferenceVariable(
       jv: JavaInferenceVariable,
       t: Type

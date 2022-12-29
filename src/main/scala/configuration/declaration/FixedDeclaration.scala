@@ -110,6 +110,7 @@ class FixedDeclaration(
     typet match
       case TypeParameterIndex(source, index) =>
         if source != identifier then ??? // TODO
+        else if index >= typeParameterBounds.size then methodTypeParameterBounds(typet.identifier)
         else typeParameterBounds(index)
       case TypeParameterName(sourceType, source, qualifiedName) =>
         if sourceType != identifier then ??? // TODO

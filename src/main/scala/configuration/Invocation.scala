@@ -8,6 +8,12 @@ case class Invocation(
     returnType: Type,
     parameterChoices: Set[TTypeParameter]
 ):
+  def fix: Invocation = copy(
+    source = source.fix,
+    formalParameters = formalParameters.map(_.fix),
+    returnType = returnType.fix,
+    parameterChoices = parameterChoices.map(_.fix)
+  )
   override def toString(): String =
     s"$source can be called with $returnType $methodName(${formalParameters.mkString(", ")}) whose inference variables could contain $parameterChoices"
   def replace(oldType: InferenceVariable, newType: Type): Invocation =

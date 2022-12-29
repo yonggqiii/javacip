@@ -35,24 +35,36 @@ class MissingTypeDeclaration(
     val methods: Map[String, Vector[Method]] = Map().withDefaultValue(Vector()),
     val constructors: Vector[Constructor] = Vector()
 ) extends Declaration:
-  // def fix(config: Configuration): FixedDeclaration =
-  //   if supertypes.filter(x => config |- x.isClass).size > 1 then ???
-  //   val extendedTypes =
-  //     if !mustBeClass then supertypes else supertypes.filter(x => config |- x.isClass)
-  //   val implementedTypes = supertypes.filter(x => !extendedTypes.contains(x))
-  //   new FixedDeclaration(
-  //     identifier,
-  //     typeParameterBounds,
-  //     false,
-  //     !mustBeClass,
-  //     !mustBeClass,
-  //     extendedTypes,
-  //     implementedTypes,
-  //     methodTypeParameterBounds,
-  //     attributes,
-  //     methods,
-  //     constructors
-  //   )
+  def fix(config: Configuration): FixedDeclaration =
+    if supertypes.filter(x => config |- x.isClass).size > 1 then ???
+    val extendedTypes =
+      if !mustBeClass then supertypes else supertypes.filter(x => config |- x.isClass)
+    val implementedTypes             = supertypes.filter(x => !extendedTypes.contains(x))
+    val newMethodTypeParameterBounds = MutableMap[String, Vector[Type]]()
+    for (k, v) <- methods do
+      for m <- v do
+        for tp <- m.typeParameterBounds do
+          val typeparam = tp._1.fix
+          val bounds    = tp._2.map(_.fix)
+          newMethodTypeParameterBounds(typeparam.identifier) = bounds
+    for c <- constructors do
+      for tp <- c.typeParameterBounds do
+        val typeparam = tp._1.fix
+        val bounds    = tp._2.map(_.fix)
+        newMethodTypeParameterBounds(typeparam.identifier) = bounds
+    new FixedDeclaration(
+      SomeClassOrInterfaceType(identifier).fix.identifier,
+      typeParameterBounds.map(v => v.map(t => t.fix)),
+      false,
+      !mustBeClass,
+      !mustBeClass,
+      extendedTypes.map(_.fix),
+      implementedTypes.map(_.fix),
+      newMethodTypeParameterBounds.toMap,
+      attributes.map((k, a) => (k -> a.fix)),
+      methods.map((k, v) => (k -> v.map(m => m.fix))),
+      constructors.map(_.fix)
+    )
   def addFinalizedMethod(m: Method): MissingTypeDeclaration =
     new MissingTypeDeclaration(
       identifier,
