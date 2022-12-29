@@ -49,9 +49,8 @@ private[inference] def typecheck(
     )
     mostSpecificMethod match
       case None =>
-        // println("lol")
         return LogWithLeft(
-          log.addError(s"no most-specific method can be found for invocation $invocation!"),
+          log.addWarn(s"no most-specific method can be found for invocation $invocation!"),
           Nil
         )
       case Some(msm) =>
@@ -61,12 +60,14 @@ private[inference] def typecheck(
           )
         then
           return LogWithLeft(
-            log.addError(
+            log.addWarn(
               s"most-specific method $msm for invocation $invocation does not have matching return types!"
             ),
             Nil
           )
-  // println(newCU)
+  for d <- newConfig.delta.map(_._2) do
+    if d.isUnreasonable then
+      return LogWithLeft(log.addWarn(s"${d.identifier} is unreasonable!"), Nil)
   LogWithRight(log, config)
 
 private def checkPasses(config: Configuration): Boolean =

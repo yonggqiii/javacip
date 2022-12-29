@@ -45,7 +45,10 @@ private def finalizeMethod(
     (
       newConfig
         .copy(phi1 =
-          newConfig.phi1 + (x -> decl.asInstanceOf[MissingTypeDeclaration].addFinalizedMethod(mtd))
+          newConfig.phi1 + (x -> newConfig
+            .phi1(x)
+            .asInstanceOf[MissingTypeDeclaration]
+            .addFinalizedMethod(mtd))
         )
         .addAllToPsi(types),
       mtd

@@ -299,6 +299,20 @@ class Method(
     val isStatic: Boolean,
     val isFinal: Boolean
 ) extends MethodLike:
+  def isUnreasonable: Boolean =
+    // check for unused type parameters
+    val fp        = signature.formalParameters
+    val allBounds = typeParameterBounds.flatMap(_._2)
+    if typeParameterBounds
+        .map(_._1)
+        .exists(t =>
+          !(fp.exists(p => t ⊆ p)) && !(allBounds.exists(b => t ⊆ b) && !(t ⊆ returnType))
+        )
+    then return true
+    // check if return type is standalone
+    if !returnType.isInstanceOf[TTypeParameter] then return false
+    if !typeParameterBounds.map(_._1).contains(returnType) then return false
+    !(fp ++ allBounds).exists(x => returnType ⊆ x)
   def fix: Method =
     new Method(
       signature.fix,

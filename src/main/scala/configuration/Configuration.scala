@@ -390,8 +390,31 @@ case class Configuration(
       )
     )
 
-  val maxBreadth = if psi.isEmpty then 0 else psi.map(_.breadth).max
-  val maxDepth   = if psi.isEmpty then 0 else psi.map(_.depth).max
+  val maxBreadth =
+    val breadthOfTypes = if psi.isEmpty then 0 else psi.map(_.breadth).max
+    // val breadthOfMethods =
+    //   if phi1.isEmpty then 0
+    //   else phi1.values.flatMap(_.methods.flatMap(x => x._2)).map(_.typeParameterBounds.size).max
+    //breadthOfTypes.max(breadthOfMethods)
+    breadthOfTypes
+  val maxDepth = if psi.isEmpty then 0 else psi.map(_.depth).max
+
+  val heuristicValue =
+    val b                = maxBreadth
+    val d                = maxDepth
+    val methodTracker    = MutableMap[(String, Int), Int]()
+    var methodMaxBreadth = 0
+    for d <- phi1.values do
+      for (k, v) <- d.methods do
+        for m <- v do
+          if !m.isInstanceOf[MethodWithContext] then
+            val numParams = m.signature.formalParameters.size
+            if !methodTracker.contains((k, numParams)) then methodTracker((k, numParams)) = 1
+            else methodTracker((k, numParams)) += 1
+            methodMaxBreadth = methodMaxBreadth.max(m.typeParameterBounds.size)
+    val overloadValue = if methodTracker.isEmpty then 1 else methodTracker.values.max
+    (((b + 1) * (d + 1)) + ((overloadValue - 1) * 1000)) //+ methodMaxBreadth * 2)
+
   def addToPsi(`type`: Type) =
     copy(psi = psi + `type`)
 

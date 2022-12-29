@@ -99,14 +99,6 @@ private[inference] def resolveSubtypeAssertion(
     case (a1: Alpha, a2: Alpha) =>
       val (l, c) = addToConstraintStore(a1, a1 <:~ a2, log, config)
       addToConstraintStore(a2, a1 <:~ a2, l, c.head)
-    case (_, alpha: Alpha) =>
-      addToConstraintStore(alpha, sub <:~ alpha, log, config)
-    case (alpha: Alpha, _) =>
-      addToConstraintStore(alpha, alpha <:~ sup, log, config)
-    case (delta: PlaceholderType, _) =>
-      addToConstraintStore(delta, a, log, config)
-    case (_, delta: PlaceholderType) =>
-      addToConstraintStore(delta, a, log, config)
     case (iv: JavaInferenceVariable, b) =>
       (
         log.addInfo(s"adding $b as supertype of $iv"),
@@ -117,6 +109,14 @@ private[inference] def resolveSubtypeAssertion(
         log.addInfo(s"adding $b as subtype of $iv"),
         config.addSubtypeToJavaInferenceVariable(iv, b) :: Nil
       )
+    case (_, alpha: Alpha) =>
+      addToConstraintStore(alpha, sub <:~ alpha, log, config)
+    case (alpha: Alpha, _) =>
+      addToConstraintStore(alpha, alpha <:~ sup, log, config)
+    case (delta: PlaceholderType, _) =>
+      addToConstraintStore(delta, a, log, config)
+    case (_, delta: PlaceholderType) =>
+      addToConstraintStore(delta, a, log, config)
     case x =>
       println(x)
       println(a)

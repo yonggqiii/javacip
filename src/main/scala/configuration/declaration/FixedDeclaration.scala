@@ -43,6 +43,9 @@ class FixedDeclaration(
     val methods: Map[String, Vector[Method]],
     val constructors: Vector[Constructor]
 ) extends Declaration:
+  def isUnreasonable: Boolean =
+    if methods.flatMap(_._2).exists(m => m.isUnreasonable) then true
+    else false
   val numParams = typeParameterBounds.size
   val isClass   = !isInterface
   override def toString =

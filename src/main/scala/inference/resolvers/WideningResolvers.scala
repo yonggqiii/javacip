@@ -37,6 +37,14 @@ private def resolveWideningAssertion(log: Log, config: Configuration, a: Widenin
       (log.addWarn(s"$x cannot widen to anything"), Nil)
     case (_, x: TemporaryType) =>
       (log.addWarn(s"$x be widened from anything"), Nil)
+    case (x: JavaInferenceVariable, _) =>
+      (log.addWarn(s"$x cannot widen to anything"), Nil)
+    case (_, x: JavaInferenceVariable) =>
+      (log.addWarn(s"$x be widened from anything"), Nil)
+    case (x: Capture, _) =>
+      (log.addWarn(s"$x cannot widen to anything"), Nil)
+    case (_, x: Capture) =>
+      (log.addWarn(s"$x be widened from anything"), Nil)
     case (Bottom, _) =>
       (log.addWarn(s"$Bottom cannot be widened to anything"), Nil)
     case (_, Bottom) =>

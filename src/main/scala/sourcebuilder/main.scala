@@ -58,7 +58,7 @@ def buildSource(log: Log, configuration: Configuration): (Log, Vector[Compilatio
   val originalCompilationUnit = configuration.cu
 
   val res = mapWithLog(log, configuration.phi1.toVector) { case (l, (k, v)) =>
-    buildType(l, k, v, configuration, prohibitedNames)
+    buildType(l, k, v.fix(configuration), configuration, prohibitedNames)
   }
 
   originalCompilationUnit.getPackageDeclaration.toScala match
@@ -70,15 +70,16 @@ def buildSource(log: Log, configuration: Configuration): (Log, Vector[Compilatio
 def buildType(
     log: Log,
     identifier: String,
-    decl: MissingTypeDeclaration,
+    decl: FixedDeclaration,
     config: Configuration,
     prohibitedNames: Set[String]
 ): (Log, CompilationUnit) =
   val cu = CompilationUnit()
   // create the declaration
   val classOrInterfaceDeclaration =
-    if decl.mustBeClass then cu.addClass(decl.identifier)
-    else cu.addInterface(decl.identifier)
+    if decl.isClass then cu.addClass(decl.identifier) else cu.addInterface(decl.identifier)
+  // if decl.mustBeClass then cu.addClass(decl.identifier)
+  // else cu.addInterface(decl.identifier)
   // add comment
   classOrInterfaceDeclaration.setLineComment("added by JavaCIP")
   // set the number of type parameters
@@ -88,34 +89,50 @@ def buildType(
       .map(ASTTypeParameter(_)): _*
   )
   classOrInterfaceDeclaration.setTypeParameters(declTypeParameters)
-  val directSupertypes = decl.supertypes
-  if decl.mustBeClass then
-    val extendedTypes    = directSupertypes.filter(config |- _.isClass)
-    val implementedTypes = directSupertypes.filter(x => !extendedTypes.contains(x))
-    if !extendedTypes.isEmpty then
-      if extendedTypes.size > 1 then ???
-      else
-        classOrInterfaceDeclaration.setExtendedTypes(
-          NodeList(
-            typeToASTType(extendedTypes(0), prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
-          )
-        )
-    if !implementedTypes.isEmpty then
-      classOrInterfaceDeclaration.setImplementedTypes(
-        NodeList(
-          implementedTypes.map(x =>
-            typeToASTType(x, prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
-          ): _*
-        )
-      )
-  else
+  if !decl.extendedTypes.isEmpty then
     classOrInterfaceDeclaration.setExtendedTypes(
       NodeList(
-        decl.supertypes.map(x =>
+        decl.extendedTypes.map(x =>
           typeToASTType(x, prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
         ): _*
       )
     )
+  if !decl.implementedTypes.isEmpty then
+    classOrInterfaceDeclaration.setImplementedTypes(
+      NodeList(
+        decl.implementedTypes.map(x =>
+          typeToASTType(x, prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
+        ): _*
+      )
+    )
+  // val directSupertypes = decl.getDirectAncestors
+  // if decl.mustBeClass then
+  //   val extendedTypes    = directSupertypes.filter(config |- _.isClass)
+  //   val implementedTypes = directSupertypes.filter(x => !extendedTypes.contains(x))
+  //   if !extendedTypes.isEmpty then
+  //     if extendedTypes.size > 1 then ???
+  //     else
+  //       classOrInterfaceDeclaration.setExtendedTypes(
+  //         NodeList(
+  //           typeToASTType(extendedTypes(0), prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
+  //         )
+  //       )
+  //   if !implementedTypes.isEmpty then
+  //     classOrInterfaceDeclaration.setImplementedTypes(
+  //       NodeList(
+  //         implementedTypes.map(x =>
+  //           typeToASTType(x, prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
+  //         ): _*
+  //       )
+  //     )
+  // else
+  //   classOrInterfaceDeclaration.setExtendedTypes(
+  //     NodeList(
+  //       decl.supertypes.map(x =>
+  //         typeToASTType(x, prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
+  //       ): _*
+  //     )
+  //   )
   // add fields
   decl.attributes.foreach((identifier, attr) =>
     classOrInterfaceDeclaration.addMember(
@@ -147,7 +164,7 @@ def buildType(
       if !params.isEmpty && m.signature.hasVarArgs then params(params.size - 1).setVarArgs(true)
       if !params.isEmpty then md.setParameters(NodeList(params: _*))
       md.setType(typeToASTType(m.returnType, prohibitedNames))
-      if !decl.mustBeClass then
+      if decl.isInterface then
         md.setAbstract(true)
         md.removeBody()
       else

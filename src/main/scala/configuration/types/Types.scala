@@ -228,6 +228,7 @@ sealed trait Type:
     case x: SuperWildcardType        => this ⊆ x.lower
     case x: TTypeParameter           => false
     case x: InferenceVariable        => false
+    case x: Capture                  => (this ⊆ x.lowerBound) || (this ⊆ x.upperBound)
 
   /** Checks if this type occurs in or is equal to another type
     * @param that
