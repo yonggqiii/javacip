@@ -69,6 +69,7 @@ private[inference] def resolveImplementsMethodAssertion(
             newTypes += generatedType
             val generatedAssertion = (generatedType substitute tpMap substitute context) ~=~ b
             newAssertions += generatedAssertion
+            newMethodTypeParameterBounds(i)._2 += generatedType
         // create and assert equality of formal parameters
         val newMethodFormalParameters = (0 until methodFormalParameters.size).map(i =>
           InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
@@ -93,7 +94,7 @@ private[inference] def resolveImplementsMethodAssertion(
         )
         newTypes += newMethodReturnType
         val substitutedReturnType = newMethodReturnType substitute tpMap substitute context
-        newAssertions += (newMethodReturnType ~=~ methodReturnType || newMethodReturnType <:~ methodReturnType)
+        newAssertions += (substitutedReturnType ~=~ methodReturnType || substitutedReturnType <:~ methodReturnType)
         val newMethod = new Method(
           MethodSignature(methodName, newMethodFormalParameters.toVector, m.signature.hasVarArgs),
           newMethodReturnType,

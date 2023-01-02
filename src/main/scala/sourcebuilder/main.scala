@@ -147,9 +147,19 @@ def buildType(
     v.foreach(m =>
       val methodTypeParameters = NodeList(
         m.typeParameterBounds
-          .map(_._1)
-          .map(t => numToLetter(t.asInstanceOf[TypeParameterIndex].index, prohibitedNames))
-          .map(ASTTypeParameter(_)): _*
+          .map((p, v) =>
+            (
+              ASTTypeParameter(
+                numToLetter(p.asInstanceOf[TypeParameterIndex].index, prohibitedNames)
+              ),
+              NodeList(
+                v.map(t =>
+                  typeToASTType(t, prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
+                ): _*
+              )
+            )
+          )
+          .map((p, v) => p.setTypeBound(v)): _*
       )
 
       val md = MethodDeclaration()

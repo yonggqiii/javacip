@@ -140,6 +140,10 @@ private[inference] def resolveEquivalenceAssertion(
         (log.addWarn(s"$x != $y"), Nil)
       case (_, Wildcard | _: ExtendsWildcardType | _: SuperWildcardType) =>
         (log.addWarn(s"$x != $y"), Nil)
+      case (x: TTypeParameter, y) =>
+        (log.addWarn(s"$x != $y"), Nil)
+      case (y, x: TTypeParameter) =>
+        (log.addWarn(s"$x != $y"), Nil)
 // case _ => ???
 
 // private[inference] def concretizeAlphaToPrimitive(
