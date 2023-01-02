@@ -34,14 +34,14 @@ private[inference] def resolveSubtypeAssertion(
       (log.addWarn(s"primitives cannot be involved in subtype relations"), Nil)
     case (_, x: PrimitivesOnlyDisjunctiveType) =>
       (log.addWarn(s"primitives cannot be involved in subtype relations"), Nil)
-    case (i: DisjunctiveType, _) =>
-      expandDisjunctiveTypeToReference(i, log, config asserts a)
-    case (_, i: DisjunctiveType) =>
-      expandDisjunctiveTypeToReference(i, log, config asserts a)
     case (_, m: PrimitiveType) =>
       (log.addWarn(s"$sub cannot be a subtype of $sup as $sup is primitive"), Nil)
     case (m: PrimitiveType, _) =>
       (log.addWarn(s"$sub cannot be a subtype of $sup as $sub is primitive"), Nil)
+    case (i: DisjunctiveType, _) =>
+      expandDisjunctiveTypeToReference(i, log, config asserts a)
+    case (_, i: DisjunctiveType) =>
+      expandDisjunctiveTypeToReference(i, log, config asserts a)
     case (ArrayType(m), ArrayType(n)) =>
       (log, (config asserts (m <:~ n || (m.isPrimitive && m ~=~ n))) :: Nil)
     case (ArrayType(m), n: SomeClassOrInterfaceType) =>
@@ -52,10 +52,14 @@ private[inference] def resolveSubtypeAssertion(
     case (m: SomeClassOrInterfaceType, n: ArrayType) =>
       (log.addWarn(s"$m <: $n is trivially not true"), Nil)
     case (alpha: Alpha, arr: ArrayType) =>
-      `resolve Alpha <: Array`(alpha, arr, log, config, a)
-    // TODO: CHANGE THIS
+      (log.addWarn(s"$alpha <: $arr is trivially not true"), Nil)
+    case (arr: ArrayType, alpha: Alpha) =>
+      val newConfig = config asserts (alpha ~=~ OBJECT || alpha ~=~ ClassOrInterfaceType(
+        "java.lang.Cloneable"
+      ) || alpha ~=~ ClassOrInterfaceType("java.io.Serializable"))
+      (log, newConfig :: Nil)
     case (_, m: ArrayType) =>
-      `resolve Type <: Array`(sub, m, log, config)
+      (log.addWarn(s"$m can only be a supertype of other array types or Bottom"), Nil)
     // left type parameter can be reduces to assertions on its bounds
     case (m: TTypeParameter, n: TTypeParameter) =>
       (log.addWarn(s"$n is not one of the bounds of $m"), Nil)

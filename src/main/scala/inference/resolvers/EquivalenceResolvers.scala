@@ -95,6 +95,10 @@ private[inference] def resolveEquivalenceAssertion(
         expandDisjunctiveType(a, log, config asserts asst)
       case (_, a: DisjunctiveType) =>
         expandDisjunctiveType(a, log, config asserts asst)
+      case (a: ArrayType, b) =>
+        (log.addWarn(s"$a != $b"), Nil)
+      case (b, a: ArrayType) =>
+        (log.addWarn(s"$a != $b"), Nil)
       case (a: Alpha, b: PrimitiveType) =>
         (log.addWarn(s"$a cannot be a primitive type"), Nil)
       case (b: PrimitiveType, a: Alpha) =>
@@ -103,6 +107,16 @@ private[inference] def resolveEquivalenceAssertion(
         concretizeAlphaToReference(log, config asserts asst, x, y)
       case (y: SomeClassOrInterfaceType, x: Alpha) =>
         concretizeAlphaToReference(log, config asserts asst, x, y)
+      case (x: JavaInferenceVariable, b: SomeClassOrInterfaceType) =>
+        (
+          log.addInfo(s"replacing $x with $y"),
+          (config.replace(x, b) :: Nil).filter(_.isDefined).map(_.get)
+        )
+      case (b: SomeClassOrInterfaceType, x: JavaInferenceVariable) =>
+        (
+          log.addInfo(s"replacing $x with $y"),
+          (config.replace(x, b) :: Nil).filter(_.isDefined).map(_.get)
+        )
       case (x: ClassOrInterfaceType, y: ClassOrInterfaceType) =>
         resolveReferenceEquivalences(x, y, log, config)
       case (x: TemporaryType, y: SomeClassOrInterfaceType) =>
@@ -144,20 +158,6 @@ private[inference] def resolveEquivalenceAssertion(
         (log.addWarn(s"$x != $y"), Nil)
       case (y, x: TTypeParameter) =>
         (log.addWarn(s"$x != $y"), Nil)
-// case _ => ???
-
-// private[inference] def concretizeAlphaToPrimitive(
-//     log: Log,
-//     config: Configuration,
-//     a: Alpha,
-//     p: PrimitiveType
-// ): (Log, List[Configuration]) =
-//   (
-//     log.addInfo(s"concretizing $a to $p"),
-//     List(config.replace(a.copy(substitutions = Nil), p))
-//       .filter(!_.isEmpty)
-//       .map(_.get)
-//   )
 
 private[inference] def concretizeAlphaToReference(
     log: Log,

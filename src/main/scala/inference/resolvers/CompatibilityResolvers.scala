@@ -27,17 +27,30 @@ private def resolveCompatibilityAssertion(
       (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
     case (s, PRIMITIVE_VOID) =>
       (log.addInfo(s"$s must be void"), (config asserts (s ~=~ PRIMITIVE_VOID)) :: Nil)
+    case (s: TemporaryType, t: PrimitiveType) =>
+      (
+        log,
+        (config asserts DisjunctiveAssertion(
+          t.widenedFrom.map(_.boxed).map(s <:~ _).toVector
+        )) :: Nil
+      )
     case (
           s @ (_: SomeClassOrInterfaceType | _: Alpha),
           t @ (_: SomeClassOrInterfaceType | _: Alpha)
         ) =>
       (log, (config asserts (s <:~ t)) :: Nil)
     case (s: Alpha, t: PrimitiveType) =>
-      val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
-      val P = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
-      val asst =
-        (s <:~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
-      (log, (config.addToPsi(B).addToPsi(P) asserts asst) :: Nil)
+      (
+        log,
+        (config asserts DisjunctiveAssertion(
+          t.widenedFrom.map(_.boxed).map(s <:~ _).toVector
+        )) :: Nil
+      )
+    // val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
+    // val P = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+    // val asst =
+    //   (s <:~ B) && ((B, P) in UNBOX_RELATION.toSet[(Type, Type)]) && (P <<~= t)
+    // (log, (config.addToPsi(B).addToPsi(P) asserts asst) :: Nil)
     case (
           s: PrimitiveType,
           t @ (_: SomeClassOrInterfaceType | _: Alpha | _: JavaInferenceVariable)

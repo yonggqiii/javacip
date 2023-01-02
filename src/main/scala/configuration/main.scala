@@ -180,11 +180,7 @@ private def visit(
 
   // resolve expressions, bodies and statements
   val expressionTypeMemo: MutableMap[
-    (
-        Option[ClassOrInterfaceDeclaration],
-        Option[MethodDeclaration],
-        Expression
-    ),
+    String,
     Option[Type]
   ] = MutableMap()
   val expressions         = c.findAll(classOf[Expression]).asScala.toVector

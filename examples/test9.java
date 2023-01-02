@@ -1,5 +1,6 @@
 import java.util.List;
 public class test9 {
+   // <T> T get(A<T> x) { return null; }
     void main() {
         A<? extends Integer> a;
         A<String> aa;
@@ -10,3 +11,4 @@ public class test9 {
         Object o = b.get(aaa);
     }
 }
+

@@ -13,6 +13,8 @@ private def checkNoDuplicates(
   val decl = config.getUnderlyingDeclaration(SomeClassOrInterfaceType(x))
   for (k, v) <- decl.methods do
     for i <- 0 until v.size do
+      if v(i).isInstanceOf[Method] && v(i).isUnreasonable then
+        return LogWithLeft(log.addWarn(s"$x is unreasonable!"), Nil)
       for j <- (i + 1) until v.size do
         // println(s"$x, ${v(i).signature}, ${v(j).signature}")
         //if x == "B" then println(s"checking ${v(i)} and ${v(j)}")

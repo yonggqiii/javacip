@@ -1,9 +1,10 @@
-public interface test12 {
-    <T extends B<T>> T get(T t);
+class test12 {
+    void main() {
+        A a;
+        String s = a.get();
+        int i = a.get(1);
+        a.doStuff();
+        a.canAvoid();
+    }
 }
 
-class Main {
-    A a;
-    test12 x = a;
-    String s = a.a;
-}

@@ -22,20 +22,16 @@ import configuration.types.*
 import configuration.Invocation
 import utils.*
 import scala.annotation.tailrec
+import com.github.javaparser.ast.comments.BlockComment
 
 private[configuration] def resolveExpression(
     log: Log,
     expr: Expression,
     config: MutableConfiguration,
-    memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
-      Option[Type]
-    ]
+    memo: MutableMap[String, Option[Type]]
 ): LogWithOption[Type] =
-  val containingMethod = expr.findAncestor(classOf[MethodDeclaration]).toScala
-  val containingClass  = expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala
-  if memo.contains((containingClass, containingMethod, expr)) then
-    LogWithOption(log, memo((containingClass, containingMethod, expr)))
+  val rng = expr.getRange().toScala.get.toString
+  if memo.contains(rng) then LogWithOption(log, memo(rng))
   else
     val res =
       if expr.isFieldAccessExpr then
@@ -81,7 +77,7 @@ private[configuration] def resolveExpression(
       else
         println(expr.getClass)
         ???
-    memo((containingClass, containingMethod, expr)) = res.opt
+    memo(rng) = res.opt
     res
 
 private def resolveScope(
@@ -89,7 +85,7 @@ private def resolveScope(
     expr: Expression,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -136,7 +132,7 @@ private def resolveFieldAccessExpr(
     expr: FieldAccessExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -242,7 +238,7 @@ private def getAttrTypeFromMissingScope(
     expr: com.github.javaparser.ast.nodeTypes.NodeWithSimpleName[?],
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ) =
@@ -309,7 +305,7 @@ private def resolveArrayAccessExpr(
     expr: ArrayAccessExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -341,7 +337,7 @@ private def resolveAssignExpr(
     expr: AssignExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -380,7 +376,7 @@ private def resolveBinaryExpr(
     expr: BinaryExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -434,7 +430,13 @@ private def resolveBinaryExpr(
             (right =:~ rt)
           rt
         case BinaryExpr.Operator.PLUS =>
-          val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+          val rt = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+            scala.util.Left(""),
+            Nil,
+            false,
+            Set(),
+            false
+          )
           config._4 += rt
           config._2._2(rt) = InferenceVariableMemberTable(rt)
           config._3 += (IsNumericAssertion(left) &&
@@ -454,7 +456,7 @@ private def resolveCastExpr(
     expr: CastExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -469,7 +471,7 @@ private def resolveClassExpr(
     expr: ClassExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -480,7 +482,7 @@ private def resolveConditionalExpr(
     expr: ConditionalExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -506,7 +508,7 @@ private def resolveEnclosedExpr(
     expr: EnclosedExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] = resolveExpression(log, expr.getInner, config, memo)
@@ -516,7 +518,7 @@ private def resolveInstanceOfExpr(
     expr: InstanceOfExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -538,7 +540,7 @@ private def resolveMethodCallExpr(
     expr: MethodCallExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -600,7 +602,7 @@ private def resolveMethodFromResolvedType(
     expr: MethodCallExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ],
     scope: ResolvedType
@@ -692,7 +694,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     expr: MethodCallExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ],
     scope: Vector[ResolvedReferenceType],
@@ -1023,7 +1025,7 @@ private def getAllBoundsOfResolvedTypeParameterDeclaration(
 //     expr: MethodCallExpr,
 //     config: MutableConfiguration,
 //     memo: MutableMap[
-//       (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+//       String,
 //       Option[Type]
 //     ],
 //     scope: ResolvedReferenceTypeDeclaration
@@ -1034,7 +1036,7 @@ private def resolveMethodFromDisjunctiveType(
     expr: MethodCallExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ],
     scope: InferenceVariable
@@ -1086,7 +1088,7 @@ private def resolveNameExpr(
     expr: NameExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -1158,7 +1160,7 @@ private def resolveSuperExpr(
     expr: SuperExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -1181,7 +1183,7 @@ private def resolveThisExpr(
     expr: ThisExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -1192,7 +1194,7 @@ private def resolveUnaryExpr(
     expr: UnaryExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =
@@ -1226,7 +1228,7 @@ private def resolveVariableDeclarationExpr(
     expr: VariableDeclarationExpr,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[Type] =

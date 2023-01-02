@@ -32,7 +32,7 @@ private def infer(
       if !log.appConfig.debug then println("cannot be compiled")
       LogWithNone(log.addError(s"Terminating as type errors exist"))
     case Some((x, xs)) =>
-      if a > 1000000 then
+      if a > 10000 then
         println("what?")
         return LogWithNone(log.addError("max hit", x.toString))
       if a % 1000 == 0 && !log.appConfig.debug then
@@ -75,6 +75,6 @@ private def addAllToConfigs(
     case x :: xs =>
       val key = x.heuristicValue
       // print(key)
-      if key > 9 then addAllToConfigs(configs, xs)
+      if key > 10 then addAllToConfigs(configs, xs)
       else if !configs.contains(key) then addAllToConfigs(configs + (key -> (x :: Nil)), xs)
       else addAllToConfigs(configs + (key -> (x :: configs(key))), xs)

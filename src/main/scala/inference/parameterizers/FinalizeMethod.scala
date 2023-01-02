@@ -22,7 +22,8 @@ private def finalizeMethod(
     .map((k, v) => v)
     .flatMap(v => v)
     .toVector
-  if unfinalizedMethods.isEmpty then return LogWithRight(log, config)
+  if unfinalizedMethods.isEmpty then
+    return LogWithRight(log.addInfo(s"$x is all finalized"), config)
   val methodToFinalize = unfinalizedMethods(0)
   val newConfig = config.copy(phi1 =
     config.phi1 + (x -> decl
@@ -40,7 +41,12 @@ private def finalizeMethod(
     .map(assts => newConfig.assertsAllOf(assts))
   // .map((assts, types) => newConfig.assertsAllOf(assts).addAllToPsi(types))
   val newMethods =
-    (0 to 3).map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
+    // (0 to 1)
+    //   .map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
+    //   .toVector
+    (normalizedMethod(methodToFinalize), Vector()) +: (0 to 1)
+      .map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
+      .toVector
   val configWithAddedMethod = newMethods.map((mtd, types) =>
     (
       newConfig
@@ -59,8 +65,22 @@ private def finalizeMethod(
     cfg.assertsAllOf(res) //.addAllToPsi(res._2)
   )
   LogWithLeft(
-    log.addInfo(s"combining $methodToFinalize"),
+    log.addInfo(
+      s"combining $methodToFinalize in $x"
+    ),
     (configsFromExistingMethods ++ configWithAddedAssertionsAndTypes).toList
+  )
+
+private def normalizedMethod(methodToFinalize: MethodWithContext) =
+  // for now, just directly use the method
+  new Method(
+    methodToFinalize.signature,
+    methodToFinalize.returnType,
+    methodToFinalize.typeParameterBounds,
+    methodToFinalize.accessModifier,
+    methodToFinalize.isAbstract,
+    methodToFinalize.isStatic,
+    methodToFinalize.isFinal
   )
 
 private def generateNewMethod(
@@ -115,7 +135,7 @@ private def generateCompatibleAssertion(
   val res = target
     .substitute(source.context)
     .callWith(source.signature.formalParameters, source.callSiteParameterChoices)
-  res._1 :+ ((res._2 <:~ source.returnType) || (res._2 <<~= source.returnType))
+  res._1 :+ ((res._2.upwardProjection <:~ source.returnType.upwardProjection) || (res._2.upwardProjection <<~= source.returnType.upwardProjection))
 // val methodTypeParameters = target.typeParameterBounds.map(_._1)
 // val newIVs = (0 until methodTypeParameters.size).map(i =>
 //   InferenceVariableFactory.createDisjunctiveType(

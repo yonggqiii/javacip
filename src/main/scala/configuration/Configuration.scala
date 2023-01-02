@@ -331,36 +331,6 @@ case class Configuration(
             val relevantMethod = rmethod.asNArgs(paramTypes.size).substitute(context)
             val res            = relevantMethod.callWith(paramTypes, callSiteParameterChoices)
             disjassts += ConjunctiveAssertion(res._1 :+ (res._2 =:~ returnType))
-        // val (realTypeParams, realParamTypes, realRt) = (
-        //   relevantMethod.typeParameterBounds.map(_._1).toSet,
-        //   relevantMethod.signature.formalParameters,
-        //   relevantMethod.returnType
-        // )
-        // // create the assertions
-        // val tpMap: Map[TTypeParameter, Type] =
-        //   realTypeParams
-        //     .map(x =>
-        //       x -> InferenceVariableFactory.createDisjunctiveType(
-        //         scala.util.Left(decl.identifier),
-        //         Nil,
-        //         true,
-        //         callSiteParameterChoices,
-        //         true
-        //       )
-        //     )
-        //     .toMap
-        // val conjAssertion = ArrayBuffer[Assertion]()
-        // for i <- (0 until paramTypes.size) do
-        //   conjAssertion += paramTypes(i) <:~ realParamTypes(i).substitute(tpMap)
-        // conjAssertion += returnType ~=~ realRt.substitute(tpMap)
-        // // assert the passed-in type arguments meets their bounds
-        // conjAssertion += ConjunctiveAssertion(
-        //   relevantMethod.typeParameterBounds.toVector.flatMap { case (tp, b) =>
-        //     val newBounds = b.map(x => x.substitute(tpMap))
-        //     newBounds.map(tp.substitute(tpMap) <:~ _)
-        //   }
-        // )
-        // disjassts += ConjunctiveAssertion(conjAssertion.toVector)
         for t <- missingMethodContainers do
           disjassts += HasMethodAssertion(
             t.substitute(context),
@@ -402,18 +372,19 @@ case class Configuration(
   val heuristicValue =
     val b                = maxBreadth
     val d                = maxDepth
-    val methodTracker    = MutableMap[(String, Int), Int]()
+    val methodTracker    = MutableMap[(String, String, Int), Int]()
     var methodMaxBreadth = 0
     for d <- phi1.values do
       for (k, v) <- d.methods do
         for m <- v do
           if !m.isInstanceOf[MethodWithContext] then
             val numParams = m.signature.formalParameters.size
-            if !methodTracker.contains((k, numParams)) then methodTracker((k, numParams)) = 1
-            else methodTracker((k, numParams)) += 1
+            if !methodTracker.contains((d.identifier, k, numParams)) then
+              methodTracker((d.identifier, k, numParams)) = 1
+            else methodTracker((d.identifier, k, numParams)) += 1
             methodMaxBreadth = methodMaxBreadth.max(m.typeParameterBounds.size)
     val overloadValue = if methodTracker.isEmpty then 1 else methodTracker.values.max
-    (((b + 1) * (d + 1)) + ((overloadValue - 1) * 1000)) //+ methodMaxBreadth * 2)
+    (((b + 1) * (d + 1)) + ((overloadValue - 1) * 5) + methodMaxBreadth * 2)
 
   def addToPsi(`type`: Type) =
     copy(psi = psi + `type`)
@@ -822,37 +793,6 @@ case class Configuration(
                     val relevantMethod = rmethod.asNArgs(paramTypes.size)
                     val res = relevantMethod.callWith(paramTypes, method.callSiteParameterChoices)
                     disjassts += ConjunctiveAssertion(res._1 :+ (res._2 =:~ returnType))
-                // val (realTypeParams, realParamTypes, realRt) = (
-                //   relevantMethod.typeParameterBounds.map(_._1).toSet,
-                //   relevantMethod.signature.formalParameters,
-                //   relevantMethod.returnType
-                // )
-                // // create the assertions
-                // val tpMap: Map[TTypeParameter, Type] =
-                //   realTypeParams
-                //     .map(x =>
-                //       x -> InferenceVariableFactory.createDisjunctiveType(
-                //         scala.util.Left(decl.identifier),
-                //         Nil,
-                //         true,
-                //         method.callSiteParameterChoices,
-                //         true
-                //       )
-                //     )
-                //     .toMap
-                // newTypes ++= tpMap.map((k, v) => v)
-                // val conjAssertion = ArrayBuffer[Assertion]()
-                // for i <- (0 until paramTypes.size) do
-                //   conjAssertion += paramTypes(i) <:~ realParamTypes(i).substitute(tpMap)
-                // conjAssertion += returnType ~=~ realRt.substitute(tpMap)
-                // // assert the passed-in type arguments meets their bounds
-                // conjAssertion += ConjunctiveAssertion(
-                //   relevantMethod.typeParameterBounds.toVector.flatMap { case (tp, b) =>
-                //     val newBounds = b.map(x => x.substitute(tpMap))
-                //     newBounds.map(tp.substitute(tpMap) <:~ _)
-                //   }
-                // )
-                // disjassts += ConjunctiveAssertion(conjAssertion.toVector)
                 for t <- missingMethodContainers do
                   disjassts += HasMethodAssertion(
                     t,
@@ -947,37 +887,6 @@ case class Configuration(
                   val relevantMethod = rmethod.asNArgs(paramTypes.size)
                   val res = relevantMethod.callWith(paramTypes, method.callSiteParameterChoices)
                   disjassts += ConjunctiveAssertion(res._1 :+ (res._2 =:~ returnType))
-              // val (realTypeParams, realParamTypes, realRt) = (
-              //   relevantMethod.typeParameterBounds.map(_._1).toSet,
-              //   relevantMethod.signature.formalParameters,
-              //   relevantMethod.returnType
-              // )
-              // // create the assertions
-              // val tpMap: Map[TTypeParameter, Type] =
-              //   realTypeParams
-              //     .map(x =>
-              //       x -> InferenceVariableFactory.createDisjunctiveType(
-              //         scala.util.Left(decl.identifier),
-              //         Nil,
-              //         true,
-              //         method.callSiteParameterChoices,
-              //         true
-              //       )
-              //     )
-              //     .toMap
-              // newTypes ++= tpMap.map((k, v) => v)
-              // val conjAssertion = ArrayBuffer[Assertion]()
-              // for i <- (0 until paramTypes.size) do
-              //   conjAssertion += paramTypes(i) <:~ realParamTypes(i).substitute(tpMap)
-              // conjAssertion += returnType ~=~ realRt.substitute(tpMap)
-              // // assert the passed-in type arguments meets their bounds
-              // conjAssertion += ConjunctiveAssertion(
-              //   relevantMethod.typeParameterBounds.toVector.flatMap { case (tp, b) =>
-              //     val newBounds = b.map(x => x.substitute(tpMap))
-              //     newBounds.map(tp.substitute(tpMap) <:~ _)
-              //   }
-              // )
-              // disjassts += ConjunctiveAssertion(conjAssertion.toVector)
               for t <- missingMethodContainers do
                 disjassts += HasMethodAssertion(
                   t,
@@ -999,6 +908,12 @@ case class Configuration(
           // to be a class or interface
           if !newTable.attributes.isEmpty || !newTable.methods.isEmpty || newTable.mustBeClass || newTable.mustBeInterface then
             return None
+        case x: ArrayType =>
+          if !newTable.methods.isEmpty then return None
+          if newTable.attributes.exists((k, v) => k != "length") then return None
+          if newTable.mustBeInterface then return None
+          if newTable.attributes.contains("length") then
+            newAssertions += newTable.attributes("length").`type` ~=~ PRIMITIVE_INT
         case x =>
           println(x)
           ???

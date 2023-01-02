@@ -18,7 +18,7 @@ def resolveStatement(
     stmt: Statement,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -46,7 +46,7 @@ private def resolveAssertStmt(
     stmt: AssertStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -67,7 +67,7 @@ private def resolveDoStmt(
     stmt: DoStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -80,7 +80,7 @@ private def resolveExplicitConstructorInvocationStmt(
     stmt: ExplicitConstructorInvocationStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] = ???
@@ -90,7 +90,7 @@ private def resolveForEachStmt(
     stmt: ForEachStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -132,7 +132,7 @@ private def resolveForStmt(
     stmt: ForStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -151,7 +151,7 @@ private def resolveIfStmt(
     stmt: IfStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -165,7 +165,7 @@ private def resolveSwitchStmt(
     stmt: SwitchStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -190,7 +190,7 @@ private def resolveThrowStmt(
     stmt: ThrowStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -204,7 +204,7 @@ private def resolveTryStmt(
     stmt: TryStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -227,7 +227,7 @@ private def resolveWhileStmt(
     stmt: WhileStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
@@ -241,7 +241,7 @@ private def resolveReturnStmt(
     stmt: ReturnStmt,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =

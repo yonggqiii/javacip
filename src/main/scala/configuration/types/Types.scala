@@ -388,7 +388,7 @@ final case class ArrayType(
   def captured: ArrayType         = copy(base = base.captured)
   def wildcardCaptured: ArrayType = copy(base = base.wildcardCaptured)
   def breadth                     = 0
-  def depth                       = base.depth
+  def depth                       = base.depth + 1
   override def toString =
     base.toString + "[]"
   def fix: ArrayType                = copy(base = base.fix)
@@ -855,6 +855,9 @@ sealed trait InferenceVariable extends Type:
 
 sealed trait DisjunctiveType extends InferenceVariable:
   val choices: Vector[Type]
+  val canBeSubsequentlyBounded: Boolean
+  val parameterChoices: Set[TTypeParameter]
+  val canBeUnknown: Boolean
 
 final case class TemporaryType(
     id: Int,
@@ -954,6 +957,7 @@ final case class ReferenceOnlyDisjunctiveType(
     canBeSubsequentlyBounded: Boolean = false,
     parameterChoices: Set[TTypeParameter] = Set(),
     choices: Vector[Type] = Vector(),
+    canBeUnknown: Boolean = true,
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
 ) extends DisjunctiveType:
@@ -1024,7 +1028,10 @@ final case class PrimitivesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): PrimitivesOnlyDisjunctiveType = this
-  def fix: PrimitivesOnlyDisjunctiveType = this
+  val canBeSubsequentlyBounded: Boolean     = false
+  val canBeUnknown: Boolean                 = false
+  val parameterChoices: Set[TTypeParameter] = Set()
+  def fix: PrimitivesOnlyDisjunctiveType    = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
   val choices                                         = PRIMITIVES.toVector
@@ -1051,6 +1058,9 @@ final case class BoxesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): BoxesOnlyDisjunctiveType = this
+  val canBeSubsequentlyBounded: Boolean          = false
+  val canBeUnknown: Boolean                      = false
+  val parameterChoices: Set[TTypeParameter]      = Set()
   def fix: BoxesOnlyDisjunctiveType              = ???
   val toBeCaptured: Boolean                      = false
   val toBeWildcardCaptured: Boolean              = false
@@ -1078,6 +1088,8 @@ final case class DisjunctiveTypeWithPrimitives(
     substitutions: SubstitutionList = Nil,
     parameterChoices: Set[TTypeParameter] = Set(),
     choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES,
+    canBeSubsequentlyBounded: Boolean = true,
+    canBeUnknown: Boolean = true,
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = true
 ) extends DisjunctiveType:
@@ -1137,9 +1149,11 @@ final case class VoidableDisjunctiveType(
     substitutions: SubstitutionList = Nil,
     parameterChoices: Set[TTypeParameter] = Set(),
     choices: Vector[Type] = Vector[Type]() ++ PRIMITIVES :+ PRIMITIVE_VOID,
+    canBeUnknown: Boolean,
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
 ) extends DisjunctiveType:
+  val canBeSubsequentlyBounded: Boolean         = true // why not
   def fix                                       = ???
   def captured: VoidableDisjunctiveType         = copy(toBeCaptured = true)
   def wildcardCaptured: VoidableDisjunctiveType = copy(toBeWildcardCaptured = true)
@@ -1286,7 +1300,8 @@ final case class Alpha(
             Nil,
             canBeBounded,
             parameterChoices,
-            canBeBounded
+            canBeBounded,
+            canBeTemporaryType
           )
         )
         .toVector
@@ -1302,7 +1317,8 @@ final case class Alpha(
             Nil,
             canBeBounded,
             parameterChoices,
-            canBeBounded
+            canBeBounded,
+            canBeTemporaryType
           )
         )
         .toVector
@@ -1353,7 +1369,8 @@ object InferenceVariableFactory:
           source,
           Nil,
           canBeSubsequentlyBounded || canBeBounded,
-          parameterChoices
+          parameterChoices,
+          canBeUnknown
         )
       else
         val alpha       = createAlpha(source, Nil, true, parameterChoices, canBeUnknown)
@@ -1367,7 +1384,8 @@ object InferenceVariableFactory:
       substitutions,
       canBeSubsequentlyBounded,
       parameterChoices,
-      choices
+      choices,
+      canBeUnknown
     )
 
   def createDisjunctiveTypeWithPrimitives(
@@ -1387,7 +1405,14 @@ object InferenceVariableFactory:
         parameterChoices,
         canBeUnknown
       )
-    DisjunctiveTypeWithPrimitives(myID, substitutions, parameterChoices, choices)
+    DisjunctiveTypeWithPrimitives(
+      myID,
+      substitutions,
+      parameterChoices,
+      choices,
+      canBeSubsequentlyBounded,
+      canBeUnknown
+    )
 
   def createCapture(lowerBound: Type, upperBound: Type) =
     id += 1
@@ -1396,7 +1421,7 @@ object InferenceVariableFactory:
   def createVoidableDisjunctiveType(
       source: scala.util.Either[String, Type],
       substitutions: SubstitutionList = Nil,
-      canBeSubsequentlyBounded: Boolean = false,
+      canBeSubsequentlyBounded: Boolean = true,
       parameterChoices: Set[TTypeParameter] = Set(),
       canBeUnknown: Boolean = true
   ) =
@@ -1417,7 +1442,13 @@ object InferenceVariableFactory:
     //   parameterChoices,
     //   canBeUnknown
     // ))
-    VoidableDisjunctiveType(myID, substitutions, parameterChoices, choices)
+    VoidableDisjunctiveType(
+      myID,
+      substitutions,
+      parameterChoices,
+      choices,
+      canBeUnknown
+    )
 
   def createPrimitivesOnlyDisjunctiveType() =
     id += 1

@@ -56,7 +56,7 @@ private[inference] def typecheck(
       case Some(msm) =>
         val (assts, rt) = msm.callWith(args, paramChoices)
         if !checkPasses(
-            newConfig assertsAllOf assts asserts ((rt <:~ returnType) || (rt <<~= returnType))
+            newConfig assertsAllOf assts asserts ((rt.upwardProjection <:~ returnType.upwardProjection) || (rt.upwardProjection <<~= returnType.upwardProjection))
           )
         then
           return LogWithLeft(

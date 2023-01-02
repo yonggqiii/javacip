@@ -16,6 +16,20 @@ class Main {
     }
 }
 
+
+// interface test7<T> {
+//     T get(int i);
+// }
+
+// class Main {
+//     void main() {
+//         A a;
+//         String s = a.s;
+//         test7<Integer> t = a;
+//         int i = a.get(1);
+//     }
+// }
+
 // class A implements test7<Integer> {
 //     // public Integer get(int i) { return 1; }
 //     public void addAll(test7<? extends Integer> ls) { }

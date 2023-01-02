@@ -17,7 +17,7 @@ def resolveVariableDeclarator(
     declarator: VariableDeclarator,
     config: MutableConfiguration,
     memo: MutableMap[
-      (Option[ClassOrInterfaceDeclaration], Option[MethodDeclaration], Expression),
+      String,
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =

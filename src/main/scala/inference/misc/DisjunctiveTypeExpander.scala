@@ -10,7 +10,20 @@ private[inference] def expandDisjunctiveType(
     log: Log,
     config: Configuration
 ) =
-  val choices = i.choices
+  val choices =
+    if i.isInstanceOf[PrimitivesOnlyDisjunctiveType] || i
+        .isInstanceOf[BoxesOnlyDisjunctiveType]
+    then i.choices
+    else
+      i.choices :+ ArrayType(
+        InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+          scala.util.Left(""),
+          Nil,
+          i.canBeSubsequentlyBounded,
+          i.parameterChoices,
+          i.canBeUnknown
+        )
+      )
   //println("aasdf")
   //choices.map(config.replace(i, _)).filter(_.isDefined).map(_.get).foreach(println)
   (
@@ -45,9 +58,25 @@ private[inference] def expandDisjunctiveTypeToReference(
     log: Log,
     config: Configuration
 ) =
-  val choices = i.choices.filter(x =>
-    !x.isInstanceOf[PrimitiveType] && !x.isInstanceOf[PrimitivesOnlyDisjunctiveType]
-  )
+  val choices =
+    if i.isInstanceOf[PrimitivesOnlyDisjunctiveType] || i
+        .isInstanceOf[BoxesOnlyDisjunctiveType]
+    then
+      i.choices.filter(x =>
+        !x.isInstanceOf[PrimitiveType] && !x.isInstanceOf[PrimitivesOnlyDisjunctiveType]
+      )
+    else
+      i.choices.filter(x =>
+        !x.isInstanceOf[PrimitiveType] && !x.isInstanceOf[PrimitivesOnlyDisjunctiveType]
+      ) :+ ArrayType(
+        InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+          scala.util.Left(""),
+          Nil,
+          i.canBeSubsequentlyBounded,
+          i.parameterChoices,
+          i.canBeUnknown
+        )
+      )
   (
     log.addInfo(s"expanding ${i.identifier} into its reference choices", choices.toString),
     choices
