@@ -179,7 +179,7 @@ def concretize(
   val allVertices  = erasureGraph.adjList.keys.toSet
   val allConcretes = allVertices.diff(alphas)
   // nothing to do!
-  if alphas.isEmpty then return LogWithRight(log.addWarn("concretize not implemented!"), config)
+  if alphas.isEmpty then return LogWithRight(log.addSuccess("concretize complete!"), config)
   // find some alpha
   val lowestAlpha = alphas.toVector(0)
 

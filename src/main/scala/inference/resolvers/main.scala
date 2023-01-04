@@ -68,6 +68,8 @@ private[inference] def resolve(
           resolveNumericAssertion(newLog, newConfig, x)
         case x: HasMethodAssertion =>
           resolveHasMethodAssertion(newLog, newConfig, x)
+        case x: HasConstructorAssertion =>
+          resolveHasConstructorAssertion(newLog, newConfig, x)
         case x: WideningAssertion =>
           resolveWideningAssertion(newLog, newConfig, x)
         case x: CompatibilityAssertion =>

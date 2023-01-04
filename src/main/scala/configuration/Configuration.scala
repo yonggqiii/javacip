@@ -552,7 +552,8 @@ case class Configuration(
         t == BOXED_INT ||
         t == BOXED_LONG ||
         t == BOXED_SHORT
-    case x: HasMethodAssertion => false
+    case x: HasMethodAssertion      => false
+    case x: HasConstructorAssertion => false
     case WideningAssertion(l, r) =>
       (l, r) match
         case (ll: PrimitiveType, rr: PrimitiveType) => ll.widened.contains(rr)

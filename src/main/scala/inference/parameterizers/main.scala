@@ -27,6 +27,7 @@ private def combineMembers(
     checkImplements(log, config, x) >>= ((l, c) => checkNoDuplicates(l, c, x))
       >>= ((l, c) => checkOverrideEquivalence(l, c, x))
       >>= ((l, c) => finalizeMethod(l, c, x))
+      >>= ((l, c) => finalizeConstructor(l, c, x))
       >>= ((l, c) => combineMembers(l, c, xs))
 
 private def getTopologicalOrdering(config: Configuration): List[String] =

@@ -111,18 +111,6 @@ private def resolveForEachStmt(
         config._3 += iterableTAssertion || arrayAssertion
         config._4 += iterableTTypeArg
         config._4 += arrayElementType
-      // val iterableProducerType = createDisjunctiveTypeWithPrimitivesFromContext(iterable, config)
-      // // whatever the iterable produces, must be a subtype of the var type
-      // config._3 += (iterableProducerType =:~ varType)
-      // val iterType = ClassOrInterfaceType(
-      //   "java.lang.Iterable",
-      //   Vector(iterableProducerType)
-      //   // 1,
-      //   // Map(TypeParameterIndex("java.lang.Iterable", 0, Nil) -> iterableProducerType) :: Nil
-      // )
-      // val arrayType = ArrayType(iterableProducerType)
-      // // the iterable must be an array of the produced type, or a subtype of Iterable<produced type>
-      // config._3 += iterableType <:~ iterType || iterableType <:~ arrayType
       )
     )
     .rightmap(x => config)

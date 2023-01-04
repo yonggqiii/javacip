@@ -33,13 +33,26 @@ private[configuration] def resolveExpression(
   val rng = expr.getRange().toScala.get.toString
   if memo.contains(rng) then LogWithOption(log, memo(rng))
   else
+    println(expr)
+    if expr.isNameExpr() then
+      val t = expr.replace(
+        FieldAccessExpr(
+          NameExpr("JavaCIPUnknownVariableStore"),
+          expr.asNameExpr().getNameAsString()
+        )
+      )
+      println(t)
+      println(expr)
+    println(expr.getClass())
     val res =
       if expr.isFieldAccessExpr then
         resolveFieldAccessExpr(log, expr.asFieldAccessExpr, config, memo)
       else if expr.isArrayAccessExpr then
         resolveArrayAccessExpr(log, expr.asArrayAccessExpr, config, memo)
-      // else if expr.isArrayInitializerExpr then
-      //   resolveArrayInitializerExpr(config, expr.asArrayInitializerExpr, memo)
+      else if expr.isArrayCreationExpr() then
+        resolveArrayCreationExpr(log, expr.asArrayCreationExpr(), config, memo)
+      else if expr.isArrayInitializerExpr then
+        resolveArrayInitializerExpr(log, expr.asArrayInitializerExpr, config, memo)
       else if expr.isAssignExpr then resolveAssignExpr(log, expr.asAssignExpr, config, memo)
       else if expr.isBinaryExpr then resolveBinaryExpr(log, expr.asBinaryExpr, config, memo)
       else if expr.isCastExpr then resolveCastExpr(log, expr.asCastExpr, config, memo)
@@ -49,15 +62,15 @@ private[configuration] def resolveExpression(
       else if expr.isEnclosedExpr then resolveEnclosedExpr(log, expr.asEnclosedExpr, config, memo)
       else if expr.isInstanceOfExpr then
         resolveInstanceOfExpr(log, expr.asInstanceOfExpr, config, memo)
-      // else if expr.isLambdaExpr then
-      //   resolveLambdaExpr(config, expr.asLambdaExpr, memo)
+      else if expr.isLambdaExpr then
+        LogWithNone(log.addError(s"JavaCIP does not support lambda expressions: $expr"))
       else if expr.isMethodCallExpr then
         resolveMethodCallExpr(log, expr.asMethodCallExpr, config, memo)
-      // else if expr.isMethodReferenceExpr then
-      //   resolveMethodReferenceExpr(config, expr.asMethodReferenceExpr, memo)
+      else if expr.isMethodReferenceExpr then
+        LogWithNone(log.addError(s"JavaCIP does not support method reference expressions: $expr"))
       else if expr.isNameExpr then resolveNameExpr(log, expr.asNameExpr, config, memo)
-      // else if expr.isObjectCreationExpr then
-      //   resolveObjectCreationExpr(config, expr.asObjectCreationExpr, memo)
+      else if expr.isObjectCreationExpr then
+        resolveObjectCreationExpr(log, expr.asObjectCreationExpr(), config, memo)
       // else if expr.isPatternExpr then
       //   resolvePatternExpr(config, expr.asPatternExpr, memo)
       else if expr.isSuperExpr then resolveSuperExpr(log, expr.asSuperExpr, config, memo)
@@ -79,6 +92,33 @@ private[configuration] def resolveExpression(
         ???
     memo(rng) = res.opt
     res
+
+def resolveArrayCreationExpr(
+    log: Log,
+    expr: ArrayCreationExpr,
+    config: MutableConfiguration,
+    memo: MutableMap[String, Option[Type]]
+): LogWithOption[Type] =
+  val levels      = expr.getLevels()
+  val elementType = resolveSolvedType(expr.getElementType().resolve())
+  var res         = elementType
+  for e <- levels.asScala do
+    e.getDimension().toScala match
+      case Some(dim) =>
+        val t = resolveExpression(log, dim, config, memo)
+        t match
+          case LogWithSome(log, some) => config._3 += some =:~ PRIMITIVE_INT
+          case LogWithNone(log)       => ()
+      case None => ()
+    res = ArrayType(res)
+  expr.getInitializer().toScala match
+    case Some(initializer) =>
+      resolveExpression(log, initializer, config, memo).consume((l, t) =>
+        config._3 += t ~=~ res
+        log
+      )
+    case None => ()
+  LogWithSome(log, res)
 
 private def resolveScope(
     log: Log,
@@ -156,82 +196,6 @@ private def resolveFieldAccessExpr(
         config._2._2(scope) = InferenceVariableMemberTable(scope)
       getAttrTypeFromMissingScope(LogWithSome(log, scope), expr, config, memo)
   )
-//     // might be a declared type
-//     var shouldntBreak = true
-//     var curr = scope
-//     var found = false
-//     var res: Type = null
-//     while shouldntBreak do
-//       if !config._2._1.contains(curr.identifier) then
-//         // must be declared
-//         // is it a reflection type?
-//         if !config._1.contains(curr.identifier) then
-//           // is reflection type
-//           try
-//             val emptyConfig = Configuration.createEmptyConfiguration()
-//             val x = emptyConfig
-//               .getSubstitutedDeclaration(curr.asInstanceOf[ClassOrInterfaceType])
-//             val attributes    = x.getAccessibleAttributes(emptyConfig, PUBLIC)
-//             val attributeName = expr.getNameAsString()
-//             if !attributes.contains(attributeName) then
-//               shouldntBreak = false
-//               LogWithNone(log.addError(s"$curr was not declared to have $attributeName!"))
-//             else
-//               shouldntBreak = false
-//               LogWithSome(log, attributes(attributeName))
-//           catch
-//             case _: Throwable =>
-//               shouldntBreak = false
-//               LogWithNone(log.addError(s"no such reflection type $curr!"))
-//         else
-//           // in delta
-//           val (_, context) = curr.expansion
-//           val ud = config._1(curr.identifier)
-//           val attributeName = expr.getNameAsString()
-//           if !ud.attributes.contains(attributeName) then
-//             if !ud.isClass || ud.extendedTypes.isEmpty then
-//               shouldntBreak = false
-//               LogWithNone(log.addError(s"$curr is not a class and shouldnt have attributes, or it does not extend any class and itself does not have $attributeName"))
-//             else
-//               curr = ud.extendedTypes(0).substitute(context)
-//           else LogWithSome(log, ud.attributes(attributeName))
-
-//     else
-//       // missing
-//       ???
-//   else
-//     // unknown
-// //     ???
-// //   println(scope)
-// // )
-// println(expr.calculateResolvedType())
-// try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
-// catch
-//   case _ =>
-//     // If it gets here, then obviously either 1) the scope is declared
-//     // and resolvable but doesnt have such field, or the scope is
-//     // undeclared
-//     // get the scope, and if its a type parameter, get its erasure
-//     // if its a type parameter, it must definitely be in the source file
-//     val logWithScope =
-//       resolveScope(log, expr.getScope, config, memo)
-//         .flatMap((l, t) =>
-//           println(t)
-//           val tt = t.captured
-//           if tt.isInstanceOf[InferenceVariable] && !config._2._2.contains(tt) then
-//             config._2._2(tt) = InferenceVariableMemberTable(tt)
-//           if !config._2._1.contains(tt.identifier) && !config._2._2
-//               .contains(tt)
-//           then
-//             LogWithOption(
-//               l.addError(
-//                 s"${tt} is declared to not contain ${expr.getName.getIdentifier}"
-//               ),
-//               None
-//             )
-//           else LogWithOption(l, Some(tt))
-//         )
-//     getAttrTypeFromMissingScope(logWithScope, expr, config, memo)
 
 private def getAttrTypeFromMissingScope(
     logWithScope: LogWithOption[Type],
@@ -314,7 +278,7 @@ private def resolveArrayAccessExpr(
   resolveExpression(log, name, config, memo).flatMap((log, name) =>
     resolveExpression(log, index, config, memo).rightmap(index =>
       // array indices must be an integer
-      config._3 += (index <<~= PRIMITIVE_INT)
+      config._3 += (index =:~ PRIMITIVE_INT)
       name match
         case ArrayType(base) => base
         case _ =>
@@ -327,10 +291,25 @@ private def resolveArrayAccessExpr(
   )
 
 private def resolveArrayInitializerExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: ArrayInitializerExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[
+      String,
+      Option[Type]
+    ]
+): LogWithOption[Type] =
+  val elementType = InferenceVariableFactory.createPlaceholderType()
+  val res         = ArrayType(elementType)
+  config._4 += elementType
+  config._4 += res
+  val values = expr.getValues().asScala.toVector
+  flatMapWithLog(log, values)((log, v) => resolveExpression(log, v, config, memo))
+    .rightvmap[Type, Unit](t =>
+      config._3 += t =:~ elementType
+      ()
+    )
+  LogWithSome(log, res)
 
 private def resolveAssignExpr(
     log: Log,
@@ -628,26 +607,6 @@ private def resolveMethodFromResolvedType(
       resolveSolvedType(scope).captured
     )
 
-// private def getMethodsFromResolvedReferenceType(t: ResolvedReferenceType): Set[MethodUsage] =
-//   val tpMap   = t.getTypeParametersMap.asScala.toList
-//   val methods = t.getDeclaredMethods.asScala.toSet
-//   methods.map(substituteTypeParametersInMethodUsage(tpMap, _))
-
-// @tailrec
-// private def substituteTypeParametersInMethodUsage(
-//     tpMap: List[Pair[ResolvedTypeParameterDeclaration, ResolvedType]],
-//     m: MethodUsage
-// ): MethodUsage = tpMap match
-//   case x :: xs => substituteTypeParametersInMethodUsage(xs, m.replaceTypeParameter(x.a, x.b))
-//   case Nil     => m
-
-// private def getAllKnownSupertypes(
-//     config: MutableConfiguration,
-//     types: Vector[ClassOrInterfaceType],
-//     exclusions: Set[String] = Set()
-// ): Set[ClassOrInterfaceType] =
-//   types.toSet.flatMap(x => getAllKnownSuperTypesOfOneType(config, x))
-
 private def getAllKnownSuperTypesOfOneType(
     config: MutableConfiguration,
     t: ClassOrInterfaceType,
@@ -915,7 +874,8 @@ private def createDisjunctiveTypeWithPrimitivesFromContext(
 
 private def createTypeArgumentFromContext(
     expr: Expression,
-    config: MutableConfiguration
+    config: MutableConfiguration,
+    boundedness: Boolean = true
 ): ReferenceOnlyDisjunctiveType =
   // get the parameter choices
   val parameterChoices = getParamChoicesFromExpression(expr)
@@ -934,7 +894,7 @@ private def createTypeArgumentFromContext(
   )
 
   val iv = InferenceVariableFactory
-    .createDisjunctiveType(source, Nil, true, parameterChoices, true)
+    .createDisjunctiveType(source, Nil, boundedness, parameterChoices, boundedness)
   config._2._2(iv) = InferenceVariableMemberTable(iv)
   iv
 
@@ -960,48 +920,6 @@ def getParamChoicesFromExpression(expr: Expression) =
           .map(i => TypeParameterIndex(x.getName.getIdentifier, i))
   methodTypeParams.map(resolveSolvedTypeVariable(_)).toSet ++ classTypeParams
 
-// private def matchMethodCallToMethodUsage(
-//     method: MethodUsage,
-//     arguments: Vector[Type],
-//     expr: MethodCallExpr,
-//     config: MutableConfiguration
-// ): (Vector[Assertion], Type) =
-//   // get the type parameters of the method
-//   val methodDeclaration = method.getDeclaration
-//   val containingType    = methodDeclaration.declaringType
-//   val typeParams        = methodDeclaration.getTypeParameters.asScala.toVector
-//   // substitute type parameters with inference variables
-//   val substitution: Substitution = typeParams
-//     .map(tpd =>
-//       // create the type parameter
-//       val p = TypeParameterName(
-//         containingType.getQualifiedName,
-//         tpd.getContainerId,
-//         tpd.getName
-//       )
-//       // create the inference variable
-//       val iv = createTypeArgumentFromContext(expr, config)
-//       config._4 += iv
-//       // add new inference variable to phi
-//       config._2._2(iv) = InferenceVariableMemberTable(iv)
-//       // return mapping
-//       p -> iv
-//     )
-//     .toMap
-//   // get the types of the formal parameters
-//   val actualMethodTypes = method.getParamTypes.asScala.map(resolveSolvedType(_))
-//   // size of originalArguments may not be the same as actualMethodTypes, because it is
-//   // of variable arity
-//   val ab: ArrayBuffer[Assertion] = ArrayBuffer()
-//   val x = (0 until arguments.size)
-//     .map(i =>
-//       if i >= actualMethodTypes.size then
-//         arguments(i) =:~ actualMethodTypes(actualMethodTypes.size - 1)
-//       else arguments(i) =:~ actualMethodTypes(i)
-//     )
-//     .toVector
-//   (x, resolveSolvedType(method.returnType).substitute(substitution))
-
 private def getAllBoundsOfResolvedTypeParameterDeclaration(
     tp: ResolvedTypeParameterDeclaration
 ): Vector[ResolvedReferenceType] =
@@ -1019,17 +937,6 @@ private def getAllBoundsOfResolvedTypeParameterDeclaration(
     val rts = ReflectionTypeSolver()
     Vector(ReferenceTypeImpl(rts.getSolvedJavaLangObject, rts))
   else res.toVector
-
-// private def resolveMethodFromResolvedDeclaration(
-//     log: Log,
-//     expr: MethodCallExpr,
-//     config: MutableConfiguration,
-//     memo: MutableMap[
-//       String,
-//       Option[Type]
-//     ],
-//     scope: ResolvedReferenceTypeDeclaration
-// ): LogWithOption[Type] = ???
 
 private def resolveMethodFromDisjunctiveType(
     log: Log,
@@ -1142,11 +1049,58 @@ private def resolveNameExpr(
         memo
       )
 
+private def getArity(identifier: String, config: MutableConfiguration): Int =
+  if config._2._1.contains(identifier) then config._2._1(identifier).numParams
+  else if config._1.contains(identifier) then config._1(identifier).numParams
+  else
+    Configuration
+      .createEmptyConfiguration()
+      .getUnderlyingDeclaration(ClassOrInterfaceType(identifier))
+      .numParams
+
 private def resolveObjectCreationExpr(
-    config: MutableConfiguration,
+    log: Log,
     expr: ObjectCreationExpr,
-    memo: MutableMap[Expression, Type]
-): Type = ???
+    config: MutableConfiguration,
+    memo: MutableMap[String, Option[Type]]
+): LogWithOption[Type] =
+  val res =
+    if expr.getType().isUsingDiamondOperator() then
+      val name    = expr.getType().getNameAsString()
+      val numArgs = getArity(name, config)
+      val x = ClassOrInterfaceType(
+        name,
+        (0 until numArgs).map(i => createTypeArgumentFromContext(expr, config, false)).toVector
+      )
+      config._4 ++= x.args
+      x
+    else resolveSolvedType(expr.getType().resolve()).asInstanceOf[ClassOrInterfaceType]
+  config._3 += res.isClass
+  val constructorArgs = flatMapWithLog(log, expr.getArguments().asScala.toVector)((l, a) =>
+    resolveExpression(l, a, config, memo)
+  )
+  val callSiteParameterChoices = getParamChoicesFromExpression(expr)
+  if config._2._1.contains(res.identifier) then
+    // is missing
+    constructorArgs.rightmap(v =>
+      config._3 += HasConstructorAssertion(res, v, callSiteParameterChoices)
+    )
+  else
+    // is declared
+    val constructors =
+      if config._1.contains(res.identifier) then
+        config._1(res.identifier).substitute(res.expansion._2).constructors
+      else Configuration.createEmptyConfiguration().getSubstitutedDeclaration(res).constructors
+    constructorArgs.rightmap(args =>
+      val relevantConstructors =
+        constructors.filter(c => c.callableWithNArgs(args.size)).map(c => c.asNArgs(args.size))
+      config._3 += DisjunctiveAssertion(
+        relevantConstructors.map(c =>
+          ConjunctiveAssertion(c.callWith(args, callSiteParameterChoices))
+        )
+      )
+    )
+  LogWithSome(log, res)
 
 private def resolvePatternExpr(
     config: MutableConfiguration,

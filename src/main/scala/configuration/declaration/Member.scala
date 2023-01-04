@@ -573,23 +573,6 @@ class MethodWithContext(
       .map((k, v) => s"$k -> $v")
       .mkString(", ") + "}"
 
-  // /** Appends some substitution lists to the types of this method
-  //   * @param substitutionList
-  //   *   the lists of substitutions to add * @return the resulting method after adding the
-  //   *   substitution lists to its types
-  //   */
-  // override def addSubstitutionLists(subs: SubstitutionList): MethodWithContext =
-  //   new MethodWithContext(
-  //     signature.addSubstitutionLists(subs),
-  //     returnType.addSubstitutionLists(subs),
-  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-  //     accessModifier,
-  //     isAbstract,
-  //     isStatic,
-  //     isFinal,
-  //     context ::: subs
-  //   )
-
   override def replace(i: InferenceVariable, t: Type): MethodWithContext =
     new MethodWithContext(
       signature.replace(i, t),
@@ -726,6 +709,33 @@ class Constructor(
     val typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
     val accessModifier: AccessModifier
 ) extends MethodLike:
+
+  def getNodeListModifiers: NodeList[Modifier] =
+    val res: NodeList[Modifier] = NodeList()
+    accessModifier match
+      case DEFAULT   => ()
+      case PUBLIC    => res.add(Modifier.publicModifier())
+      case PROTECTED => res.add(Modifier.protectedModifier())
+      case PRIVATE   => res.add(Modifier.privateModifier())
+    res
+
+  def callWith(
+      args: Vector[Type],
+      callSiteParameterChoices: Set[TTypeParameter]
+  ): Vector[Assertion] =
+    if !this.callableWithNArgs(args.size) then ???
+    val tps = typeParameterBounds.map(_._1)
+    val tpMap = tps
+      .map(x =>
+        (x -> InferenceVariableFactory.createJavaInferenceVariable(callSiteParameterChoices, true))
+      )
+      .toMap
+    val subtpBounds =
+      typeParameterBounds.map((k, v) => (k.substitute(tpMap) -> v.map(x => x.substitute(tpMap))))
+    val boundsAssts  = subtpBounds.flatMap((k, v) => v.map(b => k <:~ b))
+    val formalParams = signature.asNArgs(args.size).formalParameters.map(_.substitute(tpMap))
+    val paramAssts   = args.zip(formalParams).map((l, r) => l =:~ r)
+    boundsAssts ++ paramAssts
   def fix: Constructor =
     new Constructor(
       signature.fix,
@@ -820,19 +830,8 @@ class ConstructorWithContext(
     val context: Substitution
 ) extends Constructor(_signature, _typeParameterBounds, _accessModifier):
 
-  // /** Appends some substitution lists to the types of this constructor
-  //   * @param substitutionList
-  //   *   the lists of substitutions to add
-  //   * @return
-  //   *   the resulting constructor after adding the substitution lists to its types
-  //   */
-  // override def addSubstitutionLists(subs: SubstitutionList): ConstructorWithContext =
-  //   new ConstructorWithContext(
-  //     signature.addSubstitutionLists(subs),
-  //     typeParameterBounds.map((k, v) => (k -> v.map(x => x.addSubstitutionLists(subs)))),
-  //     accessModifier,
-  //     context ::: subs
-  //   )
+  override def toString: String =
+    s"${super.toString()} with context {${context.map((k, v) => s"$k -> $v").mkString(", ")}}"
 
   override def combineTemporaryType(
       oldType: TemporaryType,

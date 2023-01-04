@@ -20,15 +20,16 @@ given assertionOrdering: Ordering[Assertion] with
           x.isInstanceOf[DisjunctiveType] && y.isInstanceOf[DisjunctiveType]
         case ContainmentAssertion(x, y) =>
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
-        case x: ConjunctiveAssertion => false
-        case y: DisjunctiveAssertion => true
-        case IsClassAssertion(x)     => x.isInstanceOf[DisjunctiveType]
-        case IsInterfaceAssertion(x) => x.isInstanceOf[DisjunctiveType]
-        case x: HasMethodAssertion   => false
-        case IsDeclaredAssertion(x)  => false
-        case IsMissingAssertion(x)   => false
-        case IsUnknownAssertion(x)   => false
-        case IsPrimitiveAssertion(x) => x.isInstanceOf[DisjunctiveType]
+        case x: ConjunctiveAssertion    => false
+        case y: DisjunctiveAssertion    => true
+        case IsClassAssertion(x)        => x.isInstanceOf[DisjunctiveType]
+        case IsInterfaceAssertion(x)    => x.isInstanceOf[DisjunctiveType]
+        case x: HasMethodAssertion      => false
+        case y: HasConstructorAssertion => false
+        case IsDeclaredAssertion(x)     => false
+        case IsMissingAssertion(x)      => false
+        case IsUnknownAssertion(x)      => false
+        case IsPrimitiveAssertion(x)    => x.isInstanceOf[DisjunctiveType]
         //case IsReferenceAssertion(x) => x.isInstanceOf[DisjunctiveType]
         case IsIntegralAssertion(x) => x.isInstanceOf[DisjunctiveType]
         case IsNumericAssertion(x)  => x.isInstanceOf[DisjunctiveType]
@@ -239,6 +240,28 @@ case class IsInterfaceAssertion(t: Type) extends Assertion:
       newType: SomeClassOrInterfaceType
   ): IsInterfaceAssertion = IsInterfaceAssertion(t.combineTemporaryType(oldType, newType))
 
+case class HasConstructorAssertion(
+    source: ClassOrInterfaceType,
+    args: Vector[Type],
+    callSiteParameterChoices: Set[TTypeParameter]
+) extends Assertion:
+  override def toString =
+    s"${source.identifier} can be constructed with new $source(${args.mkString(", ")}) whose type arguments might be $callSiteParameterChoices"
+
+  def replace(oldType: InferenceVariable, newType: Type): HasConstructorAssertion =
+    copy(source = source.replace(oldType, newType), args = args.map(_.replace(oldType, newType)))
+
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): HasConstructorAssertion =
+    copy(
+      source = source.combineTemporaryType(oldType, newType),
+      args = args.map(_.combineTemporaryType(oldType, newType)),
+      callSiteParameterChoices =
+        callSiteParameterChoices.map(_.combineTemporaryType(oldType, newType))
+    )
+
 /** An assertion stating that a type must have a method
   * @param source
   *   the type containing the method
@@ -265,7 +288,10 @@ case class HasMethodAssertion(
       returnType = returnType.replace(oldType, newType),
       callSiteParameterChoices
     )
-  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Assertion =
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): HasMethodAssertion =
     copy(
       source = source.combineTemporaryType(oldType, newType),
       args = args.map(_.combineTemporaryType(oldType, newType)),

@@ -80,6 +80,37 @@ class MissingTypeDeclaration(
       constructors
     )
 
+  def addFinalizedConstructor(c: Constructor): MissingTypeDeclaration =
+    new MissingTypeDeclaration(
+      identifier,
+      typeParameterBounds,
+      mustBeClass,
+      mustBeInterface,
+      supertypes,
+      methodTypeParameterBounds ++ c.typeParameterBounds.map((x, y) => (x.toString -> y)),
+      attributes,
+      methods,
+      constructors :+ c
+    )
+
+  def removeConstructorWithContext(c: ConstructorWithContext): MissingTypeDeclaration =
+    new MissingTypeDeclaration(
+      identifier,
+      typeParameterBounds,
+      mustBeClass,
+      mustBeInterface,
+      supertypes,
+      methodTypeParameterBounds,
+      attributes,
+      methods,
+      constructors.filter(other =>
+        if !other.isInstanceOf[ConstructorWithContext] then true
+        else
+          val otherConstructor = other.asInstanceOf[ConstructorWithContext]
+          c.context != otherConstructor.context || c.signature != otherConstructor.signature || c.callSiteParameterChoices != otherConstructor.callSiteParameterChoices || c.typeParameterBounds != otherConstructor.typeParameterBounds
+      )
+    )
+
   def removeMethodWithContext(m: MethodWithContext): MissingTypeDeclaration =
     if !methods.contains(m.signature.identifier) then this
     else
@@ -417,17 +448,22 @@ class MissingTypeDeclaration(
   def ofParameters(i: Int) =
     // TODO make sure you can go from raw to generic type of a particular
     // arity, cannot change positive arity.
-    MissingTypeDeclaration(
-      identifier,
-      (0 until i).map(x => Vector()).toVector,
-      mustBeClass,
-      mustBeInterface,
-      supertypes,
-      methodTypeParameterBounds,
-      attributes,
-      methods,
-      constructors
-    )
+    if i == 0 && numParams > 0 then this
+    else if i == 0 && numParams == 0 then this
+    else if i != 0 && numParams == 0 then
+      MissingTypeDeclaration(
+        identifier,
+        (0 until i).map(x => Vector()).toVector,
+        mustBeClass,
+        mustBeInterface,
+        supertypes,
+        methodTypeParameterBounds,
+        attributes,
+        methods,
+        constructors
+      )
+    else if i != 0 && i == numParams then this
+    else ???
 
   /** Gets the type of an attribute
     * @param identifier
@@ -516,6 +552,33 @@ class MissingTypeDeclaration(
             .callSiteParameterChoices == paramChoices))
       )
       .map(_.returnType)
+
+  def addConstructor(
+      paramTypes: Vector[Type],
+      typeParameterBounds: Vector[(TTypeParameter, Vector[Type])],
+      accessModifier: AccessModifier,
+      callSiteParameterChoices: Set[TTypeParameter],
+      context: Substitution
+  ): MissingTypeDeclaration =
+    val newConstructor = new ConstructorWithContext(
+      MethodSignature(this.identifier, paramTypes, false),
+      typeParameterBounds,
+      accessModifier,
+      callSiteParameterChoices,
+      context
+    )
+
+    new MissingTypeDeclaration(
+      this.identifier,
+      this.typeParameterBounds,
+      this.mustBeClass,
+      this.mustBeClass,
+      this.supertypes,
+      this.methodTypeParameterBounds,
+      this.attributes,
+      this.methods,
+      this.constructors :+ newConstructor
+    )
 
   /** Adds a method to this declaration
     * @param identifier

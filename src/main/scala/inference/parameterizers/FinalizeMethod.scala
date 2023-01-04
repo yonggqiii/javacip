@@ -23,7 +23,7 @@ private def finalizeMethod(
     .flatMap(v => v)
     .toVector
   if unfinalizedMethods.isEmpty then
-    return LogWithRight(log.addInfo(s"$x is all finalized"), config)
+    return LogWithRight(log.addInfo(s"$x methods are all finalized"), config)
   val methodToFinalize = unfinalizedMethods(0)
   val newConfig = config.copy(phi1 =
     config.phi1 + (x -> decl

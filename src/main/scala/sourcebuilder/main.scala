@@ -7,7 +7,12 @@ import scala.jdk.OptionConverters.*
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.Modifier
-import com.github.javaparser.ast.body.{FieldDeclaration, MethodDeclaration, Parameter}
+import com.github.javaparser.ast.body.{
+  FieldDeclaration,
+  MethodDeclaration,
+  Parameter,
+  ConstructorDeclaration
+}
 import com.github.javaparser.ast.`type`.{
   Type as ASTType,
   PrimitiveType as ASTPrimitiveType,
@@ -186,6 +191,49 @@ def buildType(
           else bd.addStatement("return null;")
       classOrInterfaceDeclaration.addMember(md)
     )
+  )
+
+  decl.constructors.foreach(c =>
+    val methodTypeParameters = NodeList(
+      c.typeParameterBounds
+        .map((p, v) =>
+          (
+            ASTTypeParameter(
+              numToLetter(p.asInstanceOf[TypeParameterIndex].index, prohibitedNames)
+            ),
+            NodeList(
+              v.map(t =>
+                typeToASTType(t, prohibitedNames).asInstanceOf[ASTClassOrInterfaceType]
+              ): _*
+            )
+          )
+        )
+        .map((p, v) => p.setTypeBound(v)): _*
+    )
+
+    val cd = ConstructorDeclaration()
+    cd.setModifiers(c.getNodeListModifiers)
+    cd.setName(SimpleName(c.signature.identifier))
+    if !methodTypeParameters.isEmpty() then cd.setTypeParameters(methodTypeParameters)
+    // create formal parameters
+    val params = (0 until c.signature.formalParameters.size).map(i =>
+      val t = c.signature.formalParameters(i)
+      Parameter(typeToASTType(t, prohibitedNames), s"arg$i")
+    )
+    if !params.isEmpty && c.signature.hasVarArgs then params(params.size - 1).setVarArgs(true)
+    if !params.isEmpty then cd.setParameters(NodeList(params: _*))
+    //cd.setType(typeToASTType(c.returnType, prohibitedNames))
+    // if decl.isInterface then
+    //   md.setAbstract(true)
+    //   md.removeBody()
+    // else
+    //   val bd = md.getBody().toScala.get // safe
+    //   if m.returnType != PRIMITIVE_VOID then
+    //     if m.returnType == PRIMITIVE_BOOLEAN then bd.addStatement("return false;")
+    //     else if m.returnType == PRIMITIVE_CHAR then bd.addStatement("return 'a';")
+    //     else if m.returnType.isInstanceOf[PrimitiveType] then bd.addStatement("return 0;")
+    //     else bd.addStatement("return null;")
+    classOrInterfaceDeclaration.addMember(cd)
   )
 
   (log, cu)
