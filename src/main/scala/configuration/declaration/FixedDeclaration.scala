@@ -43,11 +43,17 @@ class FixedDeclaration(
     val methods: Map[String, Vector[Method]],
     val constructors: Vector[Constructor]
 ) extends Declaration:
-  def isUnreasonable: Boolean =
-    if methods.flatMap(_._2).exists(m => m.isUnreasonable) then true
-    else false
   val numParams = typeParameterBounds.size
   val isClass   = !isInterface
+
+  /** Determine whether the declaration contains any unreasonable methods
+    * @return
+    *   whether the declaration is unreasonable
+    */
+  def isUnreasonable: Boolean = methods
+    .flatMap(_._2)
+    .exists(m => m.isUnreasonable)
+
   override def toString =
     val ab      = ArrayBuffer[String]()
     val numArgs = typeParameterBounds.size
@@ -87,7 +93,6 @@ class FixedDeclaration(
 
   /** Gets the direct ancestors of this type. If this type doesn't extend any type and isn't
     * [[java.lang.Object]], then [[java.lang.Object]] will be included as its direct ancestor.
-    *
     * @return
     *   the direct ancestors of this type
     */
@@ -121,7 +126,6 @@ class FixedDeclaration(
           val index = source + "#" + qualifiedName
           if !methodTypeParameterBounds.contains(index) then ??? // TODO
           else methodTypeParameterBounds(index)
-  // case _ => ??? // TODO
 
   def erased = new FixedDeclaration(
     identifier,

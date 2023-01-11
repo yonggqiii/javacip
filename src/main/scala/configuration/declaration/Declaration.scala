@@ -57,6 +57,10 @@ trait Declaration:
     */
   val numParams: Int
 
+  /** The declaration after erasure
+    * @return
+    *   the erased declaration
+    */
   def erased: Declaration
 
   /** Gets all inherited attributes from all its supertypes
@@ -76,6 +80,13 @@ trait Declaration:
     // there should be only one direct ancestor to inherit from
     if y.isEmpty then Map() else y(0)
 
+  /** Get all the methods that are inherited from the supertypes. Only methods that are finalized
+    * Methods will be produced
+    * @param config
+    *   the configuration of the algorithm
+    * @return
+    *   the inherited methods
+    */
   def getAllInheritedMethods(config: Configuration): Map[String, Vector[Method]] =
     val supertypeDeclarations = getDirectAncestors.map(x => config.getSubstitutedDeclaration(x))
     val methods = supertypeDeclarations.map(x => x.getAccessibleMethods(config, PROTECTED))
@@ -85,6 +96,12 @@ trait Declaration:
       )
     )
 
+  /** Get all methods it has access to, including the original input erasures
+    * @param config
+    *   the configuration of the algorithm
+    * @return
+    *   the methods and their original erasures
+    */
   def getAllMethodsWithErasures(
       config: Configuration
   ): Map[String, Vector[(Method, MethodSignature)]] =
@@ -100,6 +117,12 @@ trait Declaration:
       for method <- v do res(id) += ((method, method.signature.erased(this)))
     res.map((k, v) => (k -> v.toVector)).toMap
 
+  /** Get all methods this declaration inherits, along with the original input erasures
+    * @param config
+    *   the configuration of the algorithm
+    * @return
+    *   the inherited methods and their original erasures
+    */
   def getAllInheritedMethodsWithErasures(
       config: Configuration
   ): Map[String, Vector[(Method, MethodSignature)]] =
@@ -112,6 +135,14 @@ trait Declaration:
         for (method, erasure) <- v do res(id) += ((method.substitute(context), erasure))
     res.map((k, v) => (k -> v.toVector)).toMap
 
+  /** Get all methods that are accessible to this method including inherited ones
+    * @param config
+    *   the configuration of the algorithm
+    * @param accessLevel
+    *   the access level of the method
+    * @return
+    *   all the accessible methods of this declaration
+    */
   def getAccessibleMethods(
       config: Configuration,
       accessLevel: AccessModifier
@@ -138,6 +169,12 @@ trait Declaration:
           res(id) += method
     res.map((k, v) => (k -> v.toVector)).toMap
 
+  /** Get the erasure of a method
+    * @param m
+    *   the method
+    * @return
+    *   the erasure of the method
+    */
   def getMethodErasure(m: Method): Method
 
   /** Gets all the attributes (including inherited ones) that are accessible and/or inheritable
@@ -172,8 +209,30 @@ trait Declaration:
     else if t.identifier != this.identifier then None
     else Some(attributes(identifier).substitute(t.expansion._2))
 
+  /** Substitutes the declaration
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting declaration
+    */
   def substitute(function: Substitution): Declaration
+
+  /** Gets the leftmost reference type bound of a type parameter
+    * @param type
+    *   the type whose bound is to be obtained
+    * @return
+    *   the leftmost reference type bound
+    */
   def getLeftmostReferenceTypeBoundOfTypeParameter(`type`: Type): SomeClassOrInterfaceType
+
+  /** Get all the reference type bounds of a type parameter
+    * @param type
+    *   the type whose bounds is to be obtained
+    * @param exclusions
+    *   the excluded types (for recursion)
+    * @return
+    *   the resulting reference type bounds
+    */
   def getAllReferenceTypeBoundsOfTypeParameter(
       `type`: Type,
       exclusions: Set[Type] = Set()

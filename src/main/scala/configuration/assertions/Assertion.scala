@@ -3,15 +3,10 @@ package configuration.assertions
 import configuration.declaration.*
 import configuration.types.*
 
-/** assertions to be delayed by Replaceable types are given the lowest priority, followed by
-  * disjunctive assertions, and finally all others have the highest priority
+/** disjunctive assertions have the lowest priority since they cause branching
   */
 given assertionOrdering: Ordering[Assertion] with
   def compare(x: Assertion, y: Assertion): Int =
-    // val disjunctiveTester: Assertion => Boolean = x =>
-    //   x match
-    //     case _: DisjunctiveAssertion => true
-    //     case _                       => false
     val disjunctiveTester: Assertion => Boolean = asst =>
       asst match
         case SubtypeAssertion(x, y) =>
@@ -30,14 +25,14 @@ given assertionOrdering: Ordering[Assertion] with
         case IsMissingAssertion(x)      => false
         case IsUnknownAssertion(x)      => false
         case IsPrimitiveAssertion(x)    => x.isInstanceOf[DisjunctiveType]
-        //case IsReferenceAssertion(x) => x.isInstanceOf[DisjunctiveType]
-        case IsIntegralAssertion(x) => x.isInstanceOf[DisjunctiveType]
-        case IsNumericAssertion(x)  => x.isInstanceOf[DisjunctiveType]
+        case IsIntegralAssertion(x)     => x.isInstanceOf[DisjunctiveType]
+        case IsNumericAssertion(x)      => x.isInstanceOf[DisjunctiveType]
         case CompatibilityAssertion(x, y) =>
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case WideningAssertion(x, y) =>
           x.isInstanceOf[DisjunctiveType] || y.isInstanceOf[DisjunctiveType]
         case ImplementsMethodAssertion(t, m, _) => t.isInstanceOf[DisjunctiveType]
+        case _: OverridesAssertion              => false
     val (xdisj, ydisj) =
       (disjunctiveTester(x), disjunctiveTester(y))
     if xdisj && !ydisj then -1
@@ -240,6 +235,14 @@ case class IsInterfaceAssertion(t: Type) extends Assertion:
       newType: SomeClassOrInterfaceType
   ): IsInterfaceAssertion = IsInterfaceAssertion(t.combineTemporaryType(oldType, newType))
 
+/** An assertion stating that a type has a constructor
+  * @param source
+  *   the source (and return type) of the constructor
+  * @param args
+  *   the arguments to the constructor invocation
+  * @param callSiteParameterChoices
+  *   the parameter choices at the site of the constructor invocation
+  */
 case class HasConstructorAssertion(
     source: ClassOrInterfaceType,
     args: Vector[Type],
@@ -378,6 +381,14 @@ case class IsNumericAssertion(t: Type) extends Assertion:
       newType: SomeClassOrInterfaceType
   ): IsNumericAssertion = IsNumericAssertion(t.combineTemporaryType(oldType, newType))
 
+/** An assertion stating that a type implements a method
+  * @param t
+  *   the type to implement the method
+  * @param m
+  *   the method to implement
+  * @param canBeAbstract
+  *   whether the method can be abstract
+  */
 case class ImplementsMethodAssertion(t: Type, m: Method, canBeAbstract: Boolean = false)
     extends Assertion:
   override def toString = s"$t implements $m"
@@ -389,6 +400,12 @@ case class ImplementsMethodAssertion(t: Type, m: Method, canBeAbstract: Boolean 
   ): ImplementsMethodAssertion =
     copy(t = t.combineTemporaryType(oldType, newType), m = m.combineTemporaryType(oldType, newType))
 
+/** An assertion stating that one method overrides another method
+  * @param overriding
+  *   the method that overrides the other method
+  * @param overridden
+  *   the method to be overridden
+  */
 case class OverridesAssertion(overriding: Method, overridden: Method) extends Assertion:
   override def toString = s"$overriding overrides $overridden"
   def replace(oldType: InferenceVariable, newType: Type): OverridesAssertion =

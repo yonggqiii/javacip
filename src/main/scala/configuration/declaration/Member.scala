@@ -66,10 +66,30 @@ final case class Attribute(
     isStatic: Boolean,
     isFinal: Boolean
 ):
+  /** Fix this attribute
+    * @return
+    *   the fixed version of the attribute
+    */
   def fix: Attribute =
     copy(`type` = `type`.fix)
+
+  /** Combines any temporary type in this attribute with a new type
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the result of combining the temporary type
+    * @return
+    *   the resulting attribute
+    */
   def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Attribute =
     copy(`type` = `type`.combineTemporaryType(oldType, newType))
+
+  /** Perform a substitution on this attribute
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting attribute
+    */
   def substitute(function: Substitution): Attribute =
     copy(`type` = `type`.substitute(function))
 
@@ -137,20 +157,38 @@ final case class MethodSignature(
     formalParameters: Vector[Type],
     hasVarArgs: Boolean
 ):
+  // make sure the values are passed in to the constructor properly
+  if hasVarArgs && formalParameters.size == 0 then
+    throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
+
+  /** Fix this method signature
+    * @return
+    *   the resulting method signature
+    */
   def fix: MethodSignature = copy(formalParameters = formalParameters.map(_.fix))
+
+  /** Combines any temporary types in this signature with another type
+    * @param oldType
+    *   the temporary type to combine
+    * @param newType
+    *   the resulting type after combining types
+    * @return
+    *   the resulting method signature
+    */
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): MethodSignature =
     copy(formalParameters = formalParameters.map(_.combineTemporaryType(oldType, newType)))
 
-  // make sure the values are passed in to the constructor properly
-  if hasVarArgs && formalParameters.size == 0 then
-    throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
-
+  /** Transform this method signature into one with n parameters
+    * @param n
+    *   the number of parameters to transform this method signature into
+    * @return
+    *   the resulting method signature
+    */
   def asNArgs(n: Int): MethodSignature =
-    if (formalParameters.size != n && !hasVarArgs) || formalParameters.size > n then
-      throw new IllegalArgumentException(s"$this cannoth have $n args!")
+    if !callableWithNArgs(n) then throw new IllegalArgumentException(s"$this cannot have $n args!")
     if formalParameters.size == n then this
     else
       val ab: ArrayBuffer[Type] = ArrayBuffer()
@@ -168,13 +206,19 @@ final case class MethodSignature(
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodSignature =
     copy(formalParameters = formalParameters.map(_.reorderTypeParameters(scheme)))
 
+  /** Perform a substitution on the types in this method signature
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting method signature
+    */
   def substitute(function: Substitution): MethodSignature =
     copy(formalParameters = formalParameters.map(_.substitute(function)))
 
   /** Determines if this signature is callable with n arguments
     * @param n
     *   n
-    * @returns
+    * @return
     *   true if it is callable, false otherwise
     */
   def callableWithNArgs(n: Int) =
@@ -190,6 +234,7 @@ final case class MethodSignature(
     */
   def replace(i: InferenceVariable, t: Type): MethodSignature =
     copy(formalParameters = formalParameters.map(_.replace(i, t)))
+
   override def toString =
     identifier +
       "(" +
@@ -241,16 +286,22 @@ sealed trait MethodLike:
     */
   def replace(i: InferenceVariable, t: Type): MethodLike
 
+  /** Combines any occurrence of a temporary type in this MethodLike with another type
+    * @param oldType
+    *   the temporary type to combine
+    * @param newType
+    *   the resulting type after combining the temporary type
+    * @return
+    *   the resulting MethodLike
+    */
   def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): MethodLike
 
-  // /** Appends some substitution lists to the types of this method-like
-  //   * @param substitutionList
-  //   *   the lists of substitutions to add
-  //   * @return
-  //   *   the resulting method-like after adding the substitution lists to its types
-  //   */
-  // def addSubstitutionLists(subs: SubstitutionList): MethodLike
-
+  /** Performs a substitution on the types in this MethodLike
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting MethodLike
+    */
   def substitute(function: Substitution): MethodLike
 
   /** Determines if the access level of this method is at least some other access level, based on
@@ -272,6 +323,12 @@ sealed trait MethodLike:
     */
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodLike
 
+  /** Transforms this MethodLike into one that has n parameters
+    * @param n
+    *   the number of parameters
+    * @return
+    *   the resulting MethodLike
+    */
   def asNArgs(n: Int): MethodLike
 
 /** A method
@@ -313,6 +370,7 @@ class Method(
     if !returnType.isInstanceOf[TTypeParameter] then return false
     if !typeParameterBounds.map(_._1).contains(returnType) then return false
     !(fp ++ allBounds).exists(x => returnType ⊆ x)
+
   def fix: Method =
     new Method(
       signature.fix,
