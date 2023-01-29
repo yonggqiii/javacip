@@ -107,6 +107,24 @@ private def resolveClassOrInterfaceType(
       m + (TypeParameterIndex(identifier, i) -> arguments(i))
     )
 
+  // handle the case where it was the raw type earlier but now we encounter a generic
+  // version
+  if config._2._1.contains(identifier) then
+    val decl              = config._2._1(identifier)
+    val originalNumParams = decl.numParams
+    if originalNumParams == 0 && arguments.size != 0 then
+      config._2._1(identifier) = decl.ofParameters(arguments.size)
+      cu.getInterfaceByName(identifier)
+        .toScala
+        .get
+        .setTypeParameters(
+          NodeList(
+            (0 until arguments.size)
+              .map(i => TypeParameter((84 + i).toChar.toString))
+              .asJavaCollection
+          )
+        )
+
   try (log, resolveSolvedType(typeToConvert.resolve()))
   catch
     case e: UnsolvedSymbolException =>

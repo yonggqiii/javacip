@@ -33,17 +33,17 @@ private[configuration] def resolveExpression(
   val rng = expr.getRange().toScala.get.toString
   if memo.contains(rng) then LogWithOption(log, memo(rng))
   else
-    println(expr)
-    if expr.isNameExpr() then
-      val t = expr.replace(
-        FieldAccessExpr(
-          NameExpr("JavaCIPUnknownVariableStore"),
-          expr.asNameExpr().getNameAsString()
-        )
-      )
-      println(t)
-      println(expr)
-    println(expr.getClass())
+    // println(expr)
+    // if expr.isNameExpr() then
+    //   val t = expr.replace(
+    //     FieldAccessExpr(
+    //       NameExpr("JavaCIPUnknownVariableStore"),
+    //       expr.asNameExpr().getNameAsString()
+    //     )
+    //   )
+    //   println(t)
+    //   println(expr)
+    // println(expr.getClass())
     val res =
       if expr.isFieldAccessExpr then
         resolveFieldAccessExpr(log, expr.asFieldAccessExpr, config, memo)

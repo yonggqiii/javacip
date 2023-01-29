@@ -2,6 +2,10 @@ package utils
 
 /** A type that contains a log object and an option object */
 sealed trait LogWithOption[+A]:
+  def >>=[B](f: (Log, A) => LogWithOption[B]): LogWithOption[B] = flatMap(f)
+  def >*>[B](f: (Log, A) => (Log, B)): LogWithOption[B]         = map(f)
+  def >->=[B](f: A => B): LogWithOption[B]                      = rightmap(f)
+
   /** Maps this object using a function that takes in a log and A and produces a log with B
     * @param f
     *   the function to map
