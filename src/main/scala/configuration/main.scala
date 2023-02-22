@@ -87,8 +87,8 @@ def parseConfiguration(
 
   ///////// Step 2 /////////
   // Parse the file and generate AST
-  val s: LogWithOption[CompilationUnit] =
-    parseSource(log.addInfo(s"attempting to parse $filePath..."), filePath)
+  // val s: LogWithOption[CompilationUnit] =
+  //   parseSource(log.addInfo(s"attempting to parse $filePath..."), filePath)
   // val o = s.rightmap(x => x.clone)
   ///////// Step 3 /////////
   // 3a
@@ -182,10 +182,11 @@ private def fixImpossibleCode(
     .asScala
     .filter(x =>
       try
-        x.resolve()
+        x.calculateResolvedType()
         false
       catch case _: Throwable => true
     )
+  println(allUnresolvableNameExprs.toVector)
   // build map of name -> nameexprs to see which ones might be static and which ones must not
   val m        = MutableMap[String, ArrayBuffer[NameExpr]]()
   var finalLog = log
@@ -221,13 +222,12 @@ private def fixImpossibleCode(
             )
             cu.addClass("JavaCIPUnknownScope")
     else
-      // let it be a type
-      cu.addClass(id)
+      // let it be a type (doesn't have to be a class, right?)
+      cu.addInterface(id)
       config._2._1(id) =
-        MissingTypeDeclaration(id, Vector(), true, false, Vector(), Map(), Map(), Map(), Vector())
-      finalLog = finalLog.addInfo(s"Letting $id be a class")
-  cu.recalculatePositions()
-  (finalLog, (cu, config))
+        MissingTypeDeclaration(id, Vector(), false, false, Vector(), Map(), Map(), Map(), Vector())
+      finalLog = finalLog.addInfo(s"Letting $id be a type")
+  (finalLog, (StaticJavaParser.parse(cu.toString()), config))
 
 private def cannotPossiblyHaveScope(
     expr: NameExpr,

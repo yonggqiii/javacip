@@ -1,9 +1,9 @@
-class c10118207 extends A {
+class c10118207 {
 
     public static final boolean zipUpdate(String zipfile, String name, String oldname, byte[] contents, boolean delete) {
         try {
             File temp = File.createTempFile("atf", ".zip");
-            InputStream in;
+            InputStream<Integer> in = x;
             OutputStream os;
             ZipInputStream zin;
             ZipOutputStream zout;

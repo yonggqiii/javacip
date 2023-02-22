@@ -1,5 +1,6 @@
 public class test14 {
-    void main() {
-        MLUnit.doStuff();
+    int main() {
+        int i = List.x();
+        return 1;
     }
 }

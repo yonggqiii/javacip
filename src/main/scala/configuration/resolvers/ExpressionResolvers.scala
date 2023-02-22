@@ -11,6 +11,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeS
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
+import scala.util.{Try, Success, Failure}
 import scala.collection.mutable.Map as MutableMap
 import scala.collection.mutable.Set as MutableSet
 import scala.collection.mutable.{Queue, ArrayBuffer}
@@ -232,8 +233,10 @@ private def getAttrTypeFromMissingScope(
           case scala.util.Right(x) => scala.util.Right(x.typet)
         val parameterChoices: Set[TTypeParameter] = declaredType match
           case scala.util.Left(x) =>
-            val numParams = x.numParams
-            (0 until numParams).map(TypeParameterIndex(x.identifier, _)).toSet
+            if scope.static then Set()
+            else
+              val numParams = x.numParams
+              (0 until numParams).map(TypeParameterIndex(x.identifier, _)).toSet
           case scala.util.Right(_) => Set()
         val newIV = declaredType match
           case scala.util.Left(x) =>
@@ -246,7 +249,7 @@ private def getAttrTypeFromMissingScope(
         // add attribute to the type declaration and add to phi
         declaredType match
           case scala.util.Left(dt) =>
-            val newDT = dt.addAttribute(attributeIdentifier, newIV, false)
+            val newDT = dt.addAttribute(attributeIdentifier, newIV, scope.static)
             config._2._1(scope.identifier) = newDT
           case scala.util.Right(it) =>
             val newDT = it.addAttribute(attributeIdentifier, newIV)
@@ -514,6 +517,104 @@ private def resolveLambdaExpr(
 ): Type =
   ???
 
+private def resolveStaticMethodCallExpr(
+    log: Log,
+    expr: MethodCallExpr,
+    config: MutableConfiguration,
+    memo: MutableMap[String, Option[Type]],
+    scope: ResolvedType
+): LogWithOption[Type] =
+  val nameOfMethod   = expr.getNameAsString
+  val numOfArguments = expr.getArguments.size
+  // make sure scope is static
+  val resolvedScope = resolveSolvedType(scope).asInstanceOf[ClassOrInterfaceType].toStaticType
+  val isMissing     = config._2._1.contains(resolvedScope.identifier)
+  // make sure relevant methods are static; only when scope is declared
+  val relevantMethods =
+    if !isMissing then
+      getAllRelevantMethods(resolvedScope, config, nameOfMethod, numOfArguments)
+        .filter(_.isStatic)
+    else Vector()
+
+  // call-site parameter choices
+  val paramChoices = getParamChoicesFromExpression(expr)
+
+  // get the types of the arguments suplied to the method
+  val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
+    resolveExpression(_, _, config, memo)
+  )
+  // case of no methods and scope is not missing
+  if relevantMethods.size == 0 && !isMissing then
+    LogWithOption(
+      log.addError(
+        s"$expr cannot be resolved",
+        s"static method declaration for ${nameOfMethod} cannot be" +
+          s" found in declared ${resolvedScope}"
+      ),
+      None
+    )
+  // case of only one method
+  else if relevantMethods.size == 1 then
+    // get the method in question since we unambiguously must be referring
+    // to this method
+    val method = relevantMethods(0)
+    originalArguments
+      .rightmap(v => (v -> method.callWith(v, paramChoices)))
+      .rightmap((args, x) =>
+        x._1.foreach(y => config._3 += y)
+        // TODO make this a static invocation
+        config._5 += Invocation(resolvedScope, nameOfMethod, args, x._2, paramChoices)
+        x._2
+      )
+
+  // case of scope being a missing type
+  else if isMissing then
+    originalArguments.rightmap(args =>
+      val missingDeclaration = config._2._1(resolvedScope.identifier)
+      val returnType         = createReturnTypeFromContext(expr, config)
+      config._4 += returnType
+      // create a new declaration by adding the method
+      config._2._1 += (missingDeclaration.identifier -> missingDeclaration.addMethod(
+        nameOfMethod,
+        args,
+        returnType,
+        Vector(),
+        PUBLIC,
+        false,
+        true,
+        false,
+        paramChoices,
+        Map()
+      ))
+      config._5 += Invocation(
+        resolvedScope,
+        nameOfMethod,
+        args,
+        returnType,
+        paramChoices
+      )
+      returnType
+    )
+  else
+    // we're not sure what the return type should be, so we have a placeholder
+    // and encode the choices using a disjunctive assertion of conjuctive assertions
+    val returnType = InferenceVariableFactory.createPlaceholderType()
+    config._4 += returnType
+    originalArguments.rightmap(v =>
+      config._5 += Invocation(resolvedScope, nameOfMethod, v, returnType, paramChoices)
+    )
+    val missingReturnType = createReturnTypeFromContext(expr, config)
+    config._4 += missingReturnType
+    val ambiguousDeclaredMethods = originalArguments
+      .rightmap(args => relevantMethods.map(method => method.callWith(args, paramChoices)))
+      .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion]((argsAssts, rt) =>
+        ConjunctiveAssertion(argsAssts :+ (returnType ~=~ rt))
+      )
+    ambiguousDeclaredMethods.rightmap(assts =>
+      config._3 += DisjunctiveAssertion(assts)
+      returnType
+    )
+
 private def resolveMethodCallExpr(
     log: Log,
     expr: MethodCallExpr,
@@ -523,58 +624,64 @@ private def resolveMethodCallExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  try ??? //LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
-  catch
-    case e: Throwable =>
-      expr.getScope.toScala match
-        case Some(x) =>
-          // there is a scope.
-          scala.util.Try(x.calculateResolvedType) match
-            case scala.util.Success(resolvedType) =>
-              // scope can be fully resolved
+  // check for static invocation
+  expr.getScope.toScala
+    .filter(_.isInstanceOf[NameExpr])
+    .map(_.asInstanceOf[NameExpr])
+    .map(x => (Try(x.resolve().getType()), Try(x.calculateResolvedType()))) match
+    case Some(Failure(_), Success(x)) =>
+      return resolveStaticMethodCallExpr(log, expr, config, memo, x)
+    case _ => ()
+
+  expr.getScope.toScala match
+    case Some(x) =>
+      // there is a scope.
+      scala.util.Try(x.calculateResolvedType) match
+        case scala.util.Success(resolvedType) =>
+          // scope can be fully resolved
+          resolveMethodFromResolvedType(
+            log,
+            expr,
+            config,
+            memo,
+            resolvedType
+          )
+        case scala.util.Failure(_) =>
+          // scope cannot be fully resolved, likely an inference variable
+          resolveExpression(log, x, config, memo).flatMap((newLog, t) =>
+            t match
+              case x: InferenceVariable =>
+                resolveMethodFromDisjunctiveType(
+                  newLog,
+                  expr,
+                  config,
+                  memo,
+                  x.captured.asInstanceOf[InferenceVariable]
+                )
+              case _ => ???
+          )
+    case None =>
+      // no scope.
+      expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala match
+        case None =>
+          LogWithOption(
+            log.addError(
+              s"${expr.getNameAsString} is not found in class or interface declaration!"
+            ),
+            None
+          )
+        case Some(decl) =>
+          scala.util.Try(decl.resolve) match
+            case scala.util.Success(resolvedDecl) =>
               resolveMethodFromResolvedType(
                 log,
                 expr,
                 config,
                 memo,
-                resolvedType
+                new ReferenceTypeImpl(resolvedDecl, ReflectionTypeSolver()) // does this work?
               )
             case scala.util.Failure(_) =>
-              // scope cannot be fully resolved, likely an inference variable
-              resolveExpression(log, x, config, memo).flatMap((newLog, t) =>
-                t match
-                  case x: InferenceVariable =>
-                    resolveMethodFromDisjunctiveType(
-                      newLog,
-                      expr,
-                      config,
-                      memo,
-                      x.captured.asInstanceOf[InferenceVariable]
-                    )
-                  case _ => ???
-              )
-        case None =>
-          // no scope.
-          expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala match
-            case None =>
-              LogWithOption(
-                log.addError(
-                  s"${expr.getNameAsString} is not found in class or interface declaration!"
-                ),
-                None
-              )
-            case Some(decl) =>
-              scala.util.Try(decl.resolve) match
-                case scala.util.Success(resolvedDecl) =>
-                  resolveMethodFromResolvedType(
-                    log,
-                    expr,
-                    config,
-                    memo,
-                    new ReferenceTypeImpl(resolvedDecl, ReflectionTypeSolver()) // does this work?
-                  )
-                case scala.util.Failure(_) =>
-                  LogWithNone(log.addError(s"${decl.getFullyQualifiedName} cannot be resolved?"))
+              LogWithNone(log.addError(s"${decl.getFullyQualifiedName} cannot be resolved?"))
 
 private def resolveMethodFromResolvedType(
     log: Log,
@@ -999,55 +1106,60 @@ private def resolveNameExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
+  // non static obvious
+  try LogWithOption(log, Some(resolveSolvedType(expr.resolve().getType())))
   catch
-    case e: Throwable =>
-      getAttrTypeFromMissingScope(
-        // get the scope of the field access.
-        (expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala match
-          // expr not found in class or interface declaration?
-          case None =>
-            LogWithOption(
-              log.addError(
-                s"${expr} not found in class or interface declaration"
-              ),
-              None
-            )
-          case Some(x) =>
-            val decl = config._1(x.getName.getIdentifier)
-            // not necessarily true right? could be static final
-            if decl.isInterface then
-              LogWithOption(
-                log.addError(
-                  s"${decl.identifier} cannot have instance-level attributes!"
-                ),
-                None
-              )
-            else if decl.extendedTypes.size == 0 then
-              LogWithOption(
-                log.addError(
-                  s"scope of ${expr.getName.getIdentifier} not found; it cannot exist!"
-                ),
-                None
-              )
-            else LogWithOption(log, Some(decl.extendedTypes(0)))
-        ).flatMap((l, t) =>
-          if !config._2._1.contains(
-              t.upwardProjection.identifier
-            ) && !config._2._2.contains(t.upwardProjection)
-          then
-            LogWithOption(
-              l.addError(
-                s"${t.upwardProjection.identifier} is declared but does not contain ${expr.getNameAsString}"
-              ),
-              None
-            )
-          else LogWithOption(l, Some(t))
-        ),
-        expr,
-        config,
-        memo
-      )
+    case _: Throwable =>
+      // static obvious
+      try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType()).toStaticType))
+      catch
+        case _: Throwable =>
+          getAttrTypeFromMissingScope(
+            // get the scope of the field access.
+            (expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala match
+              // expr not found in class or interface declaration?
+              case None =>
+                LogWithOption(
+                  log.addError(
+                    s"${expr} not found in class or interface declaration"
+                  ),
+                  None
+                )
+              case Some(x) =>
+                val decl = config._1(x.getName.getIdentifier)
+                // not necessarily true right? could be static final
+                if decl.isInterface then
+                  LogWithOption(
+                    log.addError(
+                      s"${decl.identifier} cannot have instance-level attributes!"
+                    ),
+                    None
+                  )
+                else if decl.extendedTypes.size == 0 then
+                  LogWithOption(
+                    log.addError(
+                      s"scope of ${expr.getName.getIdentifier} not found; it cannot exist!"
+                    ),
+                    None
+                  )
+                else LogWithOption(log, Some(decl.extendedTypes(0)))
+            ).flatMap((l, t) =>
+              if !config._2._1.contains(
+                  t.upwardProjection.identifier
+                ) && !config._2._2.contains(t.upwardProjection)
+              then
+                LogWithOption(
+                  l.addError(
+                    s"${t.upwardProjection.identifier} is declared but does not contain ${expr.getNameAsString}"
+                  ),
+                  None
+                )
+              else LogWithOption(l, Some(t))
+            ),
+            expr,
+            config,
+            memo
+          )
 
 private def getArity(identifier: String, config: MutableConfiguration): Int =
   if config._2._1.contains(identifier) then config._2._1(identifier).numParams

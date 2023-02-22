@@ -81,7 +81,7 @@ trait Declaration:
     if y.isEmpty then Map() else y(0)
 
   /** Get all the methods that are inherited from the supertypes. Only methods that are finalized
-    * Methods will be produced
+    * and nonstatic Methods will be produced
     * @param config
     *   the configuration of the algorithm
     * @return
@@ -90,11 +90,14 @@ trait Declaration:
   def getAllInheritedMethods(config: Configuration): Map[String, Vector[Method]] =
     val supertypeDeclarations = getDirectAncestors.map(x => config.getSubstitutedDeclaration(x))
     val methods = supertypeDeclarations.map(x => x.getAccessibleMethods(config, PROTECTED))
-    methods.foldLeft(Map[String, Vector[Method]]())((om, nm) =>
-      nm.foldLeft(om)((m, sm) =>
-        if !m.contains(sm._1) then m + sm else m + (sm._1 -> (m(sm._1) ++ sm._2))
+    methods
+      .foldLeft(Map[String, Vector[Method]]())((om, nm) =>
+        nm.foldLeft(om)((m, sm) =>
+          if !m.contains(sm._1) then m + sm
+          else m + (sm._1 -> (m(sm._1) ++ sm._2))
+        )
       )
-    )
+      .map((k, v) => (k -> v.filter(!_.isStatic)))
 
   /** Get all methods it has access to, including the original input erasures
     * @param config
@@ -132,7 +135,8 @@ trait Declaration:
       val (_, context) = s.expansion
       for (id, v) <- ud.getAllMethodsWithErasures(config) do
         if !res.contains(id) then res(id) = ArrayBuffer()
-        for (method, erasure) <- v do res(id) += ((method.substitute(context), erasure))
+        for (method, erasure) <- v do
+          if !method.isStatic then res(id) += ((method.substitute(context), erasure))
     res.map((k, v) => (k -> v.toVector)).toMap
 
   /** Get all methods that are accessible to this method including inherited ones

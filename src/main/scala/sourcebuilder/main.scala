@@ -179,7 +179,7 @@ def buildType(
       if !params.isEmpty && m.signature.hasVarArgs then params(params.size - 1).setVarArgs(true)
       if !params.isEmpty then md.setParameters(NodeList(params: _*))
       md.setType(typeToASTType(m.returnType, prohibitedNames))
-      if decl.isInterface then
+      if decl.isInterface && !m.isStatic then
         md.setAbstract(true)
         md.removeBody()
       else
@@ -263,7 +263,7 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
     else ???
   case ArrayType(x)             => ASTArrayType(typeToASTType(x, prohibitedNames))
   case TypeParameterIndex(_, i) => ASTClassOrInterfaceType(null, numToLetter(i, prohibitedNames))
-  case ClassOrInterfaceType(x, args) =>
+  case ClassOrInterfaceType(x, args, _) =>
     val res =
       if x.slice(0, 10) == "java.lang." then ASTClassOrInterfaceType(null, x.substring(10))
       else ASTClassOrInterfaceType(null, x)
@@ -272,7 +272,7 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
       // convert args
       val astArgs = args.map(typeToASTType(_, prohibitedNames))
       res.setTypeArguments(NodeList(astArgs: _*))
-  case z @ TemporaryType(id, args) =>
+  case z @ TemporaryType(id, args, _) =>
     val x = z.identifier
     val res =
       if x.slice(0, 10) == "java.lang." then ASTClassOrInterfaceType(null, x.substring(10))

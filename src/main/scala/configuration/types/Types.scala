@@ -70,6 +70,7 @@ sealed trait Type:
   def captured: Type
   def wildcardCaptured: Type
   def fix: Type
+  def toStaticType: Type
 
   /** Asserts that this type is compatible with another type
     * @param that
@@ -252,7 +253,7 @@ sealed trait Type:
           .mkString(", ") + ">"
     // val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
     // val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
-    s"$start$argumentList"
+    s"$start$argumentList${if static then " static" else ""}"
 
   /** Reorders type parameters by replaces all type parameters given a scheme
     * @param scheme
@@ -281,7 +282,11 @@ sealed trait Type:
 
   def expansion: (Type, Substitution)
 
-case class Capture(id: Int, lowerBound: Type, upperBound: Type) extends Type:
+  val static: Boolean
+
+case class Capture(id: Int, lowerBound: Type, upperBound: Type, static: Boolean = false)
+    extends Type:
+  def toStaticType: Capture     = copy(static = true)
   override def toString()       = s"$identifier extends $upperBound super $lowerBound"
   val args                      = Vector()
   val numArgs                   = 0
@@ -319,7 +324,9 @@ case class JavaInferenceVariable(
     paramChoices: Set[TTypeParameter],
     canBeSubsequentlyBounded: Boolean
 ) extends InferenceVariable:
-  val identifier = s"iv$id"
+  def toStaticType: JavaInferenceVariable = this
+  val static: Boolean                     = false
+  val identifier                          = s"iv$id"
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
@@ -342,9 +349,11 @@ case class JavaInferenceVariable(
 
 /** The primitive types */
 sealed trait PrimitiveType extends Type:
-  def fix: PrimitiveType     = this
-  def captured: Type         = this
-  def wildcardCaptured: Type = this
+  def toStaticType: PrimitiveType = this
+  val static: Boolean             = false
+  def fix: PrimitiveType          = this
+  def captured: Type              = this
+  def wildcardCaptured: Type      = this
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
@@ -385,6 +394,8 @@ sealed trait PrimitiveType extends Type:
 final case class ArrayType(
     base: Type
 ) extends Type:
+  def toStaticType: ArrayType     = this
+  val static: Boolean             = false
   def captured: ArrayType         = copy(base = base.captured)
   def wildcardCaptured: ArrayType = copy(base = base.wildcardCaptured)
   def breadth                     = 0
@@ -419,6 +430,7 @@ final case class ArrayType(
   def expansion: (ArrayType, Substitution) = (this, Map())
 
 sealed trait SomeClassOrInterfaceType extends Type:
+  def toStaticType: SomeClassOrInterfaceType
   // fixing either a ClassOrInterfaceType or TemporaryType always yields a ClassOrInterfaceType
   def fix: ClassOrInterfaceType
   def raw: SomeClassOrInterfaceType
@@ -442,9 +454,11 @@ object SomeClassOrInterfaceType:
 
 final case class ClassOrInterfaceType(
     identifier: String,
-    args: Vector[Type]
+    args: Vector[Type],
+    static: Boolean = false
 ) extends SomeClassOrInterfaceType:
-  def fix: ClassOrInterfaceType = copy(args = args.map(_.fix))
+  def toStaticType: ClassOrInterfaceType = copy(static = true)
+  def fix: ClassOrInterfaceType          = copy(args = args.map(_.fix))
   if identifier.size == 0 || identifier.charAt(0) == 'ξ' then
     println(identifier)
     ???
@@ -455,7 +469,7 @@ final case class ClassOrInterfaceType(
   val numArgs = args.size
   override def toString =
     val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
-    s"$identifier$a"
+    s"$identifier$a${if static then ".type" else ""}"
   def isSomehowUnknown          = args.exists(_.isSomehowUnknown)
   def raw: ClassOrInterfaceType = copy(args = Vector())
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ClassOrInterfaceType =
@@ -631,6 +645,8 @@ case object PRIMITIVE_VOID extends PrimitiveType:
 
 /** The bottom type, usually a null */
 case object Bottom extends Type:
+  val static: Boolean                                                                 = false
+  def toStaticType: Bottom.type                                                       = this
   def fix: Bottom.type                                                                = this
   def captured: Bottom.type                                                           = this
   def wildcardCaptured: Bottom.type                                                   = this
@@ -652,10 +668,12 @@ case object Bottom extends Type:
 
 /** the `?` type */
 case object Wildcard extends Type:
-  def captured: Wildcard.type = this
-  def wildcardCaptured: Type  = InferenceVariableFactory.createCapture(Bottom, OBJECT)
-  def breadth                 = 0
-  def depth                   = 0
+  val static                      = false
+  def toStaticType: Wildcard.type = this
+  def captured: Wildcard.type     = this
+  def wildcardCaptured: Type      = InferenceVariableFactory.createCapture(Bottom, OBJECT)
+  def breadth                     = 0
+  def depth                       = 0
   val upwardProjection: ClassOrInterfaceType                                            = OBJECT
   val downwardProjection: Bottom.type                                                   = Bottom
   val identifier                                                                        = "?"
@@ -678,15 +696,17 @@ case object Wildcard extends Type:
 final case class ExtendsWildcardType(
     upper: Type
 ) extends Type:
-  def fix: ExtendsWildcardType        = copy(upper = upper.fix)
-  def captured: ExtendsWildcardType   = this
-  def wildcardCaptured: Capture       = InferenceVariableFactory.createCapture(Bottom, upper)
-  def breadth                         = upper.breadth
-  def depth                           = upper.depth
-  val identifier                      = ""
-  val numArgs                         = 0
-  val upwardProjection                = upper.upwardProjection
-  val downwardProjection: Bottom.type = Bottom
+  val static: Boolean                   = false
+  def toStaticType: ExtendsWildcardType = this
+  def fix: ExtendsWildcardType          = copy(upper = upper.fix)
+  def captured: ExtendsWildcardType     = this
+  def wildcardCaptured: Capture         = InferenceVariableFactory.createCapture(Bottom, upper)
+  def breadth                           = upper.breadth
+  def depth                             = upper.depth
+  val identifier                        = ""
+  val numArgs                           = 0
+  val upwardProjection                  = upper.upwardProjection
+  val downwardProjection: Bottom.type   = Bottom
   def replace(oldType: InferenceVariable, newType: Type): ExtendsWildcardType =
     copy(upper = upper.replace(oldType, newType))
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ExtendsWildcardType =
@@ -712,6 +732,8 @@ final case class ExtendsWildcardType(
 final case class SuperWildcardType(
     lower: Type
 ) extends Type:
+  val static: Boolean                        = false
+  def toStaticType: SuperWildcardType        = this
   def fix: SuperWildcardType                 = copy(lower = lower.fix)
   def captured: SuperWildcardType            = this
   def wildcardCaptured: Capture              = InferenceVariableFactory.createCapture(lower, OBJECT)
@@ -746,6 +768,8 @@ final case class SuperWildcardType(
 
 /** A type parameter of some sort */
 sealed trait TTypeParameter extends Type:
+  val static: Boolean         = false
+  def toStaticType: this.type = this
   def fix: TTypeParameter
   def captured: TTypeParameter         = this
   def wildcardCaptured: TTypeParameter = this
@@ -858,18 +882,22 @@ sealed trait DisjunctiveType extends InferenceVariable:
   val canBeSubsequentlyBounded: Boolean
   val parameterChoices: Set[TTypeParameter]
   val canBeUnknown: Boolean
+  val static: Boolean         = false
+  def toStaticType: this.type = this
 
 final case class TemporaryType(
     id: Int,
-    args: Vector[Type]
+    args: Vector[Type],
+    static: Boolean = false
 ) extends InferenceVariable,
       SomeClassOrInterfaceType:
-  def fix: ClassOrInterfaceType       = ClassOrInterfaceType(s"UNKNOWN_$id", args.map(_.fix))
-  val toBeCaptured: Boolean           = false
-  val toBeWildcardCaptured: Boolean   = false
-  def captured                        = copy(args = args.map(_.wildcardCaptured))
-  def wildcardCaptured: TemporaryType = this
-  override def breadth                = args.size
+  override def toStaticType: TemporaryType = copy(static = true)
+  def fix: ClassOrInterfaceType            = ClassOrInterfaceType(s"UNKNOWN_$id", args.map(_.fix))
+  val toBeCaptured: Boolean                = false
+  val toBeWildcardCaptured: Boolean        = false
+  def captured                             = copy(args = args.map(_.wildcardCaptured))
+  def wildcardCaptured: TemporaryType      = this
+  override def breadth                     = args.size
   override def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
   val numArgs        = args.size
   val identifier     = s"ξ$id"
@@ -913,6 +941,8 @@ final case class PlaceholderType(
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
 ) extends InferenceVariable:
+  val static: Boolean                     = false
+  def toStaticType: PlaceholderType       = this
   def fix: PlaceholderType                = ???
   val substitutions                       = Nil
   val numArgs                             = 0
@@ -1227,6 +1257,8 @@ final case class Alpha(
     toBeCaptured: Boolean = false,
     canBeTemporaryType: Boolean = true
 ) extends InferenceVariable:
+  val static: Boolean               = false
+  def toStaticType: Alpha           = this
   def fix                           = ???
   val toBeWildcardCaptured: Boolean = false
   def captured: Alpha               = copy(toBeCaptured = true)
