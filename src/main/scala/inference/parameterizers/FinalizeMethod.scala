@@ -25,6 +25,8 @@ private def finalizeMethod(
   if unfinalizedMethods.isEmpty then
     return LogWithRight(log.addInfo(s"$x methods are all finalized"), config)
   val methodToFinalize = unfinalizedMethods(0)
+  if methodToFinalize.signature.formalParameters.exists(x => x == PRIMITIVE_VOID) then
+    return LogWithLeft(log, Nil)
   val newConfig = config.copy(phi1 =
     config.phi1 + (x -> decl
       .asInstanceOf[MissingTypeDeclaration]
@@ -35,6 +37,7 @@ private def finalizeMethod(
     else
       finalizedMethods(methodToFinalize.signature.identifier)
         .filter(m => m.callableWithNArgs(methodToFinalize.signature.formalParameters.size))
+        .filter(m => m.isStatic == methodToFinalize.isStatic)
         .map(_.asNArgs(methodToFinalize.signature.formalParameters.size))
   val configsFromExistingMethods = candidates
     .map(m => generateCompatibleAssertion(methodToFinalize, m))
@@ -44,9 +47,15 @@ private def finalizeMethod(
     // (0 to 1)
     //   .map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
     //   .toVector
-    (normalizedMethod(methodToFinalize), Vector()) +: (0 to 1)
-      .map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
-      .toVector
+    normalizedMethod(methodToFinalize) match
+      case Some(x) =>
+        (x, Vector()) +: (0 to 1)
+          .map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
+          .toVector
+      case None =>
+        (0 to 1)
+          .map(numTypeParams => generateNewMethod(numTypeParams, methodToFinalize, decl))
+          .toVector
   val configWithAddedMethod = newMethods.map((mtd, types) =>
     (
       newConfig
@@ -71,16 +80,24 @@ private def finalizeMethod(
     (configsFromExistingMethods ++ configWithAddedAssertionsAndTypes).toList
   )
 
-private def normalizedMethod(methodToFinalize: MethodWithContext) =
+private def normalizedMethod(methodToFinalize: MethodWithContext): Option[Method] =
+  // ensure bottom is not in the formal parameters
+  val newFP = methodToFinalize.signature.formalParameters
+    .map(x => x.upwardProjection)
+    .map(x => if x == Bottom then OBJECT else x)
+  if newFP.exists(t => t == PRIMITIVE_VOID) then return None
+  val newSignature = methodToFinalize.signature.copy(formalParameters = newFP)
   // for now, just directly use the method
-  new Method(
-    methodToFinalize.signature,
-    methodToFinalize.returnType,
-    methodToFinalize.typeParameterBounds,
-    methodToFinalize.accessModifier,
-    methodToFinalize.isAbstract,
-    methodToFinalize.isStatic,
-    methodToFinalize.isFinal
+  Some(
+    new Method(
+      newSignature,
+      methodToFinalize.returnType,
+      methodToFinalize.typeParameterBounds,
+      methodToFinalize.accessModifier,
+      methodToFinalize.isAbstract,
+      methodToFinalize.isStatic,
+      methodToFinalize.isFinal
+    )
   )
 
 private def generateNewMethod(
@@ -88,8 +105,11 @@ private def generateNewMethod(
     methodToFinalize: MethodWithContext,
     decl: Declaration
 ): (Method, Vector[Type]) =
-  val classTP = (0 until decl.numParams).map(i => TypeParameterIndex(decl.identifier, i))
-  val numFPs  = methodToFinalize.signature.formalParameters.size
+  val classTP =
+    if !methodToFinalize.isStatic then
+      (0 until decl.numParams).map(i => TypeParameterIndex(decl.identifier, i))
+    else Vector()
+  val numFPs = methodToFinalize.signature.formalParameters.size
   val newTPs =
     (0 until numTypeParams).map(i =>
       TypeParameterIndex(

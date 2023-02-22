@@ -178,8 +178,10 @@ private def resolveFieldAccessExpr(
     ]
 ): LogWithOption[Type] =
   resolveScope(log, expr.getScope, config, memo).flatMap((log, uncapturedScope) =>
+    config._6 += uncapturedScope
     val scope = uncapturedScope.captured
-    if !scope.isInstanceOf[InferenceVariable] then
+    if scope.isInstanceOf[ArrayType] then LogWithOption(log, Some(PRIMITIVE_INT))
+    else if !scope.isInstanceOf[InferenceVariable] then
       val attrTypeOrContainer = getAttributeTypeOrContainer(
         config,
         scope.asInstanceOf[ClassOrInterfaceType],
@@ -208,6 +210,7 @@ private def getAttrTypeFromMissingScope(
     ]
 ) =
   logWithScope.map((log, scope) =>
+    config._6 += scope
     // add assertion to omega
     config._3 += IsClassAssertion(scope)
     // get substitutions in scope
@@ -302,7 +305,7 @@ private def resolveArrayInitializerExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  val elementType = InferenceVariableFactory.createPlaceholderType()
+  val elementType = createDisjunctiveTypeWithPrimitivesFromContext(expr, config)
   val res         = ArrayType(elementType)
   config._4 += elementType
   config._4 += res
@@ -327,6 +330,8 @@ private def resolveAssignExpr(
   val v = expr.getValue
   resolveExpression(log, v, config, memo).flatMap((log, v) =>
     resolveExpression(log, t, config, memo).rightmap(t =>
+      config._6 += v
+      config._6 += t
       expr.getOperator match
         case AssignExpr.Operator.ASSIGN =>
           // right <: left
@@ -366,6 +371,8 @@ private def resolveBinaryExpr(
   val right = expr.getRight
   resolveExpression(log, left, config, memo).flatMap((log, left) =>
     resolveExpression(log, right, config, memo).rightmap(right =>
+      config._6 += left
+      config._6 += right
       expr.getOperator match
         case BinaryExpr.Operator.AND | BinaryExpr.Operator.OR =>
           config._3 += (left =:~ PRIMITIVE_BOOLEAN && right =:~ PRIMITIVE_BOOLEAN)
@@ -443,6 +450,7 @@ private def resolveCastExpr(
     ]
 ): LogWithOption[Type] =
   resolveExpression(log, expr.getExpression, config, memo).rightmap(e =>
+    config._6 += e
     val target = resolveSolvedType(expr.getType.resolve)
     config._3 += e =:~ target || target =:~ e
     target
@@ -474,6 +482,7 @@ private def resolveConditionalExpr(
   resolveExpression(log, cond, config, memo).flatMap((log, condType) =>
     resolveExpression(log, trueBranch, config, memo).flatMap((log, trueType) =>
       resolveExpression(log, falseBranch, config, memo).rightmap(falseType =>
+        config._6 ++= Vector(condType, trueType, falseType)
         // create the right inference variable
         val result = createDisjunctiveTypeWithPrimitivesFromContext(expr, config)
         config._4 += result
@@ -505,6 +514,7 @@ private def resolveInstanceOfExpr(
     ]
 ): LogWithOption[Type] =
   resolveExpression(log, expr.getExpression, config, memo).rightmap(e =>
+    config._6 += e
     val target = resolveSolvedType(expr.getType.resolve)
     config._3 += e <:~ target || target <:~ e
     PRIMITIVE_BOOLEAN
@@ -543,6 +553,7 @@ private def resolveStaticMethodCallExpr(
   val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
     resolveExpression(_, _, config, memo)
   )
+  originalArguments.rightmap(v => v.foreach(x => config._6 += x))
   // case of no methods and scope is not missing
   if relevantMethods.size == 0 && !isMissing then
     LogWithOption(
@@ -803,6 +814,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
   val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
     resolveExpression(_, _, config, memo)
   )
+  originalArguments.rightmap(v => v.foreach(x => config._6 += x))
   // case of no methods and no missing supertypes
   if relevantMethods.size == 0 && missingScopes.size == 0 then
     LogWithOption(
@@ -1062,6 +1074,7 @@ private def resolveMethodFromDisjunctiveType(
     flatMapWithLog(log, expr.getArguments.asScala.toVector)(resolveExpression(_, _, config, memo))
   val methodName = expr.getNameAsString
   originalArguments.rightmap(v =>
+    v.foreach(x => config._6 += x)
     // case where method is actually found
     table.methods(methodName).find(m => m.signature.formalParameters == originalArguments) match
       case Some(m) => m.returnType
@@ -1189,7 +1202,10 @@ private def resolveObjectCreationExpr(
     else resolveSolvedType(expr.getType().resolve()).asInstanceOf[ClassOrInterfaceType]
   config._3 += res.isClass
   val constructorArgs = flatMapWithLog(log, expr.getArguments().asScala.toVector)((l, a) =>
-    resolveExpression(l, a, config, memo)
+    resolveExpression(l, a, config, memo).rightmap(x =>
+      config._6 += x
+      x
+    )
   )
   val callSiteParameterChoices = getParamChoicesFromExpression(expr)
   if config._2._1.contains(res.identifier) then
@@ -1265,6 +1281,7 @@ private def resolveUnaryExpr(
     ]
 ): LogWithOption[Type] =
   resolveExpression(log, expr.getExpression, config, memo).rightmap(x =>
+    config._6 += x
     expr.getOperator match
       case UnaryExpr.Operator.BITWISE_COMPLEMENT =>
         val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
@@ -1298,4 +1315,9 @@ private def resolveVariableDeclarationExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
+  // try LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
+  // catch
+  //   case _ =>
+  //     println(expr)
+  //     LogWithNone(log)
+  LogWithSome(log, Bottom)

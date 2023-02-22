@@ -5,6 +5,67 @@ import configuration.types.*
 import configuration.assertions.*
 import utils.*
 
+private[inference] def expandDisjunctiveTypeGreedily(
+    i: DisjunctiveType,
+    target: Type,
+    log: Log,
+    config: Configuration
+) =
+  val greedyChoices = target match
+    case x: Alpha =>
+      i.choices.filter(x => !x.isInstanceOf[PrimitiveType])
+    case x: ArrayType =>
+      if i.isInstanceOf[PrimitivesOnlyDisjunctiveType] || i
+          .isInstanceOf[BoxesOnlyDisjunctiveType]
+      then Vector[Type]()
+      else
+        Vector(
+          ArrayType(
+            InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+              scala.util.Left(""),
+              Nil,
+              i.canBeSubsequentlyBounded,
+              i.parameterChoices,
+              i.canBeUnknown
+            )
+          )
+        )
+    case x: SomeClassOrInterfaceType =>
+      i.choices.filter(x => !x.isInstanceOf[PrimitiveType])
+    case x: PrimitiveType =>
+      if i.isInstanceOf[VoidableDisjunctiveType] || i
+          .isInstanceOf[DisjunctiveTypeWithPrimitives] || i
+          .isInstanceOf[PrimitivesOnlyDisjunctiveType]
+      then Vector(x)
+      else Vector()
+    case Bottom            => Vector()
+    case x: TTypeParameter => i.choices.filter(x => x.isInstanceOf[TTypeParameter])
+    case _                 => Vector()
+  val allChoices =
+    if i.isInstanceOf[PrimitivesOnlyDisjunctiveType] || i
+        .isInstanceOf[BoxesOnlyDisjunctiveType]
+    then i.choices
+    else
+      i.choices :+ ArrayType(
+        InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+          scala.util.Left(""),
+          Nil,
+          i.canBeSubsequentlyBounded,
+          i.parameterChoices,
+          i.canBeUnknown
+        )
+      )
+  val remainingChoices = allChoices.filter(x => !greedyChoices.contains(x))
+  val choices          = greedyChoices ++ remainingChoices
+  (
+    log.addInfo(s"expanding ${i.identifier} into its choices", choices.toString),
+    choices
+      .map(config.replace(i, _))
+      .filter(!_.isEmpty)
+      .map(_.get)
+      .toList
+  )
+
 private[inference] def expandDisjunctiveType(
     i: DisjunctiveType,
     log: Log,

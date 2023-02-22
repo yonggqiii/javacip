@@ -54,7 +54,7 @@ private type MutableOmega = MutableSet[Assertion]
 private type MutablePsi   = MutableSet[Type]
 private type MutableTheta = MutableSet[Invocation]
 private type MutableConfiguration =
-  (MutableDelta, MutablePhi, MutableOmega, MutablePsi, MutableTheta)
+  (MutableDelta, MutablePhi, MutableOmega, MutablePsi, MutableTheta, MutableSet[Type])
 
 /** Parses the configuration of the algorithm given the file path of the Java source code
   * @param log
@@ -93,7 +93,14 @@ def parseConfiguration(
   ///////// Step 3 /////////
   // 3a
   val c: MutableConfiguration =
-    (MutableMap(), (MutableMap(), MutableMap()), MutableSet(), MutableSet(), MutableSet())
+    (
+      MutableMap(),
+      (MutableMap(), MutableMap()),
+      MutableSet(),
+      MutableSet(),
+      MutableSet(),
+      MutableSet()
+    )
   // val decls =
   //   s.rightmap(x => (x, x.findAll(classOf[ClassOrInterfaceDeclaration]).asScala.toVector))
   // // 3b and 3c
@@ -121,6 +128,10 @@ def parseConfiguration(
     >>= buildDeclarations
     >>= resolveExpressionsAndStatements
     >->= cleanup
+// >->= (cu =>
+//   println(cu)
+//   cu
+// )
 
 private def cleanup(x: (CompilationUnit, MutableConfiguration)): Configuration =
   val (cu, config)         = x
@@ -136,7 +147,12 @@ private def cleanup(x: (CompilationUnit, MutableConfiguration)): Configuration =
     PriorityQueue(config._3.toList: _*),
     config._4.toSet,
     config._5.toSet,
-    cu // safe since decls already depends on s
+    cu, // safe since decls already depends on s,
+    scala.collection.mutable.Map(),
+    Map(),
+    Map(),
+    Map(),
+    config._6.toSet
   )
 
 private def resolveExpressionsAndStatements(
@@ -186,7 +202,7 @@ private def fixImpossibleCode(
         false
       catch case _: Throwable => true
     )
-  println(allUnresolvableNameExprs.toVector)
+  // println(allUnresolvableNameExprs.toVector)
   // build map of name -> nameexprs to see which ones might be static and which ones must not
   val m        = MutableMap[String, ArrayBuffer[NameExpr]]()
   var finalLog = log
@@ -227,6 +243,46 @@ private def fixImpossibleCode(
       config._2._1(id) =
         MissingTypeDeclaration(id, Vector(), false, false, Vector(), Map(), Map(), Map(), Vector())
       finalLog = finalLog.addInfo(s"Letting $id be a type")
+  // now check the methods
+  val allMethodsWithoutScope =
+    cu.findAll(classOf[MethodCallExpr]).asScala.filter(expr => expr.getScope().toScala.isEmpty)
+  //println(allMethodsWithoutScope.map(x => x.getNameAsString()))
+  val allMethodDeclarations =
+    cu.findAll(classOf[MethodDeclaration])
+      .asScala
+      .toSet // .asScala.map(x => x.getNameAsString()).toSet
+  for expr <- allMethodsWithoutScope do
+    if !allMethodDeclarations.exists(p =>
+        p.getNameAsString() == expr
+          .getNameAsString() && p.getParameters().asScala.size == expr.getArguments().size
+      )
+    then
+//    if !allMethodDeclarations.contains(expr.getNameAsString()) then
+      expr.getTypeArguments.toScala match
+        case Some(x) =>
+          expr.replace(
+            MethodCallExpr(NameExpr("JavaCIPUnknownScope"), x, expr.getName(), expr.getArguments())
+          )
+        case None =>
+          expr.replace(
+            MethodCallExpr(NameExpr("JavaCIPUnknownScope"), expr.getName(), expr.getArguments())
+          )
+      if !config._2._1.contains("JavaCIPUnknownScope") then
+        config._2._1("JavaCIPUnknownScope") = MissingTypeDeclaration(
+          "JavaCIPUnknownScope",
+          Vector(),
+          true,
+          false,
+          Vector(),
+          Map(),
+          Map(),
+          Map(),
+          Vector()
+        )
+        cu.addClass("JavaCIPUnknownScope")
+  // remove all the marker annotation exprs
+  val annotations = cu.findAll(classOf[MarkerAnnotationExpr]).asScala
+  for node <- annotations do node.remove()
   (finalLog, (StaticJavaParser.parse(cu.toString()), config))
 
 private def cannotPossiblyHaveScope(

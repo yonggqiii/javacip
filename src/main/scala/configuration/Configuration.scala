@@ -52,12 +52,15 @@ case class Configuration(
     exclusions: Map[String, Set[String]] = Map(),
     // left bounds are definitely subtypes
     // right bounds may be compatibility or subtype assertions
-    javaIVBounds: Map[JavaInferenceVariable, (Vector[Type], Vector[(String, Type)])] = Map()
+    javaIVBounds: Map[JavaInferenceVariable, (Vector[Type], Vector[(String, Type)])] = Map(),
+    unvoidable: Set[Type] = Set()
 ):
   def fix: Configuration =
     if !phi2.isEmpty then ???
     if !omega.isEmpty then ???
-    if !constraintStore.isEmpty then ???
+    if !constraintStore.isEmpty then
+      println(this)
+      ???
     if !javaIVBounds.isEmpty then ???
     val newDelta = MutableMap[String, FixedDeclaration]()
     for (k, v) <- delta do newDelta(k) = v
@@ -75,7 +78,8 @@ case class Configuration(
       _cache,
       Map(),
       Map(),
-      Map()
+      Map(),
+      unvoidable.map(_.fix)
     )
   def addCompatibileTargetToJavaInferenceVariable(
       jv: JavaInferenceVariable,
@@ -189,7 +193,8 @@ case class Configuration(
     // PriorityQueue(newOmega.map(_.replace(oldType, newType)): _*
     val newOmega = ArrayBuffer[Assertion]()
     newOmega.addAll(omega.map(_.combineTemporaryType(t, other)))
-    val newPsi = psi.map(_.combineTemporaryType(t, other))
+    val newPsi        = psi.map(_.combineTemporaryType(t, other))
+    val newUnvoidable = unvoidable.map(_.combineTemporaryType(t, other))
     val newConstraintStore = constraintStore
       .filter((k, v) => k != t.identifier)
       .map((k, v) => (k -> v.map(_.combineTemporaryType(t, other))))
@@ -230,10 +235,10 @@ case class Configuration(
           newConstraintStore,
           newExclusions,
           javaIVBounds.map((k, v) =>
-            (k -> (v._1.map(s => s.combineTemporaryType(t, other)) -> v._2.map((a, s) =>
-              (a, s.combineTemporaryType(t, other))
-            )))
-          )
+            (k -> (v._1.map(s => s.combineTemporaryType(t, other)) -> v._2
+              .map((a, s) => (a, s.combineTemporaryType(t, other)))))
+          ),
+          newUnvoidable
         )
       )
     // here, other is a declared type
@@ -353,10 +358,10 @@ case class Configuration(
         newConstraintStore,
         newExclusions,
         javaIVBounds.map((k, v) =>
-          (k -> (v._1.map(s => s.combineTemporaryType(t, other)) -> v._2.map((a, s) =>
-            (a, s.combineTemporaryType(t, other))
-          )))
-        )
+          (k -> (v._1.map(s => s.combineTemporaryType(t, other)) -> v._2
+            .map((a, s) => (a, s.combineTemporaryType(t, other)))))
+        ),
+        newUnvoidable
       )
     )
 
@@ -384,7 +389,7 @@ case class Configuration(
             else methodTracker((d.identifier, k, numParams)) += 1
             methodMaxBreadth = methodMaxBreadth.max(m.typeParameterBounds.size)
     val overloadValue = if methodTracker.isEmpty then 1 else methodTracker.values.max
-    (((b + 1) * (d + 1)) + ((overloadValue - 1) * 5) + methodMaxBreadth * 2)
+    (((b + 1) * (d + 1))) // + ((overloadValue - 1) * 5) + methodMaxBreadth * 2)
 
   def addToPsi(`type`: Type) =
     copy(psi = psi + `type`)
@@ -646,9 +651,10 @@ case class Configuration(
     *   cannot be done
     */
   def replace(oldType: InferenceVariable, newType: Type): Option[Configuration] =
+    if newType == PRIMITIVE_VOID && unvoidable.contains(oldType) then return None
     val newAssertions = ArrayBuffer[Assertion]()
     var newJVBounds   = javaIVBounds
-
+    val newUnvoidable = unvoidable.map(_.replace(oldType, newType))
     //copy(javaIVBounds = newIVBounds).assertsAllOf(newAssertions)
     /* There are two things that can happen during a replacement:
      * 1) an inference variable is replaced by one of its choices, and/or
@@ -932,10 +938,10 @@ case class Configuration(
         newConstraintStore.map((s, v) => (s -> v.toSet)).toMap,
         exclusions,
         newJVBounds.map((k, v) =>
-          (k -> (v._1.map(s => s.replace(oldType, newType)) -> v._2.map((a, s) =>
-            (a, s.replace(oldType, newType))
-          )))
-        )
+          (k -> (v._1.map(s => s.replace(oldType, newType)) -> v._2
+            .map((a, s) => (a, s.replace(oldType, newType)))))
+        ),
+        newUnvoidable
       )
     )
 

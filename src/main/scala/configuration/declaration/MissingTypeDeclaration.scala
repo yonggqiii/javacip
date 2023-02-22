@@ -572,7 +572,7 @@ class MissingTypeDeclaration(
       this.identifier,
       this.typeParameterBounds,
       this.mustBeClass,
-      this.mustBeClass,
+      this.mustBeInterface,
       this.supertypes,
       this.methodTypeParameterBounds,
       this.attributes,

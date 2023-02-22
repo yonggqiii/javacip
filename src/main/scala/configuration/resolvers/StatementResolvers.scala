@@ -52,6 +52,7 @@ private def resolveAssertStmt(
 ): LogWithOption[MutableConfiguration] =
   resolveExpression(log, stmt.getCheck, config, memo)
     .flatMap((log, checkType) =>
+      config._6 += checkType
       val message = stmt.getMessage.toScala
         .map(e => resolveExpression(log, e, config, memo))
         .getOrElse(LogWithSome(log, STRING))
@@ -72,7 +73,10 @@ private def resolveDoStmt(
     ]
 ): LogWithOption[MutableConfiguration] =
   resolveExpression(log, stmt.getCondition, config, memo)
-    .rightmap(condType => config._3 += condType =:~ PRIMITIVE_BOOLEAN)
+    .rightmap(condType =>
+      config._3 += condType =:~ PRIMITIVE_BOOLEAN
+      config._6 += condType
+    )
     .rightmap(x => config)
 
 private def resolveExplicitConstructorInvocationStmt(
