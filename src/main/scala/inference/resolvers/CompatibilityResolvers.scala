@@ -3,7 +3,7 @@ package inference.resolvers
 import configuration.Configuration
 import configuration.assertions.*
 import configuration.types.*
-import inference.misc.expandDisjunctiveType
+import inference.misc.expandDisjunctiveTypeGreedily
 import utils.*
 
 private def resolveCompatibilityAssertion(
@@ -81,9 +81,9 @@ private def resolveCompatibilityAssertion(
     case (s, t: ArrayType) =>
       (log, (config asserts (s <:~ t)) :: Nil)
     case (s: DisjunctiveType, t) =>
-      expandDisjunctiveType(s, log, config asserts a)
+      expandDisjunctiveTypeGreedily(s, t, log, config asserts a)
     case (s, t: DisjunctiveType) =>
-      expandDisjunctiveType(t, log, config asserts a)
+      expandDisjunctiveTypeGreedily(t, s, log, config asserts a)
     case (s, t) =>
       // case 1
       val case1Assertion = s <:~ t
