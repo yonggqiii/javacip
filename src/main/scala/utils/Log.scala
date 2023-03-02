@@ -3,7 +3,7 @@ package utils
 import scala.Console.{RED, GREEN, YELLOW, CYAN, RESET}
 
 /** A log object. Logs immediately in debug mode, stores all messages in verbose mode, dumps
-  * non-error message when not in either modes
+  * non-error message when not in either modes, quiet in benchmark mode
   * @param appConfig
   *   the app configuration
   * @param messages
@@ -14,8 +14,9 @@ final class Log(
     val messages: Vector[LogMessage] = Vector()
 ):
   private def logOrNot(message: LogMessage) = message match
-    case _: ErrorMessage => logOrFlush(message)
-    case _               => if appConfig.verbose then logOrFlush(message) else this
+    case _ if appConfig.benchmark => this
+    case _: ErrorMessage          => logOrFlush(message)
+    case _                        => if appConfig.verbose then logOrFlush(message) else this
 
   private def logOrFlush(message: LogMessage) =
     if appConfig.debug then

@@ -2,6 +2,7 @@ package configuration.declaration
 
 import configuration.Configuration
 import configuration.assertions.*
+import configuration.basetraits.*
 import configuration.types.*
 import utils.*
 import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
@@ -187,7 +188,7 @@ class MissingTypeDeclaration(
     Vector(),
     mustBeClass,
     mustBeInterface,
-    supertypes.map(_.raw.asInstanceOf[SomeClassOrInterfaceType]),
+    supertypes.raw,
     Map(),
     attributes.map((s, a) => (s -> getAttributeErasure(a))),
     methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),

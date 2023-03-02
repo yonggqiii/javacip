@@ -6,8 +6,8 @@ private val builder = OParser.builder[AppConfig]
 private val cmdOptsParser =
   import builder.*
   OParser.sequence(
-    programName("javacpp"),
-    head("javacpp", "0.0.x"),
+    programName("javacip"),
+    head("javacip", "1.0.0"),
     opt[Unit]('v', "verbose")
       .action((x, c) => c.copy(verbose = true))
       .text("verbose mode"),
@@ -16,6 +16,9 @@ private val cmdOptsParser =
       .valueName("<file>")
       .action((x, c) => c.copy(out = x))
       .text("file path to write stubs"),
+    opt[Unit]('b', "benchmark")
+      .action((x, c) => c.copy(benchmark = true))
+      .text("benchmark mode"),
     arg[String]("<input file>")
       .required()
       .action((x, c) => c.copy(in = x))

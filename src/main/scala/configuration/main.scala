@@ -68,16 +68,6 @@ def parseConfiguration(
     log: Log,
     filePath: String
 ): LogWithOption[Configuration] =
-  /*
-   * 1) Get the StaticJavaParser with the reflection type solver
-   * 2) Try parsing the source code
-   * 3a) If it works, then create the mutable configuration
-   * 3b) Visit each class/interface declaration in the CompilationUnit,
-   *     populating the mutable configuration
-   * 3c) Fix the mutable configuration into an immutable configuration
-   */
-
-  ///////// Step 1 /////////
   // Use the reflection type solver to solve types in the jdk
   val typeSolver = ReflectionTypeSolver()
   // Create JavaSymbolSolver using the type solver
@@ -85,13 +75,6 @@ def parseConfiguration(
   // Set the parser configuration
   StaticJavaParser.getConfiguration().setSymbolResolver(jss)
 
-  ///////// Step 2 /////////
-  // Parse the file and generate AST
-  // val s: LogWithOption[CompilationUnit] =
-  //   parseSource(log.addInfo(s"attempting to parse $filePath..."), filePath)
-  // val o = s.rightmap(x => x.clone)
-  ///////// Step 3 /////////
-  // 3a
   val c: MutableConfiguration =
     (
       MutableMap(),
@@ -101,37 +84,12 @@ def parseConfiguration(
       MutableSet(),
       MutableSet()
     )
-  // val decls =
-  //   s.rightmap(x => (x, x.findAll(classOf[ClassOrInterfaceDeclaration]).asScala.toVector))
-  // // 3b and 3c
-  // // visit each class
-  // decls
-  //   .flatMap(visitAll(_, _, c))
-  //   .rightmap(x =>
-  //     Configuration(
-  //       x._1.toMap,
-  //       x._2._1.toMap,
-  //       x._2._2.toMap,
-  //       PriorityQueue(x._3.toList: _*),
-  //       x._4.toSet,
-  //       x._5.toSet,
-  //       o.opt.get // safe since decls already depends on s
-  //     )
-  //   )
-  //   .map((l, c) =>
-  //     println(c)
-  //     (l.addSuccess("Successfully built configuration", c.toString), c)
-  //   )
 
   parseSource(log.addInfo(s"attempting to parse $filePath..."), filePath)
     >*> ((log, cu) => fixImpossibleCode(log, cu, c))
     >>= buildDeclarations
     >>= resolveExpressionsAndStatements
     >->= cleanup
-// >->= (cu =>
-//   println(cu)
-//   cu
-// )
 
 private def cleanup(x: (CompilationUnit, MutableConfiguration)): Configuration =
   val (cu, config)         = x
@@ -381,94 +339,6 @@ private def buildDeclaration(
   // add assertions to config based on declaration
   addAssertionsOnBoundsAndSupertypes(newDeclaration, config)
   LogWithSome(log, (cu, config))
-
-// private def visitAll(
-//     log: Log,
-//     cb: (CompilationUnit, Vector[ClassOrInterfaceDeclaration]),
-//     config: MutableConfiguration
-// ): LogWithOption[MutableConfiguration] =
-//   val (cu, decls) = cb
-//   decls.foldLeft(LogWithOption(log, Some(config)))((lwo, decl) =>
-//     lwo.flatMap(visit(_, decl, _, cu))
-//   )
-
-// private def visit(
-//     log: Log,
-//     c: ClassOrInterfaceDeclaration,
-//     arg: MutableConfiguration,
-//     cu: CompilationUnit
-// ): LogWithOption[MutableConfiguration] =
-
-//   /*
-//    * 1) Add all referenced ClassOrInterfaceTypes to the CompilationUnit
-//    * 2) Resolve the ClassOrInterfaceDeclaration and convert to FixedDeclaration
-//    * 3) Add the FixedDeclaration to Delta
-//    * 4) Add some assertions on the supertypes and type parameter bounds
-//    * 5) Search through expressions and resolve them
-//    */
-//   var finalLog = log
-
-//   // Get all the types being referenced in the program
-//   finalLog = mapWithLog(
-//     finalLog,
-//     c.findAll(classOf[ASTClassOrInterfaceType]).asScala.toVector
-//   )((l, t) => resolveASTType(cu, arg, t, l))._1
-
-//   // get modifiers which are not accessible to the
-//   // ResolvedReferenceTypeDeclaration
-//   val isAbstract = c.isAbstract || c.isInterface
-//   val isFinal    = c.isFinal
-
-//   // get the declaration
-//   val declAttempt =
-//     convertResolvedReferenceTypeDeclarationToFixedDeclaration(c.resolve, isAbstract, isFinal)
-//   if declAttempt.isFailure then
-//     val failure = declAttempt.failed.get
-//     return LogWithNone(finalLog.addError(failure.getMessage))
-//   val newDeclaration = declAttempt.get
-
-//   val conflictingMethods = newDeclaration.conflictingMethods
-
-//   if conflictingMethods.size > 0 then
-//     return LogWithNone(
-//       finalLog.addError(
-//         "The following methods have multiple declarations whose erasures conflict:",
-//         conflictingMethods.map(x => "\t" + x.toString).mkString("\n")
-//       )
-//     )
-
-//   if arg._1.contains(newDeclaration.identifier) then
-//     return LogWithNone(
-//       finalLog.addError(s"repeated type declaration ${newDeclaration.identifier}")
-//     )
-
-//   arg._1 += (newDeclaration.identifier -> newDeclaration)
-
-//   addAssertionsOnBoundsAndSupertypes(newDeclaration, arg)
-
-//   // resolve expressions, bodies and statements
-//   val expressionTypeMemo: MutableMap[
-//     String,
-//     Option[Type]
-//   ] = MutableMap()
-//   val expressions         = c.findAll(classOf[Expression]).asScala.toVector
-//   val statements          = c.findAll(classOf[Statement]).asScala.toVector
-//   val variableDeclarators = c.findAll(classOf[VariableDeclarator]).asScala.toVector
-//   expressions
-//     .foldLeft(LogWithOption(finalLog, Some(ClassOrInterfaceType("lol"): Type)))((lgi, expr) =>
-//       lgi.flatMap((lg, i) => resolveExpression(lg, expr, arg, expressionTypeMemo))
-//     )
-//     .rightmap(_ => arg)
-//     .flatMap((log, config) =>
-//       statements.foldLeft(LogWithOption(log, Some(config)))((lwo, stmt) =>
-//         lwo.flatMap((x, y) => resolveStatement(x, stmt, y, expressionTypeMemo))
-//       )
-//     )
-//     .flatMap((log, config) =>
-//       variableDeclarators.foldLeft(LogWithOption(log, Some(config)))((lwo, decl) =>
-//         lwo.flatMap((x, y) => resolveVariableDeclarator(x, decl, y, expressionTypeMemo))
-//       )
-//     )
 
 private def parseSource(log: Log, filePath: String): LogWithOption[CompilationUnit] =
   scala.util.Try(StaticJavaParser.parse(File(filePath))) match

@@ -520,6 +520,7 @@ case class Configuration(
         case x: ClassOrInterfaceType => getFixedDeclaration(x).isDefined
         case x: ArrayType            => true
         case x: PrimitiveType        => true
+        case x: TemporaryType        => false
         case x: InferenceVariable    => false
         case _                       => ???
     case IsMissingAssertion(a) => phi1.contains(a.upwardProjection.identifier)

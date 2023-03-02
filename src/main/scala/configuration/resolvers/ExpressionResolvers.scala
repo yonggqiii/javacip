@@ -34,17 +34,6 @@ private[configuration] def resolveExpression(
   val rng = expr.getRange().toScala.get.toString
   if memo.contains(rng) then LogWithOption(log, memo(rng))
   else
-    // println(expr)
-    // if expr.isNameExpr() then
-    //   val t = expr.replace(
-    //     FieldAccessExpr(
-    //       NameExpr("JavaCIPUnknownVariableStore"),
-    //       expr.asNameExpr().getNameAsString()
-    //     )
-    //   )
-    //   println(t)
-    //   println(expr)
-    // println(expr.getClass())
     val res =
       if expr.isFieldAccessExpr then
         resolveFieldAccessExpr(log, expr.asFieldAccessExpr, config, memo)
@@ -72,11 +61,11 @@ private[configuration] def resolveExpression(
       else if expr.isNameExpr then resolveNameExpr(log, expr.asNameExpr, config, memo)
       else if expr.isObjectCreationExpr then
         resolveObjectCreationExpr(log, expr.asObjectCreationExpr(), config, memo)
-      // else if expr.isPatternExpr then
-      //   resolvePatternExpr(config, expr.asPatternExpr, memo)
+      else if expr.isPatternExpr then
+        LogWithNone(log.addError(s"JavaCIP does not support pattern expressions: $expr"))
       else if expr.isSuperExpr then resolveSuperExpr(log, expr.asSuperExpr, config, memo)
-      // else if expr.isSwitchExpr then
-      //   resolveSwitchExpr(config, expr.asSwitchExpr, memo)
+      else if expr.isSwitchExpr then
+        LogWithNone(log.addError(s"JavaCIP does not support switch expressions: $expr"))
       else if expr.isThisExpr then resolveThisExpr(log, expr.asThisExpr, config, memo)
       else if expr.isUnaryExpr then resolveUnaryExpr(log, expr.asUnaryExpr, config, memo)
       else if expr.isVariableDeclarationExpr then
@@ -786,29 +775,13 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     .flatMap(x => getAllKnownSuperTypesOfOneType(config, x, Set()))
   val (missingScopes, fixedScopes) =
     capturedScopes.partition(x => config._2._1.contains(x.identifier))
-  // val allSupertypes = scope
-  //   .flatMap(x => x.getAllAncestors.asScala.toVector :+ x)
-  //   .toSet
   val nameOfMethod   = expr.getNameAsString
   val numOfArguments = expr.getArguments.size
-  // get all the relevant methods, i.e. the methods in the supertypes
-  // that are of the same name and arity
-  // val relevantMethods = allSupertypes.toSet
-  //   .flatMap(getMethodsFromResolvedReferenceType(_))
-  //   .filter(x =>
-  //     x.getName == nameOfMethod && (x.getParamTypes.size == numOfArguments || (x
-  //       .getDeclaration()
-  //       .hasVariadicParameter() && x.getParamTypes.size < numOfArguments))
-  //   )
-  //   .toVector
+
   val relevantMethods = fixedScopes
     .flatMap(getAllRelevantMethods(_, config, nameOfMethod, numOfArguments))
     .toVector
   val paramChoices = getParamChoicesFromExpression(expr)
-  // get all of the missing supertypes
-  // val missingSupertypes = allSupertypes
-  //   .filter(x => config._2._1.contains(x.getId))
-  //   .toVector
 
   // get the types of the arguments suplied to the method
   val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
@@ -837,14 +810,6 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         config._5 += Invocation(originalScope, nameOfMethod, args, x._2, paramChoices)
         x._2
       )
-
-  // originalArguments
-  //   .rightmap(v => (v -> matchMethodCallToMethodUsage(method, v, expr, config)))
-  //   .rightmap((args, x) =>
-  //     x._1.foreach(y => config._3 += y)
-  //     config._5 += Invocation(originalScope, nameOfMethod, args, x._2, paramChoices)
-  //     x._2
-  //   )
 
   // case of no methods and only one missing supertype
   else if relevantMethods.size == 0 && missingScopes.size == 1 then
@@ -902,19 +867,7 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     )
     val missingReturnType = createReturnTypeFromContext(expr, config)
     config._4 += missingReturnType
-    // val returnType = createReturnTypeFromContext(expr, config)
-    // config._4 += returnType
-    // originalArguments.rightmap(v =>
-    //   config._5 += Invocation(originalScope, nameOfMethod, v, returnType, paramChoices)
-    // )
-    // assertions from the bunch of declared methods (might be empty)
-    // val ambiguousDeclaredMethods = originalArguments
-    //   .rightmap(args => relevantMethods.map(method => matchMethodCallToMethodUsage(method, args, expr, config))
-    //   )
-    //   .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion](tp =>
-    //     val (assts, rt) = tp
-    //     ConjunctiveAssertion(assts :+ (returnType ~=~ rt))
-    //   )
+
     val ambiguousDeclaredMethods = originalArguments
       .rightmap(args => relevantMethods.map(method => method.callWith(args, paramChoices)))
       .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion]((argsAssts, rt) =>

@@ -7,6 +7,7 @@ import com.github.javaparser.ast.NodeList
 import configuration.Configuration
 import configuration.types.*
 import configuration.assertions.*
+import configuration.basetraits.*
 
 /** An access modifier in a Java program */
 sealed trait AccessModifier:
@@ -47,6 +48,13 @@ case object PRIVATE extends AccessModifier:
   override def toString                = "private"
   def <(that: AccessModifier): Boolean = that == DEFAULT || that == PROTECTED || that == PUBLIC
 
+private trait MemberOps[+A <: MemberOps[A]]
+    extends Replaceable[A],
+      Combineable[A],
+      Substitutable[A],
+      Reorderable[A],
+      Fixable[A]
+
 /** An attribute in a class/interface
   * @param identifier
   *   the name of the attribute
@@ -65,12 +73,12 @@ final case class Attribute(
     accessModifier: AccessModifier,
     isStatic: Boolean,
     isFinal: Boolean
-):
+) extends MemberOps[Attribute]:
   /** Fix this attribute
     * @return
     *   the fixed version of the attribute
     */
-  def fix: Attribute =
+  override def fix: Attribute =
     copy(`type` = `type`.fix)
 
   /** Combines any temporary type in this attribute with a new type
@@ -81,7 +89,10 @@ final case class Attribute(
     * @return
     *   the resulting attribute
     */
-  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Attribute =
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Attribute =
     copy(`type` = `type`.combineTemporaryType(oldType, newType))
 
   /** Perform a substitution on this attribute
@@ -90,7 +101,7 @@ final case class Attribute(
     * @return
     *   the resulting attribute
     */
-  def substitute(function: Substitution): Attribute =
+  override def substitute(function: Substitution): Attribute =
     copy(`type` = `type`.substitute(function))
 
   /** Get all the modifiers of the attribute as a `NodeList[Modifier]`
@@ -116,7 +127,7 @@ final case class Attribute(
     * @return
     *   the attribute object after replacement
     */
-  def replace(i: InferenceVariable, t: Type): Attribute =
+  override def replace(i: InferenceVariable, t: Type): Attribute =
     copy(`type` = `type`.replace(i, t))
 
   override def toString =
@@ -135,14 +146,8 @@ final case class Attribute(
     * @return
     *   the resulting attribute
     */
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Attribute =
-    Attribute(
-      identifier,
-      `type`.reorderTypeParameters(scheme),
-      accessModifier,
-      isStatic,
-      isFinal
-    )
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Attribute =
+    copy(`type` = `type`.reorderTypeParameters(scheme))
 
 /** The signature of a method
   * @param identifier
@@ -156,7 +161,7 @@ final case class MethodSignature(
     identifier: String,
     formalParameters: Vector[Type],
     hasVarArgs: Boolean
-):
+) extends MemberOps[MethodSignature]:
   // make sure the values are passed in to the constructor properly
   if hasVarArgs && formalParameters.size == 0 then
     throw new IllegalArgumentException(s"$identifier cannot have VarArgs but no parameters!")
@@ -165,7 +170,7 @@ final case class MethodSignature(
     * @return
     *   the resulting method signature
     */
-  def fix: MethodSignature = copy(formalParameters = formalParameters.map(_.fix))
+  override def fix: MethodSignature = copy(formalParameters = formalParameters.fix)
 
   /** Combines any temporary types in this signature with another type
     * @param oldType
@@ -175,11 +180,11 @@ final case class MethodSignature(
     * @return
     *   the resulting method signature
     */
-  def combineTemporaryType(
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): MethodSignature =
-    copy(formalParameters = formalParameters.map(_.combineTemporaryType(oldType, newType)))
+    copy(formalParameters = formalParameters.combineTemporaryType(oldType, newType))
 
   /** Transform this method signature into one with n parameters
     * @param n
@@ -203,8 +208,8 @@ final case class MethodSignature(
     * @return
     *   the resulting method signature
     */
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodSignature =
-    copy(formalParameters = formalParameters.map(_.reorderTypeParameters(scheme)))
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodSignature =
+    copy(formalParameters = formalParameters.reorderTypeParameters(scheme))
 
   /** Perform a substitution on the types in this method signature
     * @param function
@@ -212,8 +217,8 @@ final case class MethodSignature(
     * @return
     *   the resulting method signature
     */
-  def substitute(function: Substitution): MethodSignature =
-    copy(formalParameters = formalParameters.map(_.substitute(function)))
+  override def substitute(function: Substitution): MethodSignature =
+    copy(formalParameters = formalParameters.substitute(function))
 
   /** Determines if this signature is callable with n arguments
     * @param n
@@ -232,8 +237,8 @@ final case class MethodSignature(
     * @return
     *   the resulting method signature from replacement
     */
-  def replace(i: InferenceVariable, t: Type): MethodSignature =
-    copy(formalParameters = formalParameters.map(_.replace(i, t)))
+  override def replace(i: InferenceVariable, t: Type): MethodSignature =
+    copy(formalParameters = formalParameters.replace(i, t))
 
   override def toString =
     identifier +
@@ -256,7 +261,7 @@ final case class MethodSignature(
     else MethodSignature(identifier, formalParameters.map(decl.getErasure(_)), false)
 
 /** A method or constructor */
-sealed trait MethodLike:
+sealed trait MethodLike extends MemberOps[MethodLike]:
   def fix: MethodLike
 
   /** The signature of the method */
@@ -276,33 +281,33 @@ sealed trait MethodLike:
     */
   def callableWithNArgs(n: Int): Boolean = signature.callableWithNArgs(n)
 
-  /** Replaces all the occurrences of some inference variable with another type
-    * @param i
-    *   the inference variable to replace
-    * @param t
-    *   the type after replacement
-    * @return
-    *   the resulting method-like from replacement
-    */
-  def replace(i: InferenceVariable, t: Type): MethodLike
+  // /** Replaces all the occurrences of some inference variable with another type
+  //   * @param i
+  //   *   the inference variable to replace
+  //   * @param t
+  //   *   the type after replacement
+  //   * @return
+  //   *   the resulting method-like from replacement
+  //   */
+  // def replace(i: InferenceVariable, t: Type): MethodLike
 
-  /** Combines any occurrence of a temporary type in this MethodLike with another type
-    * @param oldType
-    *   the temporary type to combine
-    * @param newType
-    *   the resulting type after combining the temporary type
-    * @return
-    *   the resulting MethodLike
-    */
-  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): MethodLike
+  // /** Combines any occurrence of a temporary type in this MethodLike with another type
+  //   * @param oldType
+  //   *   the temporary type to combine
+  //   * @param newType
+  //   *   the resulting type after combining the temporary type
+  //   * @return
+  //   *   the resulting MethodLike
+  //   */
+  // def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): MethodLike
 
-  /** Performs a substitution on the types in this MethodLike
-    * @param function
-    *   the substitution function
-    * @return
-    *   the resulting MethodLike
-    */
-  def substitute(function: Substitution): MethodLike
+  // /** Performs a substitution on the types in this MethodLike
+  //   * @param function
+  //   *   the substitution function
+  //   * @return
+  //   *   the resulting MethodLike
+  //   */
+  // def substitute(function: Substitution): MethodLike
 
   /** Determines if the access level of this method is at least some other access level, based on
     * the following ordering--private, package-private, protected, public
@@ -314,14 +319,14 @@ sealed trait MethodLike:
     val vec = Vector(PRIVATE, DEFAULT, PROTECTED, PUBLIC)
     vec.indexOf(accessLevel) <= vec.indexOf(accessModifier)
 
-  /** Reorders the type parameters of this method-like given a scheme by replacing the type
-    * parameters
-    * @param scheme
-    *   the reordering scheme
-    * @return
-    *   the resulting method-like
-    */
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodLike
+  // /** Reorders the type parameters of this method-like given a scheme by replacing the type
+  //   * parameters
+  //   * @param scheme
+  //   *   the reordering scheme
+  //   * @return
+  //   *   the resulting method-like
+  //   */
+  // def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): MethodLike
 
   /** Transforms this MethodLike into one that has n parameters
     * @param n
@@ -355,7 +360,26 @@ class Method(
     val isAbstract: Boolean,
     val isStatic: Boolean,
     val isFinal: Boolean
-) extends MethodLike:
+) extends MethodLike,
+      MemberOps[Method]:
+  def copy(
+      signature: MethodSignature = this.signature,
+      returnType: Type = this.returnType,
+      typeParameterBounds: Vector[(TTypeParameter, Vector[Type])] = this.typeParameterBounds,
+      accessModifier: AccessModifier = this.accessModifier,
+      isAbstract: Boolean = this.isAbstract,
+      isStatic: Boolean = this.isStatic,
+      isFinal: Boolean = this.isFinal
+  ): Method = new Method(
+    signature,
+    returnType,
+    typeParameterBounds,
+    accessModifier,
+    isAbstract,
+    isStatic,
+    isFinal
+  )
+
   def isUnreasonable: Boolean =
     // check for unused type parameters
     val fp        = signature.formalParameters
@@ -372,15 +396,12 @@ class Method(
     !(fp ++ allBounds).exists(x => returnType ⊆ x)
 
   def fix: Method =
-    new Method(
-      signature.fix,
-      returnType.fix,
-      typeParameterBounds.map((k, v) => (k.fix -> v.map(_.fix))),
-      accessModifier,
-      isAbstract,
-      isStatic,
-      isFinal
+    copy(
+      signature = signature.fix,
+      returnType = returnType.fix,
+      typeParameterBounds = typeParameterBounds.map((k, v) => (k.fix -> (v.fix)))
     )
+
   def callWith(
       args: Vector[Type],
       callSiteParameterChoices: Set[TTypeParameter]
@@ -393,9 +414,9 @@ class Method(
       )
       .toMap
     val subtpBounds =
-      typeParameterBounds.map((k, v) => (k.substitute(tpMap) -> v.map(x => x.substitute(tpMap))))
+      typeParameterBounds.map((k, v) => (k.substitute(tpMap) -> v.substitute(tpMap)))
     val boundsAssts  = subtpBounds.flatMap((k, v) => v.map(b => k <:~ b))
-    val formalParams = signature.asNArgs(args.size).formalParameters.map(_.substitute(tpMap))
+    val formalParams = signature.asNArgs(args.size).formalParameters.substitute(tpMap)
     val paramAssts   = args.zip(formalParams).map((l, r) => l =:~ r)
     (boundsAssts ++ paramAssts, returnType.substitute(tpMap))
 
@@ -437,16 +458,7 @@ class Method(
       isFinal
     )
 
-  def asNArgs(n: Int): Method =
-    new Method(
-      signature.asNArgs(n),
-      returnType,
-      typeParameterBounds,
-      accessModifier,
-      isAbstract,
-      isStatic,
-      isFinal
-    )
+  def asNArgs(n: Int): Method = copy(signature = signature.asNArgs(n))
 
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Method =
     new Method(

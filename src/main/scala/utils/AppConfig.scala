@@ -14,5 +14,6 @@ case class AppConfig(
     verbose: Boolean = false,
     in: String = ".",
     out: String = ".",
-    debug: Boolean = false
+    debug: Boolean = false,
+    benchmark: Boolean = false
 )

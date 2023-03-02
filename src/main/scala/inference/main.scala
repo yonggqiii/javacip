@@ -14,11 +14,12 @@ import inference.typecheckers.typecheck
 import scala.util.{Try, Success, Failure, Either, Left, Right}
 
 def infer(log: Log, config: Configuration): LogWithOption[Configuration] =
-  println(
-    s"Config Transitions | No. Configs | Current Breadth | Current Depth"
-  )
+  if !log.appConfig.debug && !log.appConfig.benchmark then
+    println(
+      s"Config Transitions | No. Configs | Current Breadth | Current Depth"
+    )
   val res = infer(log, addAllToConfigs(Map(), config :: Nil))
-  println()
+  if !log.appConfig.debug && !log.appConfig.benchmark then println()
   res
 
 @tailrec
@@ -32,25 +33,25 @@ private def infer(
       if !log.appConfig.debug then println("cannot be compiled")
       LogWithNone(log.addError(s"Terminating as type errors exist"))
     case Some((x, xs)) =>
-      if a > 100000 then return LogWithNone(log.addError("max hit", x.toString))
-      if a % 1000 == 0 && !log.appConfig.debug then
+      if a > 100000 then
+        return LogWithNone(
+          log.addError("max hit", if !log.appConfig.benchmark then x.toString else "")
+        )
+      if a % 1000 == 0 && !log.appConfig.debug && !log.appConfig.benchmark then
         print(
           "\r" + f"$a%18d | ${configs.map((k, v) => v.size).sum}%11d | ${x.maxBreadth}%15d | ${x.maxDepth}%14d"
         )
-      if x.maxBreadth > 3 || x.maxDepth > 3 then infer(log, xs, a + 1)
+      val res =
+        resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers >>= typecheck
+      if res.isLeft then
+        val allConfigs = addAllToConfigs(xs, res.left.reverse)
+        infer(res.log, allConfigs, a + 1)
       else
-        val res =
-          resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers >>= typecheck
-        if res.isLeft then
-          val allConfigs = addAllToConfigs(xs, res.left.reverse)
-          infer(res.log, allConfigs, a + 1)
-        else
-          if !log.appConfig.debug then println(res.right)
-          LogWithSome(
-            res.log
-              .addSuccess(s"successfully inferred compilable configuration", res.right.toString),
-            res.right
-          )
+        LogWithSome(
+          res.log
+            .addSuccess(s"successfully inferred compilable configuration", res.right.toString),
+          res.right
+        )
 
 private def getConfig(
     configs: Map[Int, List[Configuration]]

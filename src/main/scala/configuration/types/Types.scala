@@ -1,5 +1,8 @@
 package configuration.types
+
+import configuration.basetraits.*
 import configuration.assertions.*
+
 import scala.Console.{RED, RESET}
 
 /** The `java.lang.Object` type */
@@ -35,6 +38,7 @@ val BOXED_BOOLEAN = ClassOrInterfaceType("java.lang.Boolean")
 /** The `java.lang.Void` type */
 val BOXED_VOID = ClassOrInterfaceType("java.lang.Void")
 
+/** The set of boxed primitive types */
 val BOXES: Set[ClassOrInterfaceType] = Set(
   BOXED_BOOLEAN,
   BOXED_BYTE,
@@ -55,8 +59,72 @@ extension (t: (Type, Type))
 type SubstitutionList = List[Substitution]
 type Substitution     = Map[TTypeParameter, Type]
 
+/** Base trait for Type operations
+  * @tparam RAW
+  *   the type of the raw type
+  * @tparam FIX
+  *   the type of the fixed type
+  * @tparam CAPT
+  *   the type of the captured type
+  * @tparam WILDCAPT
+  *   the type of the wildcard captured type
+  * @tparam UP
+  *   the type of the upward projection
+  * @tparam DOWN
+  *   the type of the downward projection
+  * @tparam SUB
+  *   the type after substitution
+  * @tparam EXP
+  *   the type of the expansion
+  * @tparam REP
+  *   the type after replacement
+  * @tparam COM
+  *   the type after combining
+  * @tparam REORDER
+  *   the type after reordering the type parameters
+  */
+sealed trait TypeOps[
+    +RAW <: Type,
+    +FIX <: Type,
+    +CAPT <: Type,
+    +WILDCAPT <: Type,
+    +UP <: Type,
+    +DOWN <: Type,
+    +SUB <: Type,
+    +EXP <: Type,
+    +REP <: Type,
+    +COM <: Type,
+    +REORDER <: Type
+] extends Raw[RAW],
+      Fixable[FIX],
+      Capturable[CAPT],
+      WildcardCapturable[WILDCAPT],
+      UpwardProjectable[UP],
+      DownwardProjectable[DOWN],
+      Substitutable[SUB],
+      Expandable[EXP],
+      Replaceable[REP],
+      Combineable[COM],
+      Reorderable[REORDER]
+
+private type BaseTypeOps = TypeOps[Type, Type, Type, Type, Type, Type, Type, Type, Type, Type, Type]
+
 /** Represents some type in the program */
-sealed trait Type:
+sealed trait Type extends BaseTypeOps:
+  /** The identifier of the type
+    */
+  val identifier: String
+
+  /** The number of type arguments this type needs to have
+    */
+  val numArgs: Int
+
+  /** The type arguments to this type */
+  val args: Vector[Type]
+
+  /** whether this type is the static type or not */
+  val static: Boolean
+
   /** Asserts that some other type is compatible with this type
     * @param that
     *   the other type that is compatible with this type
@@ -65,12 +133,26 @@ sealed trait Type:
     */
   def ~:=(that: Type) = CompatibilityAssertion(this, that)
 
+  /** The breadth of this type
+    * @return
+    *   the breadth of this type
+    */
   def breadth: Int
+
+  /** The depth of this type
+    * @return
+    *   the depth of this type
+    */
   def depth: Int
-  def captured: Type
-  def wildcardCaptured: Type
-  def fix: Type
+
+  /** Converts this type into the static type (the type of this type)
+    * @return
+    *   the static type of this type
+    */
   def toStaticType: Type
+
+  /** Determines if this type contains any inference variables, alphas or placeholder types */
+  def isSomehowUnknown: Boolean
 
   /** Asserts that this type is compatible with another type
     * @param that
@@ -95,25 +177,6 @@ sealed trait Type:
     *   the resulting WideningAssertion
     */
   def =~>>(that: Type) = WideningAssertion(that, this)
-
-  /** The identifier of the type
-    */
-  val identifier: String
-
-  /** The number of type arguments this type needs to have
-    */
-  val numArgs: Int
-
-  /** The upward projection of this type
-    */
-  val upwardProjection: Type
-
-  /** The downward projection of this type
-    */
-  val downwardProjection: Type
-
-  /** The type arguments to this type */
-  val args: Vector[Type]
 
   /** Asserts that this type is a supertype of another type
     * @param that
@@ -185,34 +248,14 @@ sealed trait Type:
     */
   def isPrimitive = IsPrimitiveAssertion(this)
 
-  // /** Asserts that this type is a reference type
-  //   * @return
-  //   *   the resulting IsReferenceAssertion
-  //   */
-  // def isReference = IsReferenceAssertion(this)
-
-  /** Determines if this type contains any inference variables, alphas or placeholder types */
-  def isSomehowUnknown: Boolean
-
-  /** Replace any occurrences of an old type in this type and all its substitutions/members with a
-    * new type
-    * @param oldType
-    *   the old type to be replaced
-    * @param newType
-    *   the new type after replacement
+  /** Asserts that this type is a member of a set of types
+    * @param set
+    *   the set of types
     * @return
-    *   the resulting type
+    *   the corresponding disjunction
     */
-  def replace(oldType: InferenceVariable, newType: Type): Type
-
-  /** Returns the equivalent type after removing all type arguments, a.k.a. the raw type.
-    *
-    * @return
-    *   the raw type of this type
-    */
-  def raw: Type
-
-  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Type
+  def in(set: Set[Type]): DisjunctiveAssertion =
+    DisjunctiveAssertion(set.toVector.map(this ~=~ _))
 
   /** Checks if this type strictly occurs in, but is not equal to, another type
     * @param that
@@ -251,127 +294,301 @@ sealed trait Type:
         "<" + (0 until numArgs)
           .map(TypeParameterIndex(identifier, _))
           .mkString(", ") + ">"
-    // val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
-    // val subsstring = substitutions.map(subs => s"[${subsFn(subs)}]").mkString
     s"$start$argumentList${if static then " static" else ""}"
 
-  /** Reorders type parameters by replaces all type parameters given a scheme
-    * @param scheme
-    *   the scheme to replace all type parameters
-    * @return
-    *   the resulting type after re-ordering
-    */
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Type
+private type CaptureOps =
+  TypeOps[
+    Capture,
+    Capture,
+    Capture,
+    Capture,
+    Type,
+    Type,
+    Capture,
+    Capture,
+    Capture,
+    Capture,
+    Capture
+  ]
 
-  /** Asserts that this type is a member of a set of types
-    * @param set
-    *   the set of types
-    * @return
-    *   the corresponding disjunction
-    */
-  def in(set: Set[Type]): DisjunctiveAssertion =
-    DisjunctiveAssertion(set.toVector.map(this ~=~ _))
-
-  /** Add a substitution function to this type
-    * @param function
-    *   the function that maps type parameters to types
-    * @return
-    *   the type after substitution
-    */
-  def substitute(function: Substitution): Type
-
-  def expansion: (Type, Substitution)
-
-  val static: Boolean
-
+/** A type after Java capture conversion
+  * @param id
+  *   the ID of this type
+  * @param lowerBound
+  *   the lower bound of this captured type
+  * @param upperBound
+  *   the upper bound of this captured type
+  * @param static
+  *   whether this represents the static type
+  */
 case class Capture(id: Int, lowerBound: Type, upperBound: Type, static: Boolean = false)
-    extends Type:
-  def toStaticType: Capture     = copy(static = true)
-  override def toString()       = s"$identifier extends $upperBound super $lowerBound"
-  val args                      = Vector()
-  val numArgs                   = 0
-  def breadth                   = lowerBound.breadth.max(upperBound.breadth)
-  def depth                     = lowerBound.depth.max(upperBound.depth) + 1
-  def captured: Capture         = this
-  def wildcardCaptured: Capture = this
-  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Capture =
+    extends Type,
+      CaptureOps:
+  /** The identifier of a capture is `CAP<id>` */
+  override val identifier = s"CAP$id"
+
+  /** Captures have no type arguments */
+  override val args = Vector()
+
+  /** Captures have no type arguments */
+  override val numArgs = 0
+
+  /** The upward projection of a capture is the upward projection of its upper bound */
+  override val upwardProjection = upperBound.upwardProjection
+
+  /** The downward projection of a capture is the downward projection of its lower bound */
+  override val downwardProjection = lowerBound.downwardProjection
+
+  /** Converting capture to a static type is simply the equivalent where `static = true` */
+  override def toStaticType: Capture = copy(static = true)
+
+  /** The breadth of a capture is the max between the breadth of the lower and upper bounds */
+  override def breadth = lowerBound.breadth.max(upperBound.breadth)
+
+  /** The depth of a capture is 1 + the max between the depth of the lower and upper bounds */
+  override def depth = lowerBound.depth.max(upperBound.depth) + 1
+
+  /** Capturing a capture is itself */
+  override def captured = this
+
+  /** Wildcard-capturing a capture is itself */
+  override def wildcardCaptured = this
+
+  /** Combines all occurrences of a temporary type in the lower and upper bounds of this capture
+    * with a new type
+    * @param oldType
+    *   the temporary type to combine
+    * @param newType
+    *   the new type to combine with
+    * @return
+    *   the resulting capture
+    */
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Capture =
     copy(
       lowerBound = lowerBound.combineTemporaryType(oldType, newType),
       upperBound = upperBound.combineTemporaryType(oldType, newType)
     )
-  val upwardProjection   = upperBound.upwardProjection
-  val downwardProjection = lowerBound.downwardProjection
-  def expansion          = (this, Map())
-  val identifier         = s"CAP$id"
-  def raw                = this
-  def substitute(function: Substitution): Capture = copy(
+
+  /** The expansion of a capture is itself and the empty substitution */
+  override def expansion = (this, Map())
+
+  /** The raw type of a capture is itself */
+  override def raw = this
+
+  /** Performs a substitution on the upper and lower bounds of this capture
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting capture
+    */
+  override def substitute(function: Substitution): Capture = copy(
     lowerBound = lowerBound.substitute(function),
     upperBound = upperBound.substitute(function)
   )
-  def isSomehowUnknown: Boolean = lowerBound.isSomehowUnknown || upperBound.isSomehowUnknown
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Capture = copy(
+
+  /** Determines if one of the bounds of this capture is somehow unknown */
+  override def isSomehowUnknown: Boolean =
+    lowerBound.isSomehowUnknown || upperBound.isSomehowUnknown
+
+  /** Reorders the type parameters of the bounds of this capture
+    * @param scheme
+    *   the scheme to reorder the type parameters by
+    * @return
+    *   the resulting capture
+    */
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Capture = copy(
     lowerBound = lowerBound.reorderTypeParameters(scheme),
     upperBound = upperBound.reorderTypeParameters(scheme)
   )
-  def fix: Capture = copy(lowerBound = lowerBound.fix, upperBound = upperBound.fix)
-  def replace(oldType: InferenceVariable, newType: Type): Capture = copy(
+
+  /** Fixes the bounds of this capture */
+  override def fix: Capture = copy(lowerBound = lowerBound.fix, upperBound = upperBound.fix)
+
+  /** Performs a replacement on the bounds of this capture
+    * @param oldType
+    *   the old type to replace
+    * @param newType
+    *   the new type to replace the old type with
+    * @return
+    *   the resulting capture
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): Capture = copy(
     lowerBound = lowerBound.replace(oldType, newType),
     upperBound = upperBound.replace(oldType, newType)
   )
 
+  override def toString() = s"$identifier extends $upperBound super $lowerBound"
+
+private type JavaInferenceVariableOps = TypeOps[
+  JavaInferenceVariable,
+  JavaInferenceVariable,
+  JavaInferenceVariable,
+  JavaInferenceVariable,
+  JavaInferenceVariable,
+  JavaInferenceVariable,
+  JavaInferenceVariable,
+  JavaInferenceVariable,
+  Type,
+  JavaInferenceVariable,
+  JavaInferenceVariable
+]
+
+/** An inference variable used in Java's type inference
+  * @param id
+  *   the ID of this inference variable
+  * @param paramChoices
+  *   the set of parameters this inference variable could be/contained
+  * @param canBeSubsequentlyBounded
+  *   whether after substitution this type can contain bounded/unbounded wildcards
+  */
 case class JavaInferenceVariable(
     id: Int,
     paramChoices: Set[TTypeParameter],
     canBeSubsequentlyBounded: Boolean
-) extends InferenceVariable:
-  def toStaticType: JavaInferenceVariable = this
-  val static: Boolean                     = false
-  val identifier                          = s"iv$id"
-  def combineTemporaryType(
+) extends InferenceVariable,
+      JavaInferenceVariableOps:
+  /** The identifier of a java inference variable is `iv<id>` */
+  override val identifier = s"iv$id"
+
+  /** There will never be the static type of a java inference variable */
+  override val static: Boolean = false
+
+  /** Java inference variables have no type arguments */
+  override val args: Vector[Type] = Vector()
+
+  /** Java inference variables have no type arguments */
+  override val numArgs: Int = 0
+
+  /** The upward projection of a java inference variable is itself */
+  override val upwardProjection: JavaInferenceVariable = this
+
+  /** The downward projection of a java inference variable is itself */
+  override val downwardProjection: JavaInferenceVariable = this
+
+  /** Java inference variables have no substitutions */
+  override val substitutions: SubstitutionList = Nil
+
+  /** Java inference variables will never be captured */
+  override val toBeCaptured: Boolean = false
+
+  /** Java inference variables will never be wildcard-captured */
+  override val toBeWildcardCaptured: Boolean = false
+
+  /** The raw type of a Java inference variable is itself
+    * @return
+    *   itself
+    */
+  override def raw = this
+
+  /** The expansion of a java inference variable is itself and the empty substitution function
+    * @return
+    *   itself and the empty substitution function
+    */
+  override def expansion = (this, Map())
+
+  /** The static type of a java inference variable is itself
+    * @return
+    *   itself
+    */
+  override def toStaticType: JavaInferenceVariable = this
+
+  /** Java inference variables do not contain any temporary types
+    * @param oldType
+    *   the type to combine
+    * @param newType
+    *   the type to combine with
+    * @return
+    *   itself
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): JavaInferenceVariable = this
-  def fix: JavaInferenceVariable = this
-  def replace(oldType: InferenceVariable, newType: Type): Type =
+
+  /** Fixing a java inference variable just produces itself
+    * @return
+    *   itself
+    */
+  override def fix: JavaInferenceVariable = this
+
+  /** Performs a replacement on this inference variable if it is the target of replacement
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   the resulting type
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): Type =
     if oldType == this then newType else this
-  def substitute(function: Substitution): JavaInferenceVariable = this
-  val substitutions: SubstitutionList                           = Nil
-  val toBeCaptured: Boolean                                     = false
-  val toBeWildcardCaptured: Boolean                             = false
-  def captured: JavaInferenceVariable                           = this
-  def wildcardCaptured: JavaInferenceVariable                   = this
-  val args: Vector[Type]                                        = Vector()
-  val numArgs: Int                                              = 0
-  val upwardProjection: JavaInferenceVariable                   = this
-  val downwardProjection: JavaInferenceVariable                 = this
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): JavaInferenceVariable =
+
+  /** Performing a substitution on this java inference variable does nothing
+    * @param function
+    *   the substitution function
+    * @return
+    *   itself
+    */
+  override def substitute(function: Substitution): JavaInferenceVariable = this
+
+  /** Capturing a java inference variable produces itself
+    * @return
+    *   itself
+    */
+  override def captured: JavaInferenceVariable = this
+
+  /** Wildcard-capturing a java inference variable produces itself
+    * @return
+    *   itself
+    */
+  override def wildcardCaptured: JavaInferenceVariable = this
+
+  /** Java inference variables do not have any type parameters, so there is nothing to reorder
+    * @param scheme
+    *   the reordering scheme
+    * @return
+    *   itself
+    */
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): JavaInferenceVariable =
     this
 
+private type PrimitiveTypeOps = TypeOps[
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType
+]
+
 /** The primitive types */
-sealed trait PrimitiveType extends Type:
-  def toStaticType: PrimitiveType = this
-  val static: Boolean             = false
-  def fix: PrimitiveType          = this
-  def captured: Type              = this
-  def wildcardCaptured: Type      = this
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): PrimitiveType = this
-  def breadth = 0
-  def depth   = 0
+sealed trait PrimitiveType extends Type, PrimitiveTypeOps:
+  /** The boxed type of this primitive type */
   val boxed: ClassOrInterfaceType
-  val numArgs                                                                           = 0
-  val substitutions                                                                     = Nil
-  def addSubstitutionLists(substitutions: SubstitutionList): PrimitiveType              = this
-  val upwardProjection: PrimitiveType                                                   = this
-  val downwardProjection: PrimitiveType                                                 = this
-  def replace(oldType: InferenceVariable, newType: Type): PrimitiveType                 = this
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PrimitiveType = this
-  def substituted                                                                       = this
-  val args                                                                              = Vector()
-  def isSomehowUnknown                                                                  = false
-  def raw: PrimitiveType                                                                = this
+
+  /** Primitive types have no type arguments */
+  override val args = Vector()
+
+  /** Primitive types have no type arguments */
+  override val numArgs = 0
+
+  /** The upward projection of any primitive type is itself */
+  override val upwardProjection: PrimitiveType = this
+
+  /** The downward projection of any primitive type is itself */
+  override val downwardProjection: PrimitiveType = this
+
+  /** Primitive types will never be the static type */
+  override val static: Boolean = false
 
   /** the types which this primitive type can widen to */
   def widened: Set[PrimitiveType]
@@ -379,13 +596,30 @@ sealed trait PrimitiveType extends Type:
   /** the types which can be assigned into this type */
   def isAssignableBy: Set[Type] = widenedFrom ++ boxedSources
 
-  /** Substitutions on a primitive type do not change it */
-  def substitute(function: Substitution): PrimitiveType = this
-
-  /** The expansion of any primitive type is just itself and an empty function */
-  def expansion: (PrimitiveType, Substitution) = (this, Map())
   def widenedFrom: Set[PrimitiveType]
   def boxedSources: Set[ClassOrInterfaceType] = widenedFrom.map(_.boxed)
+
+  override def toStaticType: PrimitiveType     = this
+  override def fix: PrimitiveType              = this
+  override def captured: PrimitiveType         = this
+  override def wildcardCaptured: PrimitiveType = this
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): PrimitiveType = this
+  override def breadth                                                           = 0
+  override def depth                                                             = 0
+  override def replace(oldType: InferenceVariable, newType: Type): PrimitiveType = this
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PrimitiveType =
+    this
+  override def isSomehowUnknown   = false
+  override def raw: PrimitiveType = this
+
+  /** Substitutions on a primitive type do not change it */
+  override def substitute(function: Substitution): PrimitiveType = this
+
+  /** The expansion of any primitive type is just itself and an empty function */
+  override def expansion: (PrimitiveType, Substitution) = (this, Map())
 
 /** An array
   * @param base
@@ -429,11 +663,10 @@ final case class ArrayType(
   /** Nothing */
   def expansion: (ArrayType, Substitution) = (this, Map())
 
-sealed trait SomeClassOrInterfaceType extends Type:
+sealed trait SomeClassOrInterfaceType extends Type, Raw[SomeClassOrInterfaceType]:
   def toStaticType: SomeClassOrInterfaceType
   // fixing either a ClassOrInterfaceType or TemporaryType always yields a ClassOrInterfaceType
   def fix: ClassOrInterfaceType
-  def raw: SomeClassOrInterfaceType
   def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): SomeClassOrInterfaceType
   val upwardProjection: SomeClassOrInterfaceType
   val downwardProjection: SomeClassOrInterfaceType
@@ -456,7 +689,8 @@ final case class ClassOrInterfaceType(
     identifier: String,
     args: Vector[Type],
     static: Boolean = false
-) extends SomeClassOrInterfaceType:
+) extends SomeClassOrInterfaceType,
+      Raw[ClassOrInterfaceType]:
   def toStaticType: ClassOrInterfaceType = copy(static = true)
   def fix: ClassOrInterfaceType          = copy(args = args.map(_.fix))
   if identifier.size == 0 || identifier.charAt(0) == 'ξ' then
@@ -889,8 +1123,7 @@ final case class TemporaryType(
     id: Int,
     args: Vector[Type],
     static: Boolean = false
-) extends InferenceVariable,
-      SomeClassOrInterfaceType:
+) extends SomeClassOrInterfaceType:
   override def toStaticType: TemporaryType = copy(static = true)
   def fix: ClassOrInterfaceType            = ClassOrInterfaceType(s"UNKNOWN_$id", args.map(_.fix))
   val toBeCaptured: Boolean                = false
@@ -1467,13 +1700,6 @@ object InferenceVariableFactory:
         parameterChoices,
         canBeUnknown
       )
-    // ((PRIMITIVE_VOID +: (parameterChoices.toVector ++ PRIMITIVES.toVector)) :+ createAlpha(
-    //   source,
-    //   Nil,
-    //   canBeSubsequentlyBounded,
-    //   parameterChoices,
-    //   canBeUnknown
-    // ))
     VoidableDisjunctiveType(
       myID,
       substitutions,

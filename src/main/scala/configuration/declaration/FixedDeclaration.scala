@@ -1,5 +1,6 @@
 package configuration.declaration
 
+import configuration.basetraits.*
 import configuration.types.*
 import configuration.Configuration
 import scala.annotation.tailrec
@@ -45,6 +46,33 @@ class FixedDeclaration(
 ) extends Declaration:
   val numParams = typeParameterBounds.size
   val isClass   = !isInterface
+
+  def copy(
+      identifier: String = this.identifier,
+      typeParameterBounds: Vector[Vector[Type]] = this.typeParameterBounds,
+      isFinal: Boolean = this.isFinal,
+      isAbstract: Boolean = this.isAbstract,
+      isInterface: Boolean = this.isInterface,
+      extendedTypes: Vector[ClassOrInterfaceType] = this.extendedTypes,
+      implementedTypes: Vector[ClassOrInterfaceType] = this.implementedTypes,
+      methodTypeParameterBounds: Map[String, Vector[Type]] = this.methodTypeParameterBounds,
+      attributes: Map[String, Attribute] = this.attributes,
+      methods: Map[String, Vector[Method]] = this.methods,
+      constructors: Vector[Constructor] = this.constructors
+  ): FixedDeclaration =
+    new FixedDeclaration(
+      identifier,
+      typeParameterBounds,
+      isFinal,
+      isAbstract,
+      isInterface,
+      extendedTypes,
+      implementedTypes,
+      methodTypeParameterBounds,
+      attributes,
+      methods,
+      constructors
+    )
 
   /** Determine whether the declaration contains any unreasonable methods
     * @return
@@ -127,18 +155,13 @@ class FixedDeclaration(
           if !methodTypeParameterBounds.contains(index) then ??? // TODO
           else methodTypeParameterBounds(index)
 
-  def erased = new FixedDeclaration(
-    identifier,
-    Vector(),
-    isFinal,
-    isAbstract,
-    isInterface,
-    extendedTypes.map(_.raw),
-    implementedTypes.map(_.raw),
-    Map(),
-    attributes.map((s, a) => (s -> getAttributeErasure(a))),
-    methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
-    constructors.map(getConstructorErasure(_))
+  def erased = copy(
+    typeParameterBounds = Vector(),
+    extendedTypes = extendedTypes.raw,
+    implementedTypes = implementedTypes.raw,
+    attributes = attributes.map((s, a) => (s -> getAttributeErasure(a))),
+    methods = methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
+    constructors = constructors.map(getConstructorErasure(_))
   )
 
   def getAllReferenceTypeBoundsOfTypeParameter(
