@@ -4,6 +4,32 @@ import configuration.types.*
 import configuration.Configuration
 import scala.collection.mutable.{Map as MutableMap, ArrayBuffer}
 
+type AttributesList = Map[String, Attribute]
+
+type ConstructorList = Vector[Constructor]
+
+type MethodList = Map[String, Vector[Method]]
+
+extension [A, B](m: Map[A, B])
+  /** Maps the values of this map
+    * @tparam C
+    *   the result of applying the function
+    * @param f
+    *   the function to apply to the values of this map
+    * @return
+    *   the resulting map
+    */
+  def >->=[C](f: B => C): Map[A, C] = m.map((k, v) => (k -> f(v)))
+
+extension (m: MethodList)
+  /** Maps each method in this method list
+    * @param f
+    *   the function to map the method
+    * @return
+    *   the resulting method list
+    */
+  def mmap(f: Method => Method) = m.map((k, v) => (k -> v.map(f)))
+
 /** A declaration of a type in the program.
   */
 trait Declaration:
@@ -36,11 +62,11 @@ trait Declaration:
 
   /** The attributes of this declaration
     */
-  val attributes: Map[String, Attribute]
+  val attributes: AttributesList
 
   /** The methods of this declaration
     */
-  val methods: Map[String, Vector[Method]]
+  val methods: MethodList
 
   /** The constructors of this declaration
     */

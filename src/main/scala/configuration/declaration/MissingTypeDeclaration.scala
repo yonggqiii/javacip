@@ -36,6 +36,29 @@ class MissingTypeDeclaration(
     val methods: Map[String, Vector[Method]] = Map().withDefaultValue(Vector()),
     val constructors: Vector[Constructor] = Vector()
 ) extends Declaration:
+
+  def copy(
+      identifier: String = this.identifier,
+      typeParameterBounds: Vector[Vector[Type]] = this.typeParameterBounds,
+      mustBeClass: Boolean = this.mustBeClass,
+      mustBeInterface: Boolean = this.mustBeInterface,
+      supertypes: Vector[SomeClassOrInterfaceType] = this.supertypes,
+      methodTypeParameterBounds: Map[String, Vector[Type]] = this.methodTypeParameterBounds,
+      attributes: Map[String, Attribute] = this.attributes,
+      methods: Map[String, Vector[Method]] = this.methods,
+      constructors: Vector[Constructor] = this.constructors
+  ) = new MissingTypeDeclaration(
+    identifier,
+    typeParameterBounds,
+    mustBeClass,
+    mustBeInterface,
+    supertypes,
+    methodTypeParameterBounds,
+    attributes,
+    methods,
+    constructors
+  )
+
   def fix(config: Configuration): FixedDeclaration =
     if supertypes.filter(x => config |- x.isClass).size > 1 then ???
     val extendedTypes =
@@ -66,20 +89,28 @@ class MissingTypeDeclaration(
       methods.map((k, v) => (k -> v.map(m => m.fix))),
       constructors.map(_.fix)
     )
-  def addFinalizedMethod(m: Method): MissingTypeDeclaration =
-    new MissingTypeDeclaration(
-      identifier,
-      typeParameterBounds,
-      mustBeClass,
-      mustBeInterface,
-      supertypes,
+
+  def addFinalizedMethod(m: Method): MissingTypeDeclaration = copy(
+    methodTypeParameterBounds =
       methodTypeParameterBounds ++ m.typeParameterBounds.map((x, y) => (x.toString -> y)),
-      attributes,
+    methods =
       if !methods.contains(m.signature.identifier) then
         methods + (m.signature.identifier    -> Vector(m))
-      else methods + (m.signature.identifier -> (methods(m.signature.identifier) :+ m)),
-      constructors
-    )
+      else methods + (m.signature.identifier -> (methods(m.signature.identifier) :+ m))
+  )
+  // new MissingTypeDeclaration(
+  //   identifier,
+  //   typeParameterBounds,
+  //   mustBeClass,
+  //   mustBeInterface,
+  //   supertypes,
+  //   methodTypeParameterBounds ++ m.typeParameterBounds.map((x, y) => (x.toString -> y)),
+  //   attributes,
+  //   if !methods.contains(m.signature.identifier) then
+  //     methods + (m.signature.identifier    -> Vector(m))
+  //   else methods + (m.signature.identifier -> (methods(m.signature.identifier) :+ m)),
+  //   constructors
+  // )
 
   def addFinalizedConstructor(c: Constructor): MissingTypeDeclaration =
     new MissingTypeDeclaration(

@@ -690,7 +690,8 @@ final case class ClassOrInterfaceType(
     args: Vector[Type],
     static: Boolean = false
 ) extends SomeClassOrInterfaceType,
-      Raw[ClassOrInterfaceType]:
+      Raw[ClassOrInterfaceType],
+      Substitutable[ClassOrInterfaceType]:
   def toStaticType: ClassOrInterfaceType = copy(static = true)
   def fix: ClassOrInterfaceType          = copy(args = args.map(_.fix))
   if identifier.size == 0 || identifier.charAt(0) == 'ξ' then

@@ -47,6 +47,32 @@ class FixedDeclaration(
   val numParams = typeParameterBounds.size
   val isClass   = !isInterface
 
+  /** Copies this declaration
+    * @param identifier
+    *   the name of the type
+    * @param typeParameters
+    *   the bounds of the type parameters of this type
+    * @param isFinal
+    *   whether this type is final
+    * @param isAbstract
+    *   whether this type is abstract
+    * @param isInterface
+    *   whether this type is an interface; if it is not, then it is a class
+    * @param extendedTypes
+    *   any type that this type extends
+    * @param implementedTypes
+    *   any type that this type implements
+    * @param methodTypeParameterBounds
+    *   any method type parameters and its corresponding bounds
+    * @param attributes
+    *   the attributes of this type
+    * @param methods
+    *   the methods of this type
+    * @param constructors
+    *   the constructors of this type
+    * @return
+    *   the resulting copied declaration
+    */
   def copy(
       identifier: String = this.identifier,
       typeParameterBounds: Vector[Vector[Type]] = this.typeParameterBounds,
@@ -159,9 +185,11 @@ class FixedDeclaration(
     typeParameterBounds = Vector(),
     extendedTypes = extendedTypes.raw,
     implementedTypes = implementedTypes.raw,
-    attributes = attributes.map((s, a) => (s -> getAttributeErasure(a))),
-    methods = methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
-    constructors = constructors.map(getConstructorErasure(_))
+    attributes = attributes >->= getAttributeErasure,
+    // attributes.map((s, a) => (s -> getAttributeErasure(a))),
+    methods = methods mmap getMethodErasure,
+    //  methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
+    constructors = constructors map getConstructorErasure
   )
 
   def getAllReferenceTypeBoundsOfTypeParameter(
@@ -246,10 +274,14 @@ class FixedDeclaration(
       isFinal,
       isAbstract,
       isInterface,
-      extendedTypes.map(x => x.substitute(function)),
-      implementedTypes.map(x => x.substitute(function)),
+      //extendedTypes.map(x => x.substitute(function)),
+      extendedTypes.substitute(function),
+      // implementedTypes.map(x => x.substitute(function)),
+      implementedTypes.substitute(function),
       methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.substitute(function)))),
-      attributes.map((k, v) => (k -> v.substitute(function))),
-      methods.map((k, v) => (k -> v.map(m => m.substitute(function)))),
-      constructors.map(c => c.substitute(function))
+      // attributes.map((k, v) => (k -> v.substitute(function))),
+      attributes >->= (_.substitute(function)),
+      methods mmap (_.substitute(function)),
+      // methods.map((k, v) => (k -> v.map(m => m.substitute(function)))),
+      constructors.substitute(function)
     )
