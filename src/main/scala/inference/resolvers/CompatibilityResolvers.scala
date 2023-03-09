@@ -70,8 +70,8 @@ private def resolveCompatibilityAssertion(
       else (log.addWarn(s"$s does not unbox to something that widens to $t"), Nil)
     case (s: TTypeParameter, t: ClassOrInterfaceType) =>
       (log, (config asserts s <:~ t) :: Nil)
-    case (Bottom, _) =>
-      (log, config :: Nil)
+    case (Bottom, t) =>
+      (log, (config asserts (Bottom <:~ t)) :: Nil)
     case (s, Bottom) =>
       (log.addWarn(s"$Bottom := $s will always be false"), Nil)
     case (s: SomeClassOrInterfaceType, t: JavaInferenceVariable) =>

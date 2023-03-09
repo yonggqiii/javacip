@@ -33,7 +33,7 @@ private def infer(
       if !log.appConfig.debug then println("cannot be compiled")
       LogWithNone(log.addError(s"Terminating as type errors exist"))
     case Some((x, xs)) =>
-      if a > 100000 then
+      if a > 200000 then
         return LogWithNone(
           log.addError("max hit", if !log.appConfig.benchmark then x.toString else "")
         )
@@ -41,17 +41,19 @@ private def infer(
         print(
           "\r" + f"$a%18d | ${configs.map((k, v) => v.size).sum}%11d | ${x.maxBreadth}%15d | ${x.maxDepth}%14d"
         )
-      val res =
-        resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers >>= typecheck
-      if res.isLeft then
-        val allConfigs = addAllToConfigs(xs, res.left.reverse)
-        infer(res.log, allConfigs, a + 1)
+      if x.maxBreadth > 3 || x.maxDepth > 2 then infer(log, xs, a + 1)
       else
-        LogWithSome(
-          res.log
-            .addSuccess(s"successfully inferred compilable configuration", res.right.toString),
-          res.right
-        )
+        val res =
+          resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers >>= typecheck
+        if res.isLeft then
+          val allConfigs = addAllToConfigs(xs, res.left.reverse)
+          infer(res.log, allConfigs, a + 1)
+        else
+          LogWithSome(
+            res.log
+              .addSuccess(s"successfully inferred compilable configuration", res.right.toString),
+            res.right
+          )
 
 private def getConfig(
     configs: Map[Int, List[Configuration]]
@@ -73,7 +75,7 @@ private def addAllToConfigs(
     case Nil     => configs
     case x :: xs =>
       // val res = addAllToConfigs(configs, xs)
-      val key = x.heuristicValue
+      val key = 0 //x.heuristicValue // 0
       // print(key)
       if key > 100 then configs
       else if !configs.contains(key) then addAllToConfigs(configs + (key -> (x :: Nil)), xs)

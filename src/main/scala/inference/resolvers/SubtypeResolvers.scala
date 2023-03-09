@@ -26,6 +26,11 @@ private[inference] def resolveSubtypeAssertion(
       )
   // trivial cases
   (sub, sup) match
+    case (Bottom, _: PrimitiveType) => (log.addWarn("primitive types are non nullable"), Nil)
+    case (Bottom, _: PrimitivesOnlyDisjunctiveType) =>
+      (log.addWarn("primitive types are non nullable"), Nil)
+    case (Bottom, i: DisjunctiveType) =>
+      expandDisjunctiveTypeToReference(i, log, config asserts a)
     case (Bottom, _) =>
       (log, config :: Nil)
     case (x, Bottom) =>

@@ -56,6 +56,27 @@ private type MutableTheta = MutableSet[Invocation]
 private type MutableConfiguration =
   (MutableDelta, MutablePhi, MutableOmega, MutablePsi, MutableTheta, MutableSet[Type])
 
+def hasGenerics(log: Log, filePath: String): (Log, Boolean) =
+  // Use the reflection type solver to solve types in the jdk
+  val typeSolver = ReflectionTypeSolver()
+  // Create JavaSymbolSolver using the type solver
+  val jss = JavaSymbolSolver(typeSolver)
+  // Set the parser configuration
+  StaticJavaParser.getConfiguration().setSymbolResolver(jss)
+  parseSource(log.addInfo(s"attempting to parse $filePath..."), filePath) >->= findGenerics match
+    case LogWithSome(log, some) => (log, some)
+    case LogWithNone(log)       => (log, false)
+
+def findGenerics(cu: CompilationUnit): Boolean =
+  cu.findAll(classOf[ASTClassOrInterfaceType])
+    .asScala
+    .toVector
+    .exists(t =>
+      t.getTypeArguments().toScala match
+        case Some(x) => !x.asScala.isEmpty
+        case None    => false
+    )
+
 /** Parses the configuration of the algorithm given the file path of the Java source code
   * @param log
   *   the log file

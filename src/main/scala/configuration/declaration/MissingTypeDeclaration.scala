@@ -90,14 +90,16 @@ class MissingTypeDeclaration(
       constructors.map(_.fix)
     )
 
-  def addFinalizedMethod(m: Method): MissingTypeDeclaration = copy(
-    methodTypeParameterBounds =
-      methodTypeParameterBounds ++ m.typeParameterBounds.map((x, y) => (x.toString -> y)),
-    methods =
-      if !methods.contains(m.signature.identifier) then
-        methods + (m.signature.identifier    -> Vector(m))
-      else methods + (m.signature.identifier -> (methods(m.signature.identifier) :+ m))
-  )
+  def addFinalizedMethod(m: Method): MissingTypeDeclaration =
+    val mm = if this.isAbstract && !m.isStatic then m.makeAbstract else m
+    copy(
+      methodTypeParameterBounds =
+        methodTypeParameterBounds ++ mm.typeParameterBounds.map((x, y) => (x.toString -> y)),
+      methods =
+        if !methods.contains(mm.signature.identifier) then
+          methods + (mm.signature.identifier    -> Vector(mm))
+        else methods + (mm.signature.identifier -> (methods(mm.signature.identifier) :+ mm))
+    )
   // new MissingTypeDeclaration(
   //   identifier,
   //   typeParameterBounds,

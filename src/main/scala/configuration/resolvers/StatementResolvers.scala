@@ -209,7 +209,7 @@ private def resolveTryStmt(
       v.map(x => x <:~ ClassOrInterfaceType("java.lang.AutoCloseable"))
     )
     config._3 += ConjunctiveAssertion(
-      catchClauses.map(x => x <:~ ClassOrInterfaceType("java.lang.Throwable"))
+      catchClauses.map(x => x <:~ ClassOrInterfaceType("java.lang.RuntimeException"))
     )
     config
   )

@@ -341,6 +341,10 @@ class Method(
     isFinal
   )
 
+  def makeAbstract = copy(isAbstract = true, isStatic = false, isFinal = false)
+  def makeStatic   = copy(isStatic = true, isAbstract = false)
+  def makeFinal    = copy(isAbstract = false, isFinal = true)
+
   /** Determines whether this method violates the reasonable-use assumption
     * @return
     *   whether this method violates the reasonable-use assumption

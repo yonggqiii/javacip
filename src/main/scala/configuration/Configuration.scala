@@ -597,7 +597,17 @@ case class Configuration(
   private def proveSubtype(left: Type, right: Type): Boolean =
     val (sub, sup) = (left.upwardProjection, right.downwardProjection)
     if sup == OBJECT then true
-    else if sub == Bottom then true
+    else if sub == Bottom then
+      sup match
+        case _: PrimitiveType            => false
+        case _: Alpha                    => true
+        case _: InferenceVariable        => false
+        case _: SomeClassOrInterfaceType => true
+        case _: TTypeParameter           => true
+        case _: ArrayType                => true
+        case _: Capture                  => true
+        case Bottom                      => true
+
     //else if sub.isSomehowUnknown || sup.isSomehowUnknown then false
     else
       (sub, sup) match

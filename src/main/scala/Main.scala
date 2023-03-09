@@ -1,7 +1,7 @@
 import java.io.File
 import java.io.FileWriter
 import com.github.javaparser.ast.CompilationUnit
-import configuration.parseConfiguration
+import configuration.{parseConfiguration, hasGenerics}
 import inference.infer
 import sourcebuilder.buildSource
 import utils.{Log, LogWithSome, parseCommandLineArgs, mapWithLog}
@@ -11,6 +11,13 @@ object Main:
       case None => ()
       case Some(config) =>
         LogWithSome(Log(config), config.in)
+          // .map(hasGenerics)
+          // .consume((log, x) =>
+          //   if x then
+          //     println(log.appConfig.in)
+          //     log
+          //   else log
+          // )
           .flatMap(parseConfiguration)
           .flatMap(infer)
           .map(buildSource)

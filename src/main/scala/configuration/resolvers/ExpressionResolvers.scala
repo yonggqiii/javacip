@@ -273,7 +273,8 @@ private def resolveArrayAccessExpr(
   resolveExpression(log, name, config, memo).flatMap((log, name) =>
     resolveExpression(log, index, config, memo).rightmap(index =>
       // array indices must be an integer
-      config._3 += (index =:~ PRIMITIVE_INT)
+      if index != PRIMITIVE_INT || index != PRIMITIVE_BYTE || index != PRIMITIVE_CHAR || index != PRIMITIVE_SHORT then
+        config._3 += (index =:~ PRIMITIVE_INT)
       name match
         case ArrayType(base) => base
         case _ =>
@@ -281,6 +282,7 @@ private def resolveArrayAccessExpr(
           val rt           = createDisjunctiveTypeWithPrimitivesFromContext(expr, config)
           // nameexpr must be an instance of rt[]
           config._3 += (name <:~ ArrayType(rt))
+          config._4 += rt
           rt
     )
   )
@@ -408,24 +410,26 @@ private def resolveBinaryExpr(
             (right =:~ rt)
           rt
         case BinaryExpr.Operator.PLUS =>
-          val rt = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
-            scala.util.Left(""),
-            Nil,
-            false,
-            Set(),
-            false
-          )
-          config._4 += rt
-          config._2._2(rt) = InferenceVariableMemberTable(rt)
-          config._3 += (IsNumericAssertion(left) &&
-            IsNumericAssertion(right) &&
-            IsNumericAssertion(rt) &&
-            (left =:~ rt) &&
-            (right =:~ rt)) ||
-            (((left ~=~ STRING) ||
-              (right ~=~ STRING)) &&
-              (rt ~=~ STRING))
-          rt
+          if left == STRING || right == STRING then STRING
+          else
+            val rt = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+              scala.util.Left(""),
+              Nil,
+              false,
+              Set(),
+              false
+            )
+            config._4 += rt
+            config._2._2(rt) = InferenceVariableMemberTable(rt)
+            config._3 += (IsNumericAssertion(left) &&
+              IsNumericAssertion(right) &&
+              IsNumericAssertion(rt) &&
+              (left =:~ rt) &&
+              (right =:~ rt)) ||
+              (((left ~=~ STRING) ||
+                (right ~=~ STRING)) &&
+                (rt ~=~ STRING))
+            rt
     )
   )
 
@@ -571,29 +575,32 @@ private def resolveStaticMethodCallExpr(
   else if isMissing then
     originalArguments.rightmap(args =>
       val missingDeclaration = config._2._1(resolvedScope.identifier)
-      val returnType         = createReturnTypeFromContext(expr, config)
-      config._4 += returnType
-      // create a new declaration by adding the method
-      config._2._1 += (missingDeclaration.identifier -> missingDeclaration.addMethod(
-        nameOfMethod,
-        args,
-        returnType,
-        Vector(),
-        PUBLIC,
-        false,
-        true,
-        false,
-        paramChoices,
-        Map()
-      ))
-      config._5 += Invocation(
-        resolvedScope,
-        nameOfMethod,
-        args,
-        returnType,
-        paramChoices
-      )
-      returnType
+      val x = missingDeclaration.getMethodReturnType(nameOfMethod, args, paramChoices, Map())
+      if x.isDefined then x.get
+      else
+        val returnType = createReturnTypeFromContext(expr, config)
+        config._4 += returnType
+        // create a new declaration by adding the method
+        config._2._1 += (missingDeclaration.identifier -> missingDeclaration.addMethod(
+          nameOfMethod,
+          args,
+          returnType,
+          Vector(),
+          PUBLIC,
+          false,
+          true,
+          false,
+          paramChoices,
+          Map()
+        ))
+        config._5 += Invocation(
+          resolvedScope,
+          nameOfMethod,
+          args,
+          returnType,
+          paramChoices
+        )
+        returnType
     )
   else
     // we're not sure what the return type should be, so we have a placeholder
@@ -767,12 +774,12 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
     originalScope: Type
 ): LogWithOption[Type] =
   // get all the supertypes where methods may be defined
-  val capturedScopes = scope
+  val capturedScopes = (scope
     .map(resolveSolvedType(_))
     .map(_.captured)
     .map(_.asInstanceOf[ClassOrInterfaceType])
     .toSet[ClassOrInterfaceType]
-    .flatMap(x => getAllKnownSuperTypesOfOneType(config, x, Set()))
+    .flatMap(x => getAllKnownSuperTypesOfOneType(config, x, Set()))) + OBJECT
   val (missingScopes, fixedScopes) =
     capturedScopes.partition(x => config._2._1.contains(x.identifier))
   val nameOfMethod   = expr.getNameAsString
