@@ -44,7 +44,8 @@ private trait AssertionOps[+A <: Assertion] extends Replaceable[A], Combineable[
 
 /** An assertion in the algorithm */
 sealed trait Assertion extends AssertionOps[Assertion]:
-  /** Combine a temporary type with another class or interface type
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
     * @param oldType
     *   the old temporary type to combine
     * @param newType
@@ -54,7 +55,7 @@ sealed trait Assertion extends AssertionOps[Assertion]:
     */
   def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Assertion
 
-  /** Replaces one type with another type
+  /** Replaces all occurrences of one type with another type in this assertion
     * @param oldType
     *   the type to replace
     * @param newType
@@ -91,7 +92,16 @@ sealed trait Assertion extends AssertionOps[Assertion]:
 case class SubtypeAssertion(left: Type, right: Type)
     extends Assertion,
       AssertionOps[SubtypeAssertion]:
-  def combineTemporaryType(
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): SubtypeAssertion =
@@ -99,8 +109,18 @@ case class SubtypeAssertion(left: Type, right: Type)
       left.combineTemporaryType(oldType, newType),
       right.combineTemporaryType(oldType, newType)
     )
+
   override def toString = s"${left} <: ${right}"
-  def replace(oldType: InferenceVariable, newType: Type): SubtypeAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): SubtypeAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
 /** An assertion stating that one type must be compatible in an assignment/strict/loose invocation
@@ -114,7 +134,17 @@ case class CompatibilityAssertion(target: Type, source: Type)
     extends Assertion,
       AssertionOps[CompatibilityAssertion]:
   override def toString = s"${target} := ${source}"
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): CompatibilityAssertion =
@@ -122,7 +152,16 @@ case class CompatibilityAssertion(target: Type, source: Type)
       target.combineTemporaryType(oldType, newType),
       source.combineTemporaryType(oldType, newType)
     )
-  def replace(oldType: InferenceVariable, newType: Type): CompatibilityAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): CompatibilityAssertion =
     copy(target = target.replace(oldType, newType), source = source.replace(oldType, newType))
 
 /** An assertion stating that one type widens to another
@@ -135,7 +174,17 @@ case class WideningAssertion(left: Type, right: Type)
     extends Assertion,
       AssertionOps[WideningAssertion]:
   override def toString = s"${left} <<~= ${right}"
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): WideningAssertion =
@@ -143,7 +192,16 @@ case class WideningAssertion(left: Type, right: Type)
       left.combineTemporaryType(oldType, newType),
       right.combineTemporaryType(oldType, newType)
     )
-  def replace(oldType: InferenceVariable, newType: Type): WideningAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): WideningAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
 
 /** An assertion stating that two types are equivalent
@@ -156,9 +214,28 @@ case class EquivalenceAssertion(left: Type, right: Type)
     extends Assertion,
       AssertionOps[EquivalenceAssertion]:
   override def toString = s"${left} = ${right}"
-  def replace(oldType: InferenceVariable, newType: Type): EquivalenceAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): EquivalenceAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): EquivalenceAssertion =
@@ -177,9 +254,28 @@ case class ContainmentAssertion(left: Type, right: Type)
     extends Assertion,
       AssertionOps[ContainmentAssertion]:
   override def toString = s"${left} <= ${right}"
-  def replace(oldType: InferenceVariable, newType: Type): ContainmentAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): ContainmentAssertion =
     copy(left = left.replace(oldType, newType), right = right.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): ContainmentAssertion =
@@ -195,12 +291,32 @@ case class ContainmentAssertion(left: Type, right: Type)
 case class DisjunctiveAssertion(assertions: Vector[Assertion])
     extends Assertion,
       AssertionOps[DisjunctiveAssertion]:
-  def replace(oldType: InferenceVariable, newType: Type): DisjunctiveAssertion =
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): DisjunctiveAssertion =
     copy(assertions = assertions.map(_.replace(oldType, newType)))
+
   override def ||(a: Assertion): DisjunctiveAssertion =
     copy(assertions = assertions :+ a)
+
   override def toString = "(" + assertions.mkString(" ∨ ") + ")"
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): DisjunctiveAssertion = DisjunctiveAssertion(
@@ -214,12 +330,32 @@ case class DisjunctiveAssertion(assertions: Vector[Assertion])
 case class ConjunctiveAssertion(assertions: Vector[Assertion])
     extends Assertion,
       AssertionOps[ConjunctiveAssertion]:
-  def replace(oldType: InferenceVariable, newType: Type): ConjunctiveAssertion =
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): ConjunctiveAssertion =
     copy(assertions = assertions.map(_.replace(oldType, newType)))
+
   override def &&(a: Assertion): ConjunctiveAssertion =
     copy(assertions = assertions :+ a)
+
   override def toString = "(" + assertions.mkString(" ∧ ") + ")"
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): ConjunctiveAssertion = ConjunctiveAssertion(
@@ -232,9 +368,28 @@ case class ConjunctiveAssertion(assertions: Vector[Assertion])
   */
 case class IsClassAssertion(t: Type) extends Assertion, AssertionOps[IsClassAssertion]:
   override def toString = s"isClass($t)"
-  def replace(oldType: InferenceVariable, newType: Type): IsClassAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): IsClassAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsClassAssertion = IsClassAssertion(t.combineTemporaryType(oldType, newType))
@@ -245,9 +400,28 @@ case class IsClassAssertion(t: Type) extends Assertion, AssertionOps[IsClassAsse
   */
 case class IsInterfaceAssertion(t: Type) extends Assertion, AssertionOps[IsInterfaceAssertion]:
   override def toString = s"isInterface($t)"
-  def replace(oldType: InferenceVariable, newType: Type): IsInterfaceAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): IsInterfaceAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsInterfaceAssertion = IsInterfaceAssertion(t.combineTemporaryType(oldType, newType))
@@ -269,10 +443,27 @@ case class HasConstructorAssertion(
   override def toString =
     s"${source.identifier} can be constructed with new $source(${args.mkString(", ")}) whose type arguments might be $callSiteParameterChoices"
 
-  def replace(oldType: InferenceVariable, newType: Type): HasConstructorAssertion =
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): HasConstructorAssertion =
     copy(source = source.replace(oldType, newType), args = args.map(_.replace(oldType, newType)))
 
-  def combineTemporaryType(
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): HasConstructorAssertion =
@@ -303,14 +494,33 @@ case class HasMethodAssertion(
       AssertionOps[HasMethodAssertion]:
   override def toString =
     s"$source has $returnType $methodName($args) whose type arguments might be $callSiteParameterChoices"
-  def replace(oldType: InferenceVariable, newType: Type): HasMethodAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): HasMethodAssertion =
     copy(
       source = source.replace(oldType, newType),
       args = args.map(_.replace(oldType, newType)),
       returnType = returnType.replace(oldType, newType),
       callSiteParameterChoices
     )
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): HasMethodAssertion =
@@ -328,9 +538,28 @@ case class HasMethodAssertion(
   */
 case class IsDeclaredAssertion(t: Type) extends Assertion, AssertionOps[IsDeclaredAssertion]:
   override def toString = s"${t.identifier} ∈ Δ"
-  def replace(oldType: InferenceVariable, newType: Type): IsDeclaredAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): IsDeclaredAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsDeclaredAssertion = IsDeclaredAssertion(t.combineTemporaryType(oldType, newType))
@@ -341,9 +570,28 @@ case class IsDeclaredAssertion(t: Type) extends Assertion, AssertionOps[IsDeclar
   */
 case class IsMissingAssertion(t: Type) extends Assertion, AssertionOps[IsMissingAssertion]:
   override def toString = s"${t.identifier} ∈ Φ₁"
-  def replace(oldType: InferenceVariable, newType: Type): IsMissingAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): IsMissingAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsMissingAssertion = IsMissingAssertion(t.combineTemporaryType(oldType, newType))
@@ -356,7 +604,17 @@ case class IsUnknownAssertion(t: Type) extends Assertion, AssertionOps[IsUnknown
   override def toString = s"${t.identifier} ∈ Φ₂"
   def replace(oldType: InferenceVariable, newType: Type): IsUnknownAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsUnknownAssertion = IsUnknownAssertion(t.combineTemporaryType(oldType, newType))
@@ -367,9 +625,28 @@ case class IsUnknownAssertion(t: Type) extends Assertion, AssertionOps[IsUnknown
   */
 case class IsPrimitiveAssertion(t: Type) extends Assertion, AssertionOps[IsPrimitiveAssertion]:
   override def toString = s"${t.identifier} is primitive"
-  def replace(oldType: InferenceVariable, newType: Type): IsPrimitiveAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): IsPrimitiveAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsPrimitiveAssertion = IsPrimitiveAssertion(t.combineTemporaryType(oldType, newType))
@@ -380,9 +657,28 @@ case class IsPrimitiveAssertion(t: Type) extends Assertion, AssertionOps[IsPrimi
   */
 case class IsIntegralAssertion(t: Type) extends Assertion, AssertionOps[IsIntegralAssertion]:
   override def toString = s"${t.identifier} is an integral type"
-  def replace(oldType: InferenceVariable, newType: Type): IsIntegralAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): IsIntegralAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsIntegralAssertion = IsIntegralAssertion(t.combineTemporaryType(oldType, newType))
@@ -393,9 +689,28 @@ case class IsIntegralAssertion(t: Type) extends Assertion, AssertionOps[IsIntegr
   */
 case class IsNumericAssertion(t: Type) extends Assertion, AssertionOps[IsNumericAssertion]:
   override def toString = s"${t.identifier} is an integral type"
-  def replace(oldType: InferenceVariable, newType: Type): IsNumericAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): IsNumericAssertion =
     copy(t = t.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): IsNumericAssertion = IsNumericAssertion(t.combineTemporaryType(oldType, newType))
@@ -412,9 +727,28 @@ case class ImplementsMethodAssertion(t: Type, m: Method, canBeAbstract: Boolean 
     extends Assertion,
       AssertionOps[ImplementsMethodAssertion]:
   override def toString = s"$t implements $m"
-  def replace(oldType: InferenceVariable, newType: Type): ImplementsMethodAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): ImplementsMethodAssertion =
     copy(t = t.replace(oldType, newType), m = m.replace(oldType, newType))
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): ImplementsMethodAssertion =
@@ -430,12 +764,31 @@ case class OverridesAssertion(overriding: Method, overridden: Method)
     extends Assertion,
       AssertionOps[OverridesAssertion]:
   override def toString = s"$overriding overrides $overridden"
-  def replace(oldType: InferenceVariable, newType: Type): OverridesAssertion =
+
+  /** Replaces all occurrences of one type with another type in this assertion
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type after replacement
+    * @return
+    *   the resulting assertion
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): OverridesAssertion =
     copy(
       overriding = overriding.replace(oldType, newType),
       overridden = overridden.replace(oldType, newType)
     )
-  def combineTemporaryType(
+
+  /** Combines all occurrences of a temporary type with another class or interface type in this
+    * assertion
+    * @param oldType
+    *   the old temporary type to combine
+    * @param newType
+    *   the other type to combine with
+    * @return
+    *   the resulting assertion
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): OverridesAssertion =
