@@ -78,16 +78,16 @@ class MissingTypeDeclaration(
         newMethodTypeParameterBounds(typeparam.identifier) = bounds
     new FixedDeclaration(
       SomeClassOrInterfaceType(identifier).fix.identifier,
-      typeParameterBounds.map(v => v.map(t => t.fix)),
+      typeParameterBounds.map(v => v.fix),
       false,
       !mustBeClass,
       !mustBeClass,
-      extendedTypes.map(_.fix),
-      implementedTypes.map(_.fix),
+      extendedTypes.fix,
+      implementedTypes.fix,
       newMethodTypeParameterBounds.toMap,
-      attributes.map((k, a) => (k -> a.fix)),
-      methods.map((k, v) => (k -> v.map(m => m.fix))),
-      constructors.map(_.fix)
+      attributes >->= (_.fix),
+      methods >->= (_.fix),
+      constructors.fix
     )
 
   def addFinalizedMethod(m: Method): MissingTypeDeclaration =
@@ -95,10 +95,10 @@ class MissingTypeDeclaration(
     copy(
       methodTypeParameterBounds =
         methodTypeParameterBounds ++ mm.typeParameterBounds.map((x, y) => (x.toString -> y)),
-      methods =
-        if !methods.contains(mm.signature.identifier) then
-          methods + (mm.signature.identifier    -> Vector(mm))
-        else methods + (mm.signature.identifier -> (methods(mm.signature.identifier) :+ mm))
+      methods = methods >+ mm
+      // if !methods.contains(mm.signature.identifier) then
+      //   methods + (mm.signature.identifier    -> Vector(mm))
+      // else methods + (mm.signature.identifier -> (methods(mm.signature.identifier) :+ mm))
     )
   // new MissingTypeDeclaration(
   //   identifier,
@@ -114,18 +114,22 @@ class MissingTypeDeclaration(
   //   constructors
   // )
 
-  def addFinalizedConstructor(c: Constructor): MissingTypeDeclaration =
-    new MissingTypeDeclaration(
-      identifier,
-      typeParameterBounds,
-      mustBeClass,
-      mustBeInterface,
-      supertypes,
+  def addFinalizedConstructor(c: Constructor): MissingTypeDeclaration = copy(
+    methodTypeParameterBounds =
       methodTypeParameterBounds ++ c.typeParameterBounds.map((x, y) => (x.toString -> y)),
-      attributes,
-      methods,
-      constructors :+ c
-    )
+    constructors = constructors :+ c
+  )
+  // new MissingTypeDeclaration(
+  //   identifier,
+  //   typeParameterBounds,
+  //   mustBeClass,
+  //   mustBeInterface,
+  //   supertypes,
+  //   methodTypeParameterBounds ++ c.typeParameterBounds.map((x, y) => (x.toString -> y)),
+  //   attributes,
+  //   methods,
+  //   constructors :+ c
+  // )
 
   def removeConstructorWithContext(c: ConstructorWithContext): MissingTypeDeclaration =
     new MissingTypeDeclaration(

@@ -296,6 +296,502 @@ sealed trait Type extends BaseTypeOps:
           .mkString(", ") + ">"
     s"$start$argumentList${if static then " static" else ""}"
 
+private type PrimitiveTypeOps = TypeOps[
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType,
+  PrimitiveType
+]
+
+/** The primitive types */
+sealed trait PrimitiveType extends Type, PrimitiveTypeOps:
+  /** The boxed type of this primitive type */
+  val boxed: ClassOrInterfaceType
+
+  /** Primitive types have no type arguments */
+  override final val args = Vector()
+
+  /** Primitive types have no type arguments */
+  override final val numArgs = 0
+
+  /** The upward projection of any primitive type is itself */
+  override final val upwardProjection: PrimitiveType = this
+
+  /** The downward projection of any primitive type is itself */
+  override final val downwardProjection: PrimitiveType = this
+
+  /** Primitive types will never be the static type */
+  override final val static: Boolean = false
+
+  /** the types which this primitive type can widen to */
+  def widened: Set[PrimitiveType]
+
+  /** the types which can be assigned into this type */
+  def isAssignableBy: Set[Type] = widenedFrom ++ boxedSources
+
+  /** The types that widen to this type */
+  def widenedFrom: Set[PrimitiveType]
+
+  /** The types that, after unboxing conversions, widen to this type */
+  def boxedSources: Set[ClassOrInterfaceType] = widenedFrom.map(_.boxed)
+
+  /** There is no static primitive type */
+  override final def toStaticType: PrimitiveType = this
+
+  /** Fixing this type just produces itself */
+  override final def fix: PrimitiveType = this
+
+  /** Capturing this type just produces itself */
+  override final def captured: PrimitiveType = this
+
+  /** Wildcard-capturing this type just produces itself */
+  override final def wildcardCaptured: PrimitiveType = this
+
+  /** Attempting to combine a temporary type on this type just produces itself */
+  override final def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): PrimitiveType = this
+
+  /** The breadth of a primitive type is 0 */
+  override final def breadth = 0
+
+  /** The depth of a primitive type is 0 */
+  override final def depth = 0
+
+  /** Attempting to replace inference variables in this primitive type just produces itself */
+  override final def replace(oldType: InferenceVariable, newType: Type): PrimitiveType = this
+
+  /** Attempting to reorder the type parameters of this type just produces itself */
+  override final def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): PrimitiveType =
+    this
+
+  /** All primitive types are known */
+  override final def isSomehowUnknown = false
+
+  /** The raw type of a primitive type is itself */
+  override final def raw: PrimitiveType = this
+
+  /** Substitutions on a primitive type do not change it */
+  override final def substitute(function: Substitution): PrimitiveType = this
+
+  /** The expansion of any primitive type is just itself and an empty function */
+  override final def expansion: (PrimitiveType, Substitution) = (this, Map())
+
+/** Companion object to [[configuration.types.PrimitiveType]]. */
+object PrimitiveType:
+  /** Creates a primitive given its name
+    * @param identifier
+    *   the name of the primitive type
+    * @return
+    *   the resulting primitive type
+    */
+  def apply(identifier: String): PrimitiveType = identifier match
+    case "byte"    => PRIMITIVE_BYTE
+    case "short"   => PRIMITIVE_SHORT
+    case "char"    => PRIMITIVE_CHAR
+    case "int"     => PRIMITIVE_INT
+    case "long"    => PRIMITIVE_LONG
+    case "float"   => PRIMITIVE_FLOAT
+    case "double"  => PRIMITIVE_DOUBLE
+    case "boolean" => PRIMITIVE_BOOLEAN
+    case "void"    => PRIMITIVE_VOID
+    case x         => throw new IllegalArgumentException(f"$x is not a valid primitive type")
+
+/** the `int` type */
+case object PRIMITIVE_INT extends PrimitiveType:
+  /** `int` */
+  override val identifier = "int"
+
+  /** `java.lang.Integer` */
+  override val boxed = BOXED_INT
+
+  /** `int` widens to `int`, `long`, `float` and `double` */
+  override def widened = Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
+
+  /** `byte`, `char`, `short` and `int` widen to `int` */
+  override def widenedFrom = Set(PRIMITIVE_SHORT, PRIMITIVE_CHAR, PRIMITIVE_BYTE, PRIMITIVE_INT)
+
+/** the `byte` type */
+case object PRIMITIVE_BYTE extends PrimitiveType:
+  /** `byte` */
+  override val identifier = "byte"
+
+  /** `java.lang.Byte` */
+  override val boxed = BOXED_BYTE
+
+  /** `byte` widens to `byte`, `short`, `int`, `long`, `float`, `double` */
+  override def widened = Set(
+    PRIMITIVE_BYTE,
+    PRIMITIVE_SHORT,
+    PRIMITIVE_INT,
+    PRIMITIVE_LONG,
+    PRIMITIVE_FLOAT,
+    PRIMITIVE_DOUBLE
+  )
+
+  /** Only `byte` widens to `byte` */
+  override def widenedFrom = Set(PRIMITIVE_BYTE)
+
+/** the `short` type */
+case object PRIMITIVE_SHORT extends PrimitiveType:
+  /** `short` */
+  override val identifier = "short"
+
+  /** `java.lang.Short` */
+  override val boxed = BOXED_SHORT
+
+  /** `short` widens to `short`, `int`, `long`, `float`, `double` */
+  override def widened =
+    Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE, PRIMITIVE_SHORT)
+
+  /** `short` and `byte` widen to `short` */
+  override def widenedFrom = Set(PRIMITIVE_SHORT, PRIMITIVE_BYTE)
+
+/** the `char` type */
+case object PRIMITIVE_CHAR extends PrimitiveType:
+  /** `char` */
+  override val identifier = "char"
+
+  /** `java.lang.Character` */
+  override val boxed = BOXED_CHAR
+
+  /** `char` widens to `char`, `int`, `long`, `float`, `double` */
+  override def widened =
+    Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE, PRIMITIVE_CHAR)
+
+  /** `byte` and `char` widen to `char` */
+  override def widenedFrom = Set(PRIMITIVE_CHAR, PRIMITIVE_BYTE)
+
+/** the `long` type */
+case object PRIMITIVE_LONG extends PrimitiveType:
+  /** `long` */
+  override val identifier = "long"
+
+  /** `java.lang.Long` */
+  override val boxed = BOXED_LONG
+
+  /** `long` widens to `long`, `float` and `double` */
+  override def widened = Set(PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE, PRIMITIVE_LONG)
+
+  /** `byte`, `short`, `char`, `int` and `long` widen to `long` */
+  override def widenedFrom =
+    Set(PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE)
+
+/** the `float` type */
+case object PRIMITIVE_FLOAT extends PrimitiveType:
+  /** `float` */
+  override val identifier = "float"
+
+  /** `java.lang.Float` */
+  override val boxed = BOXED_FLOAT
+
+  /** `float` widens to `float` and `double` */
+  override def widened = Set(PRIMITIVE_DOUBLE, PRIMITIVE_FLOAT)
+
+  /** `byte`, `short`, `char`, `int`, `long` and `float` widen to `float` */
+  override def widenedFrom = Set(
+    PRIMITIVE_FLOAT,
+    PRIMITIVE_LONG,
+    PRIMITIVE_SHORT,
+    PRIMITIVE_INT,
+    PRIMITIVE_CHAR,
+    PRIMITIVE_BYTE
+  )
+
+/** the `double` type */
+case object PRIMITIVE_DOUBLE extends PrimitiveType:
+  /** `double` */
+  override val identifier = "double"
+
+  /** `java.lang.Double` */
+  override val boxed = BOXED_DOUBLE
+
+  /** `double` only widens to `double` */
+  override def widened = Set(PRIMITIVE_DOUBLE)
+
+  /** all of the numeric types widen to `double` */
+  override def widenedFrom = Set(
+    PRIMITIVE_DOUBLE,
+    PRIMITIVE_FLOAT,
+    PRIMITIVE_LONG,
+    PRIMITIVE_SHORT,
+    PRIMITIVE_INT,
+    PRIMITIVE_CHAR,
+    PRIMITIVE_BYTE
+  )
+
+/** the `boolean` type */
+case object PRIMITIVE_BOOLEAN extends PrimitiveType:
+  /** `boolean` */
+  override val identifier = "boolean"
+
+  /** `java.lang.Boolean` */
+  override val boxed = BOXED_BOOLEAN
+
+  /** `boolean` only widens to `boolean` */
+  override def widened = Set(PRIMITIVE_BOOLEAN)
+
+  /** `boolean` only widens to `boolean` */
+  override def widenedFrom = widened
+
+/** the `void` type */
+case object PRIMITIVE_VOID extends PrimitiveType:
+  /** `void` */
+  override val identifier = "void"
+
+  /** `java.lang.Void` */
+  override val boxed = BOXED_VOID
+
+  /** `void` only widens to `void` */
+  override def widened = Set(PRIMITIVE_VOID)
+
+  /** `void` only widens to `void` */
+  override def widenedFrom = widened
+
+private type SomeClassOrInterfaceTypeOps = TypeOps[
+  SomeClassOrInterfaceType,
+  ClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+  SomeClassOrInterfaceType,
+]
+
+/** Represents some class or interface type; could be a temporary type */
+sealed trait SomeClassOrInterfaceType extends Type, SomeClassOrInterfaceTypeOps:
+  /** Converts this type into the static type (the type of this type)
+    * @return
+    *   the static type of this type
+    */
+  def toStaticType: SomeClassOrInterfaceType
+
+/** Companion object to [[configuration.types.SomeClassOrInterfaceType]] */
+object SomeClassOrInterfaceType:
+  /** Creates some class or interface type
+    * @param identifier
+    *   the name of the type
+    * @param args
+    *   the type arguments of this type
+    * @return
+    *   the resulting class or interface type (could be a temporary type)
+    */
+  def apply(identifier: String, args: Vector[Type] = Vector()): SomeClassOrInterfaceType =
+    if identifier.length() == 0 then
+      throw new IllegalArgumentException(
+        f"cannot create some class or interface type with an empty identifier!"
+      ) // ClassOrInterfaceType(identifier, args)
+    // this is a temporary type
+    else if identifier.charAt(0) == 'ξ' then
+      TemporaryType(Integer.parseInt(identifier.substring(1)), args)
+    // just a regular ClassOrInterfaceType
+    else ClassOrInterfaceType(identifier, args)
+
+private type ClassOrInterfaceTypeOps = TypeOps[
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType,
+  ClassOrInterfaceType
+]
+
+/** A class or interface type in a Java program
+  * @param identifier
+  *   the name of the type
+  * @param args
+  *   the type arguments to this type
+  * @param static
+  *   whether this type is the static type
+  */
+case class ClassOrInterfaceType(
+    identifier: String,
+    args: Vector[Type],
+    static: Boolean = false
+) extends SomeClassOrInterfaceType,
+      ClassOrInterfaceTypeOps:
+  if identifier.size == 0 then
+    throw new IllegalArgumentException(
+      "cannot create ClassOrInterfaceType with an empty identifier!"
+    )
+  if identifier.charAt(0) == 'ξ' then
+    throw new IllegalArgumentException(
+      s"$identifier is not a valid identifier of a ClassOrInterfaceType!"
+    )
+
+  /** The number of type arguments to this type */
+  override val numArgs = args.size
+
+  /** The upward projection of a class or interface type is itself */
+  override val upwardProjection: ClassOrInterfaceType = this
+
+  /** The downward projection of a class or interface type is itself */
+  override val downwardProjection: ClassOrInterfaceType = this
+
+  /** Makes this the static type */
+  override def toStaticType: ClassOrInterfaceType = copy(static = true)
+
+  /** Fixes the arguments to this class or interface type */
+  override def fix: ClassOrInterfaceType = copy(args = args.map(_.fix))
+
+  /** Wildcard-capturing a class or interface type simply produces itself */
+  override def wildcardCaptured: ClassOrInterfaceType = this
+
+  /** Capturing a class or interface type performs a wildcard-capture on its arguments */
+  override def captured: ClassOrInterfaceType = copy(identifier, args.map(_.wildcardCaptured))
+
+  /** The breadth of a class or interface type is its number of arguments */
+  override def breadth = numArgs
+
+  /** The depth of a class or interface type is the maximum depth of its arguments + 1 (if it has no
+    * arguments then its depth is 0)
+    */
+  override def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
+
+  override def toString =
+    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
+    s"$identifier$a${if static then ".type" else ""}"
+
+  /** Determines if any of its arguments are unknown types */
+  override def isSomehowUnknown = args.exists(_.isSomehowUnknown)
+
+  /** The raw type of a class or interface type is itself without any of its type arguments */
+  override def raw: ClassOrInterfaceType = copy(args = Vector())
+
+  /** Reorders the type parameters of the arguments to this class or interface type
+    * @param scheme
+    *   the scheme to reorder the type parameters with
+    * @return
+    *   the resulting class or interface type
+    */
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): ClassOrInterfaceType =
+    copy(args = args.map(_.reorderTypeParameters(scheme)))
+
+  /** Replaces all occurrences of an inference variable with a new type in this class or interface
+    * type
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   the resulting class or interface type
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): ClassOrInterfaceType =
+    copy(args = args.map(_.replace(oldType, newType)))
+
+  /** Performs a substitution on this type
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting type after substitution
+    */
+  override def substitute(function: Substitution): ClassOrInterfaceType =
+    copy(args = args.substitute(function))
+
+  /** Performs an expansion on this type
+    * @return
+    *   the base type with the substitution function
+    */
+  override def expansion: (ClassOrInterfaceType, Substitution) =
+    val base = copy(args = (0 until numArgs).map(TypeParameterIndex(identifier, _)).toVector)
+    val subs = (0 until numArgs)
+      .map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i)))
+      .toMap
+    (base, subs)
+
+  /** Combines all occurrences of a temporary type in the arguments to this type with another class
+    * or interface type
+    * @param oldType
+    *   the temporary type to combine
+    * @param newType
+    *   the type to combine with
+    * @return
+    *   the resulting class or interface type
+    */
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ClassOrInterfaceType =
+    copy(args = args.map(_.combineTemporaryType(oldType, newType)))
+
+/** Companion object to [[configuration.types.ClassOrInterfaceType]] */
+object ClassOrInterfaceType:
+  /** Creates an empty ClassOrInterfaceType with just the identifier and no type arguments
+    * @param identifier
+    *   the identifier of this type
+    * @return
+    *   the resulting ClassOrInterfaceType
+    */
+  def apply(identifier: String): ClassOrInterfaceType =
+    new ClassOrInterfaceType(identifier, Vector())
+
+final case class TemporaryType(
+    id: Int,
+    args: Vector[Type],
+    static: Boolean = false
+) extends SomeClassOrInterfaceType:
+  override def toStaticType: TemporaryType = copy(static = true)
+  def fix: ClassOrInterfaceType            = ClassOrInterfaceType(s"UNKNOWN_$id", args.map(_.fix))
+  val toBeCaptured: Boolean                = false
+  val toBeWildcardCaptured: Boolean        = false
+  def captured                             = copy(args = args.map(_.wildcardCaptured))
+  def wildcardCaptured: TemporaryType      = this
+  override def breadth                     = args.size
+  override def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
+  val numArgs        = args.size
+  val identifier     = s"ξ$id"
+  override def toString =
+    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
+    s"$identifier$a"
+  override def isSomehowUnknown   = args.exists(_.isSomehowUnknown)
+  override def raw: TemporaryType = copy(args = Vector())
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TemporaryType =
+    copy(args = args.map(_.reorderTypeParameters(scheme)))
+  val upwardProjection: TemporaryType   = this
+  val downwardProjection: TemporaryType = this
+  def replace(oldType: InferenceVariable, newType: Type): TemporaryType =
+    copy(args = args.map(_.replace(oldType, newType)))
+  def substitute(function: Substitution): TemporaryType =
+    copy(args = args.map(_.substitute(function)))
+  override def expansion: (TemporaryType, Substitution) =
+    val base = copy(args = (0 until numArgs).map(TypeParameterIndex(identifier, _)).toVector)
+    val subs = (0 until numArgs)
+      .map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i)))
+      .toMap
+    (base, subs)
+  val substitutions = Nil
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): SomeClassOrInterfaceType =
+    if oldType.id != id then copy(args = args.map(_.combineTemporaryType(oldType, newType)))
+    else
+      SomeClassOrInterfaceType(
+        newType.identifier,
+        args.map(_.combineTemporaryType(oldType, newType))
+      )
+
 private type CaptureOps =
   TypeOps[
     Capture,
@@ -556,327 +1052,105 @@ case class JavaInferenceVariable(
   ): JavaInferenceVariable =
     this
 
-private type PrimitiveTypeOps = TypeOps[
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType
+private type ArrayTypeOps = TypeOps[
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType,
+  ArrayType
 ]
-
-/** The primitive types */
-sealed trait PrimitiveType extends Type, PrimitiveTypeOps:
-  /** The boxed type of this primitive type */
-  val boxed: ClassOrInterfaceType
-
-  /** Primitive types have no type arguments */
-  override val args = Vector()
-
-  /** Primitive types have no type arguments */
-  override val numArgs = 0
-
-  /** The upward projection of any primitive type is itself */
-  override val upwardProjection: PrimitiveType = this
-
-  /** The downward projection of any primitive type is itself */
-  override val downwardProjection: PrimitiveType = this
-
-  /** Primitive types will never be the static type */
-  override val static: Boolean = false
-
-  /** the types which this primitive type can widen to */
-  def widened: Set[PrimitiveType]
-
-  /** the types which can be assigned into this type */
-  def isAssignableBy: Set[Type] = widenedFrom ++ boxedSources
-
-  def widenedFrom: Set[PrimitiveType]
-  def boxedSources: Set[ClassOrInterfaceType] = widenedFrom.map(_.boxed)
-
-  override def toStaticType: PrimitiveType     = this
-  override def fix: PrimitiveType              = this
-  override def captured: PrimitiveType         = this
-  override def wildcardCaptured: PrimitiveType = this
-  override def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): PrimitiveType = this
-  override def breadth                                                           = 0
-  override def depth                                                             = 0
-  override def replace(oldType: InferenceVariable, newType: Type): PrimitiveType = this
-  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): PrimitiveType =
-    this
-  override def isSomehowUnknown   = false
-  override def raw: PrimitiveType = this
-
-  /** Substitutions on a primitive type do not change it */
-  override def substitute(function: Substitution): PrimitiveType = this
-
-  /** The expansion of any primitive type is just itself and an empty function */
-  override def expansion: (PrimitiveType, Substitution) = (this, Map())
 
 /** An array
   * @param base
   *   the type of the elements of this array
   */
-final case class ArrayType(
-    base: Type
-) extends Type:
-  def toStaticType: ArrayType     = this
-  val static: Boolean             = false
-  def captured: ArrayType         = copy(base = base.captured)
-  def wildcardCaptured: ArrayType = copy(base = base.wildcardCaptured)
-  def breadth                     = 0
-  def depth                       = base.depth + 1
-  override def toString =
-    base.toString + "[]"
-  def fix: ArrayType                = copy(base = base.fix)
-  val identifier                    = base.identifier + "[]"
-  val numArgs                       = 0
-  val upwardProjection: ArrayType   = this
-  val downwardProjection: ArrayType = this
-  def replace(oldType: InferenceVariable, newType: Type): ArrayType =
-    copy(base = base.replace(oldType, newType))
-  val args             = Vector()
-  def isSomehowUnknown = base.isSomehowUnknown
+case class ArrayType(base: Type) extends Type, ArrayTypeOps:
+  /** There are no static array types */
+  override val static: Boolean = false
 
-  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): ArrayType =
+  /** the identifier of an array type is its elements identifier, with [] */
+  override val identifier = base.identifier + "[]"
+
+  /** Arrays have no type arguments */
+  override val numArgs = 0
+
+  /** The upward projection of an array type is itself */
+  override val upwardProjection: ArrayType = this
+
+  /** The downward projection of an array type is itself */
+  override val downwardProjection: ArrayType = this
+
+  /** Arrays have no type arguments */
+  override val args = Vector()
+
+  /** The static type of an array type is itself */
+  override def toStaticType: ArrayType = this
+
+  /** To capture an array type is to capture its elements */
+  override def captured: ArrayType = copy(base = base.captured)
+
+  /** To wildcard-capture an array type is to wildcard-capture its elements */
+  override def wildcardCaptured: ArrayType = copy(base = base.wildcardCaptured)
+
+  /** The breadth of an array type is 0 */
+  override def breadth = 0
+
+  /** The depth of an array type is the depth of its elements + 1 */
+  override def depth = base.depth + 1
+
+  override def toString = base.toString + "[]"
+
+  /** To fix an array type is to fix its elements */
+  override def fix: ArrayType = copy(base = base.fix)
+
+  /** Replaces all occurrences of an inference variable in its element type with a new type
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   the resulting array type
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): ArrayType =
+    copy(base = base.replace(oldType, newType))
+
+  /** An array type is unknown if its base is unknown */
+  override def isSomehowUnknown = base.isSomehowUnknown
+
+  /** Combines all occurrences of a temporary type in its element type with a new type
+    * @param oldType
+    *   the type to combine
+    * @param newType
+    *   the type to combine it with
+    * @return
+    *   the resulting array type
+    */
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ArrayType =
     copy(base = base.combineTemporaryType(oldType, newType))
 
-  /** Returns the type after making its base raw
+  /** Returns the type after making its element type raw
     * @return
     *   the resulting raw type
     */
-  def raw: ArrayType = copy(base = base.raw)
+  override def raw: ArrayType = copy(base = base.raw)
 
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]) =
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]) =
     copy(base = base.reorderTypeParameters(scheme))
 
-  def substitute(function: Substitution): ArrayType = copy(base = base.substitute(function))
+  override def substitute(function: Substitution): ArrayType =
+    copy(base = base.substitute(function))
 
   /** Nothing */
-  def expansion: (ArrayType, Substitution) = (this, Map())
-
-sealed trait SomeClassOrInterfaceType extends Type, Raw[SomeClassOrInterfaceType]:
-  def toStaticType: SomeClassOrInterfaceType
-  // fixing either a ClassOrInterfaceType or TemporaryType always yields a ClassOrInterfaceType
-  def fix: ClassOrInterfaceType
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): SomeClassOrInterfaceType
-  val upwardProjection: SomeClassOrInterfaceType
-  val downwardProjection: SomeClassOrInterfaceType
-  def replace(oldType: InferenceVariable, newType: Type): SomeClassOrInterfaceType
-  def substitute(function: Substitution): SomeClassOrInterfaceType
-  def expansion: (SomeClassOrInterfaceType, Substitution)
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): SomeClassOrInterfaceType
-
-object SomeClassOrInterfaceType:
-  def apply(identifier: String, args: Vector[Type] = Vector()): SomeClassOrInterfaceType =
-    if identifier.length() == 0 then ClassOrInterfaceType(identifier, args)
-    else if identifier.charAt(0) == 'ξ' then
-      TemporaryType(Integer.parseInt(identifier.substring(1)), args)
-    else ClassOrInterfaceType(identifier, args)
-
-final case class ClassOrInterfaceType(
-    identifier: String,
-    args: Vector[Type],
-    static: Boolean = false
-) extends SomeClassOrInterfaceType,
-      Raw[ClassOrInterfaceType],
-      Substitutable[ClassOrInterfaceType]:
-  def toStaticType: ClassOrInterfaceType = copy(static = true)
-  def fix: ClassOrInterfaceType          = copy(args = args.map(_.fix))
-  if identifier.size == 0 || identifier.charAt(0) == 'ξ' then
-    println(identifier)
-    ???
-  def wildcardCaptured: ClassOrInterfaceType = this
-  def captured: ClassOrInterfaceType         = copy(identifier, args.map(_.wildcardCaptured))
-  def breadth                                = args.size
-  def depth   = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
-  val numArgs = args.size
-  override def toString =
-    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
-    s"$identifier$a${if static then ".type" else ""}"
-  def isSomehowUnknown          = args.exists(_.isSomehowUnknown)
-  def raw: ClassOrInterfaceType = copy(args = Vector())
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ClassOrInterfaceType =
-    copy(args = args.map(_.reorderTypeParameters(scheme)))
-  val upwardProjection: ClassOrInterfaceType   = this
-  val downwardProjection: ClassOrInterfaceType = this
-  def replace(oldType: InferenceVariable, newType: Type): ClassOrInterfaceType =
-    copy(args = args.map(_.replace(oldType, newType)))
-  def substitute(function: Substitution): ClassOrInterfaceType =
-    copy(args = args.map(_.substitute(function)))
-  def expansion: (ClassOrInterfaceType, Substitution) =
-    val base = copy(args = (0 until numArgs).map(TypeParameterIndex(identifier, _)).toVector)
-    val subs = (0 until numArgs)
-      .map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i)))
-      .toMap
-    (base, subs)
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): ClassOrInterfaceType =
-    copy(args = args.map(_.combineTemporaryType(oldType, newType)))
-
-object ClassOrInterfaceType:
-  def apply(identifier: String): ClassOrInterfaceType =
-    new ClassOrInterfaceType(identifier, Vector())
-
-/** Companion object to [[configuration.types.PrimitiveType]]. */
-object PrimitiveType:
-  /** Creates a primitive given its name
-    * @param identifier
-    *   the name of the primitive type
-    * @return
-    *   the resulting primitive type
-    */
-  def apply(identifier: String): PrimitiveType = identifier match
-    case "byte"    => PRIMITIVE_BYTE
-    case "short"   => PRIMITIVE_SHORT
-    case "char"    => PRIMITIVE_CHAR
-    case "int"     => PRIMITIVE_INT
-    case "long"    => PRIMITIVE_LONG
-    case "float"   => PRIMITIVE_FLOAT
-    case "double"  => PRIMITIVE_DOUBLE
-    case "boolean" => PRIMITIVE_BOOLEAN
-    case "void"    => PRIMITIVE_VOID
-    case _ => ??? // definitely fails
-
-/** the `int` type */
-case object PRIMITIVE_INT extends PrimitiveType:
-  val identifier  = "int"
-  val boxed       = BOXED_INT
-  def widened     = Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE)
-  def widenedFrom = Set(PRIMITIVE_SHORT, PRIMITIVE_CHAR, PRIMITIVE_BYTE, PRIMITIVE_INT)
-
-// def isAssignableBy =
-//   Set(PRIMITIVE_SHORT, PRIMITIVE_CHAR, PRIMITIVE_BYTE, PRIMITIVE_INT).flatMap(x =>
-//     Set(x, x.boxed)
-//   )
-
-/** the `byte` type */
-case object PRIMITIVE_BYTE extends PrimitiveType:
-  val identifier = "byte"
-  val boxed      = BOXED_BYTE
-  def widened = Set(
-    PRIMITIVE_BYTE,
-    // PRIMITIVE_CHAR,
-    PRIMITIVE_SHORT,
-    PRIMITIVE_INT,
-    PRIMITIVE_LONG,
-    PRIMITIVE_FLOAT,
-    PRIMITIVE_DOUBLE
-  )
-  def widenedFrom = Set(PRIMITIVE_BYTE)
-// def isAssignableBy =
-//   Set(PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
-
-/** the `short` type */
-case object PRIMITIVE_SHORT extends PrimitiveType:
-  val identifier = "short"
-  val boxed      = BOXED_SHORT
-  def widened =
-    Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE, PRIMITIVE_SHORT)
-  def widenedFrom = Set(PRIMITIVE_SHORT, PRIMITIVE_BYTE)
-// def isAssignableBy =
-//   Set(PRIMITIVE_SHORT, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
-
-/** the `char` type */
-case object PRIMITIVE_CHAR extends PrimitiveType:
-  val identifier = "char"
-  val boxed      = BOXED_CHAR
-  def widened =
-    Set(PRIMITIVE_INT, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE, PRIMITIVE_CHAR)
-  def widenedFrom = Set(PRIMITIVE_CHAR, PRIMITIVE_BYTE)
-// def isAssignableBy =
-//   Set(PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x => Set(x, x.boxed))
-
-/** the `long` type */
-case object PRIMITIVE_LONG extends PrimitiveType:
-  val identifier = "long"
-  val boxed      = BOXED_LONG
-  def widened    = Set(PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE, PRIMITIVE_LONG)
-  def widenedFrom =
-    Set(PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE)
-// def isAssignableBy =
-//   Set(PRIMITIVE_LONG, PRIMITIVE_SHORT, PRIMITIVE_INT, PRIMITIVE_CHAR, PRIMITIVE_BYTE).flatMap(x =>
-//     Set(x, x.boxed)
-//   )
-
-/** the `float` type */
-case object PRIMITIVE_FLOAT extends PrimitiveType:
-  val identifier = "float"
-  val boxed      = BOXED_FLOAT
-  def widened    = Set(PRIMITIVE_DOUBLE, PRIMITIVE_FLOAT)
-  def widenedFrom = Set(
-    PRIMITIVE_FLOAT,
-    PRIMITIVE_LONG,
-    PRIMITIVE_SHORT,
-    PRIMITIVE_INT,
-    PRIMITIVE_CHAR,
-    PRIMITIVE_BYTE
-  )
-// def isAssignableBy =
-//   Set(
-//     PRIMITIVE_FLOAT,
-//     PRIMITIVE_LONG,
-//     PRIMITIVE_SHORT,
-//     PRIMITIVE_INT,
-//     PRIMITIVE_CHAR,
-//     PRIMITIVE_BYTE
-//   ).flatMap(x => Set(x, x.boxed))
-
-/** the `double` type */
-case object PRIMITIVE_DOUBLE extends PrimitiveType:
-  val identifier = "double"
-  val boxed      = BOXED_DOUBLE
-  def widened    = Set(PRIMITIVE_DOUBLE)
-  def widenedFrom = Set(
-    PRIMITIVE_DOUBLE,
-    PRIMITIVE_FLOAT,
-    PRIMITIVE_LONG,
-    PRIMITIVE_SHORT,
-    PRIMITIVE_INT,
-    PRIMITIVE_CHAR,
-    PRIMITIVE_BYTE
-  )
-// override def isAssignableBy =
-//   Set(
-//     PRIMITIVE_DOUBLE,
-//     PRIMITIVE_FLOAT,
-//     PRIMITIVE_LONG,
-//     PRIMITIVE_SHORT,
-//     PRIMITIVE_INT,
-//     PRIMITIVE_CHAR,
-//     PRIMITIVE_BYTE
-//   ).flatMap(x => Set(x, x.boxed))
-
-/** the `boolean` type */
-case object PRIMITIVE_BOOLEAN extends PrimitiveType:
-  val identifier  = "boolean"
-  val boxed       = BOXED_BOOLEAN
-  def widened     = Set(PRIMITIVE_BOOLEAN)
-  def widenedFrom = widened
-// // def isAssignableBy =
-//   Set(PRIMITIVE_BOOLEAN).flatMap(x => Set(x, x.boxed))
-
-/** the `void` type */
-case object PRIMITIVE_VOID extends PrimitiveType:
-  val identifier  = "void"
-  val boxed       = BOXED_VOID
-  def widened     = Set(PRIMITIVE_VOID)
-  def widenedFrom = widened
-// def isAssignableBy =
-//   Set(PRIMITIVE_VOID).flatMap(x => Set(x, x.boxed))
+  override def expansion: (ArrayType, Substitution) = (this, Map())
 
 /** The bottom type, usually a null */
 case object Bottom extends Type:
@@ -1119,52 +1393,6 @@ sealed trait DisjunctiveType extends InferenceVariable:
   val canBeUnknown: Boolean
   val static: Boolean         = false
   def toStaticType: this.type = this
-
-final case class TemporaryType(
-    id: Int,
-    args: Vector[Type],
-    static: Boolean = false
-) extends SomeClassOrInterfaceType:
-  override def toStaticType: TemporaryType = copy(static = true)
-  def fix: ClassOrInterfaceType            = ClassOrInterfaceType(s"UNKNOWN_$id", args.map(_.fix))
-  val toBeCaptured: Boolean                = false
-  val toBeWildcardCaptured: Boolean        = false
-  def captured                             = copy(args = args.map(_.wildcardCaptured))
-  def wildcardCaptured: TemporaryType      = this
-  override def breadth                     = args.size
-  override def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
-  val numArgs        = args.size
-  val identifier     = s"ξ$id"
-  override def toString =
-    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
-    s"$identifier$a"
-  override def isSomehowUnknown   = args.exists(_.isSomehowUnknown)
-  override def raw: TemporaryType = copy(args = Vector())
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TemporaryType =
-    copy(args = args.map(_.reorderTypeParameters(scheme)))
-  val upwardProjection: TemporaryType   = this
-  val downwardProjection: TemporaryType = this
-  def replace(oldType: InferenceVariable, newType: Type): TemporaryType =
-    copy(args = args.map(_.replace(oldType, newType)))
-  def substitute(function: Substitution): TemporaryType =
-    copy(args = args.map(_.substitute(function)))
-  override def expansion: (TemporaryType, Substitution) =
-    val base = copy(args = (0 until numArgs).map(TypeParameterIndex(identifier, _)).toVector)
-    val subs = (0 until numArgs)
-      .map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i)))
-      .toMap
-    (base, subs)
-  val substitutions = Nil
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): SomeClassOrInterfaceType =
-    if oldType.id != id then copy(args = args.map(_.combineTemporaryType(oldType, newType)))
-    else
-      SomeClassOrInterfaceType(
-        newType.identifier,
-        args.map(_.combineTemporaryType(oldType, newType))
-      )
 
 /** Some random placeholder type
   * @param id

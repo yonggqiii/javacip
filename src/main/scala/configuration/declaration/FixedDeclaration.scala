@@ -186,9 +186,7 @@ class FixedDeclaration(
     extendedTypes = extendedTypes.raw,
     implementedTypes = implementedTypes.raw,
     attributes = attributes >->= getAttributeErasure,
-    // attributes.map((s, a) => (s -> getAttributeErasure(a))),
     methods = methods mmap getMethodErasure,
-    //  methods.map((s, v) => (s -> v.map(m => getMethodErasure(m)))),
     constructors = constructors map getConstructorErasure
   )
 
@@ -267,21 +265,26 @@ class FixedDeclaration(
         else s += erasedSig
     res.toVector
 
-  def substitute(function: Substitution): FixedDeclaration =
-    FixedDeclaration(
-      identifier,
-      typeParameterBounds.map(x => x.map(t => t.substitute(function))),
-      isFinal,
-      isAbstract,
-      isInterface,
-      //extendedTypes.map(x => x.substitute(function)),
-      extendedTypes.substitute(function),
-      // implementedTypes.map(x => x.substitute(function)),
-      implementedTypes.substitute(function),
-      methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.substitute(function)))),
-      // attributes.map((k, v) => (k -> v.substitute(function))),
-      attributes >->= (_.substitute(function)),
-      methods mmap (_.substitute(function)),
-      // methods.map((k, v) => (k -> v.map(m => m.substitute(function)))),
-      constructors.substitute(function)
-    )
+  def substitute(function: Substitution): FixedDeclaration = copy(
+    typeParameterBounds = typeParameterBounds.map(x => x.map(t => t.substitute(function))),
+    extendedTypes = extendedTypes.substitute(function),
+    implementedTypes = implementedTypes.substitute(function),
+    methodTypeParameterBounds =
+      methodTypeParameterBounds.map((k, v) => (k -> v.substitute(function))),
+    attributes = attributes >->= (_.substitute(function)),
+    methods = methods mmap (_.substitute(function)),
+    constructors = constructors.substitute(function)
+  )
+// FixedDeclaration(
+//   identifier,
+//   typeParameterBounds.map(x => x.map(t => t.substitute(function))),
+//   isFinal,
+//   isAbstract,
+//   isInterface,
+//   extendedTypes.substitute(function),
+//   implementedTypes.substitute(function),
+//   methodTypeParameterBounds.map((k, v) => (k -> v.map(t => t.substitute(function)))),
+//   attributes >->= (_.substitute(function)),
+//   methods mmap (_.substitute(function)),
+//   constructors.substitute(function)
+// )

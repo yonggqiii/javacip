@@ -21,6 +21,15 @@ extension [A, B](m: Map[A, B])
     */
   def >->=[C](f: B => C): Map[A, C] = m.map((k, v) => (k -> f(v)))
 
+extension (m: AttributesList)
+  /** Adds one attribute to this attributes list
+    * @param a
+    *   the attribute to add
+    * @return
+    *   the resulting attributes list
+    */
+  def >+(a: Attribute): AttributesList = m + (a.identifier -> a)
+
 extension (m: MethodList)
   /** Maps each method in this method list
     * @param f
@@ -29,6 +38,17 @@ extension (m: MethodList)
     *   the resulting method list
     */
   def mmap(f: Method => Method) = m.map((k, v) => (k -> v.map(f)))
+
+  /** Adds one method to this methods list
+    * @param mtd
+    *   the method to add
+    * @return
+    *   the resulting methods list
+    */
+  def >+(mtd: Method): MethodList =
+    val id = mtd.signature.identifier
+    if !m.contains(id) then m + (id -> Vector(mtd))
+    else m + (id                    -> (m(id) :+ mtd))
 
 /** A declaration of a type in the program.
   */
