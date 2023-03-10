@@ -144,6 +144,13 @@ private def resolveExpressionsAndStatements(
     String,
     Option[Type]
   ] = MutableMap()
+  // resolve all throws declarations in method declarations
+  cu.findAll(classOf[MethodDeclaration])
+    .asScala
+    .flatMap(_.getThrownExceptions().asScala)
+    .toVector
+    .map(t => resolveSolvedType(t.resolve))
+    .foreach(t => config._3 += t <:~ ClassOrInterfaceType("java.lang.Throwable"))
   val expressions         = cu.findAll(classOf[Expression]).asScala.toVector
   val statements          = cu.findAll(classOf[Statement]).asScala.toVector
   val variableDeclarators = cu.findAll(classOf[VariableDeclarator]).asScala.toVector
