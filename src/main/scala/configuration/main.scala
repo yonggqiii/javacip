@@ -201,7 +201,7 @@ private def fixImpossibleCode(
         x.getParentNode().toScala match
           case Some(p) => !p.isInstanceOf[FieldAccessExpr] && !p.isInstanceOf[MethodCallExpr]
           case None    => true
-      )
+      ) || id.toUpperCase() == id
     then
       // must not be static because there exists some x that is used as an actual expression
       for expr <- exprs do

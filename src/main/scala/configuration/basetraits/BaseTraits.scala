@@ -109,8 +109,8 @@ trait Replaceable[+A]:
   *   the object after combining
   */
 trait Combineable[+A]:
-  /** Combines all occurrences of an old type in this type and all its substitutions/members with a
-    * new type
+  /** Combines all occurrences of an old type in this object and all its substitutions/members with
+    * a new type
     * @param oldType
     *   the old type to combine
     * @param newType

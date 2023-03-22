@@ -193,7 +193,15 @@ def buildType(
     )
   )
 
-  decl.constructors.foreach(c =>
+  // write empty constructor
+  val allConstructors =
+    if decl.constructors.exists(c =>
+        c.signature.formalParameters.size == 0
+      ) || decl.isInterface
+    then decl.constructors
+    else decl.constructors :+ Constructor(decl.identifier, Vector(), Vector(), DEFAULT, false)
+
+  allConstructors.foreach(c =>
     val methodTypeParameters = NodeList(
       c.typeParameterBounds
         .map((p, v) =>
@@ -222,6 +230,8 @@ def buildType(
     )
     if !params.isEmpty && c.signature.hasVarArgs then params(params.size - 1).setVarArgs(true)
     if !params.isEmpty then cd.setParameters(NodeList(params: _*))
+    val bd = cd.getBody()
+    bd.addStatement("super();")
     //cd.setType(typeToASTType(c.returnType, prohibitedNames))
     // if decl.isInterface then
     //   md.setAbstract(true)

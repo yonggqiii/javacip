@@ -49,6 +49,14 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
       if config.constraintStore.contains(x.identifier) then config.constraintStore(x.identifier)
       else Vector()
     )
+    .map { x =>
+      x match
+        case CompatibilityAssertion(target: Alpha, source: PrimitiveType) =>
+          SubtypeAssertion(source.boxed, target)
+        case CompatibilityAssertion(target: Alpha, source: Alpha) =>
+          SubtypeAssertion(source, target)
+        case y => y
+    }
     .filter { x =>
       x match
         case x @ CompatibilityAssertion(a, b) =>

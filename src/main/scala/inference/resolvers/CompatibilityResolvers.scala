@@ -21,6 +21,14 @@ private def resolveCompatibilityAssertion(
   (source.captured.upwardProjection, target.downwardProjection) match
     // case (s, t) if t == OBJECT =>
     //   (log, config :: Nil)
+    case (Bottom, t) =>
+      (log, (config asserts (Bottom <:~ t)) :: Nil)
+    case (s, Bottom) =>
+      (log.addWarn(s"$Bottom := $s will always be false"), Nil)
+    case (s: PrimitiveType, t: Alpha) =>
+      (log, (config asserts s.boxed <:~ t) :: Nil)
+    case (s: Alpha, t: Alpha) =>
+      (log, (config asserts s <:~ t) :: Nil)
     case (s: PrimitiveType, t: PrimitiveType) =>
       (log, (config asserts (s <<~= t)) :: Nil)
     case (PRIMITIVE_VOID, s) =>
@@ -70,10 +78,6 @@ private def resolveCompatibilityAssertion(
       else (log.addWarn(s"$s does not unbox to something that widens to $t"), Nil)
     case (s: TTypeParameter, t: ClassOrInterfaceType) =>
       (log, (config asserts s <:~ t) :: Nil)
-    case (Bottom, t) =>
-      (log, (config asserts (Bottom <:~ t)) :: Nil)
-    case (s, Bottom) =>
-      (log.addWarn(s"$Bottom := $s will always be false"), Nil)
     case (s: SomeClassOrInterfaceType, t: JavaInferenceVariable) =>
       (log, config.asserts(s <:~ t) :: Nil)
     case (s: ArrayType, t) =>

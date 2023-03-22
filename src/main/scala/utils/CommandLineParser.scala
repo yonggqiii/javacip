@@ -25,7 +25,22 @@ private val cmdOptsParser =
       .text("target of compilation"),
     opt[Unit]('d', "debug")
       .action((x, c) => c.copy(verbose = true, debug = true))
-      .text("debug mode")
+      .text("debug mode"),
+    opt[Int]('i', "iterations")
+      .action((x, c) => c.copy(numIterations = x))
+      .text("maximum number of compiler iterations"),
+    opt[Int]("maxBreadth")
+      .action((x, c) => c.copy(maxBreadth = x))
+      .text("maximum breadth of generated types"),
+    opt[Int]("maxDepth")
+      .action((x, c) => c.copy(maxDepth = x))
+      .text("maximum depth of generated types"),
+    opt[Unit]('h', "heuristic")
+      .action((x, c) => c.copy(heuristicSearch = true))
+      .text("search in ascending order by heuristic value"),
+    opt[Unit]('n', "noOverloading")
+      .action((x, c) => c.copy(noOverloading = true))
+      .text("bans method/constructor overloading in generated types")
   )
 
 /** parses the command line arguments into the compiler

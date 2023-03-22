@@ -1,0 +1,10 @@
+Filename,Output written,Time taken for disambiguation,Compilable
+276152.java,True,2.1183021068573,False
+299251.java,True,1.5168588161468506,False
+322658.java,True,2.1679749488830566,False
+372172.java,True,2.1681506633758545,False
+481364.java,False,1.3164873123168945,False
+494226.java,True,2.271174430847168,False
+592597.java,False,0.7653660774230957,False
+631632.java,False,0.7654063701629639,False
+638175.java,False,1.4667036533355713,False

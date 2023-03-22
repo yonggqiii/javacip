@@ -8,19 +8,3 @@ class test4 extends D {
         s = x.get();
     }
 }
-
-// interface C<T extends C<T>> {
-//     T get();
-// }
-
-// class I extends C<I> {
-//     I get() {
-//         return null;
-//     }
-// }
-
-// class S extends C<S> {
-//     S get() {
-//         return null;
-//     }
-// }

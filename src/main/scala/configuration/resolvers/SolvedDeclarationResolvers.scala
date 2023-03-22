@@ -174,12 +174,15 @@ def getMethods(
               )(0)
           java.lang.reflect.Modifier.isFinal(reflectMethod.getModifiers)
     val hasVarArgs = methodDeclaration.hasVariadicParameter
+    val revisedArgs =
+      if !hasVarArgs then args
+      else args.slice(0, args.size - 1) :+ args(args.size - 1).asInstanceOf[ArrayType].base
     // add to table
     if !mmethods.contains(methodName) then mmethods(methodName) = MutableSet()
     val table = mmethods(methodName)
     table += Method(
       methodName,
-      args,
+      revisedArgs,
       returnType,
       typeParamBounds,
       accessModifier,

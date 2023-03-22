@@ -4,6 +4,7 @@ import configuration.basetraits.*
 import configuration.assertions.*
 
 import scala.Console.{RED, RESET}
+import utils.IllegalOperationException
 
 /** The `java.lang.Object` type */
 val OBJECT = ClassOrInterfaceType("java.lang.Object")
@@ -107,7 +108,9 @@ sealed trait TypeOps[
       Combineable[COM],
       Reorderable[REORDER]
 
-private type BaseTypeOps = TypeOps[Type, Type, Type, Type, Type, Type, Type, Type, Type, Type, Type]
+private type SimpleTypeOps[A <: Type] = TypeOps[A, A, A, A, A, A, A, A, A, A, A]
+
+private type BaseTypeOps = SimpleTypeOps[Type]
 
 /** Represents some type in the program */
 sealed trait Type extends BaseTypeOps:
@@ -296,19 +299,7 @@ sealed trait Type extends BaseTypeOps:
           .mkString(", ") + ">"
     s"$start$argumentList${if static then " static" else ""}"
 
-private type PrimitiveTypeOps = TypeOps[
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType,
-  PrimitiveType
-]
+private type PrimitiveTypeOps = SimpleTypeOps[PrimitiveType]
 
 /** The primitive types */
 sealed trait PrimitiveType extends Type, PrimitiveTypeOps:
@@ -386,6 +377,8 @@ sealed trait PrimitiveType extends Type, PrimitiveTypeOps:
 
   /** The expansion of any primitive type is just itself and an empty function */
   override final def expansion: (PrimitiveType, Substitution) = (this, Map())
+
+  override final def toString = identifier
 
 /** Companion object to [[configuration.types.PrimitiveType]]. */
 object PrimitiveType:
@@ -580,6 +573,20 @@ sealed trait SomeClassOrInterfaceType extends Type, SomeClassOrInterfaceTypeOps:
     */
   def toStaticType: SomeClassOrInterfaceType
 
+  /** The number of type arguments to this type */
+  override final val numArgs = args.size
+
+  /** The breadth of a class or interface type is its number of arguments */
+  override final def breadth = numArgs
+
+  /** The depth of a class or interface type is the maximum depth of its arguments + 1 (if it has no
+    * arguments then its depth is 0)
+    */
+  override final def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
+
+  /** Determines if any of its arguments are unknown types */
+  override final def isSomehowUnknown = args.exists(_.isSomehowUnknown)
+
 /** Companion object to [[configuration.types.SomeClassOrInterfaceType]] */
 object SomeClassOrInterfaceType:
   /** Creates some class or interface type
@@ -594,26 +601,14 @@ object SomeClassOrInterfaceType:
     if identifier.length() == 0 then
       throw new IllegalArgumentException(
         f"cannot create some class or interface type with an empty identifier!"
-      ) // ClassOrInterfaceType(identifier, args)
+      )
     // this is a temporary type
     else if identifier.charAt(0) == 'ξ' then
       TemporaryType(Integer.parseInt(identifier.substring(1)), args)
     // just a regular ClassOrInterfaceType
     else ClassOrInterfaceType(identifier, args)
 
-private type ClassOrInterfaceTypeOps = TypeOps[
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType,
-  ClassOrInterfaceType
-]
+private type ClassOrInterfaceTypeOps = SimpleTypeOps[ClassOrInterfaceType]
 
 /** A class or interface type in a Java program
   * @param identifier
@@ -638,9 +633,6 @@ case class ClassOrInterfaceType(
       s"$identifier is not a valid identifier of a ClassOrInterfaceType!"
     )
 
-  /** The number of type arguments to this type */
-  override val numArgs = args.size
-
   /** The upward projection of a class or interface type is itself */
   override val upwardProjection: ClassOrInterfaceType = this
 
@@ -659,20 +651,9 @@ case class ClassOrInterfaceType(
   /** Capturing a class or interface type performs a wildcard-capture on its arguments */
   override def captured: ClassOrInterfaceType = copy(identifier, args.map(_.wildcardCaptured))
 
-  /** The breadth of a class or interface type is its number of arguments */
-  override def breadth = numArgs
-
-  /** The depth of a class or interface type is the maximum depth of its arguments + 1 (if it has no
-    * arguments then its depth is 0)
-    */
-  override def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
-
   override def toString =
     val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
     s"$identifier$a${if static then ".type" else ""}"
-
-  /** Determines if any of its arguments are unknown types */
-  override def isSomehowUnknown = args.exists(_.isSomehowUnknown)
 
   /** The raw type of a class or interface type is itself without any of its type arguments */
   override def raw: ClassOrInterfaceType = copy(args = Vector())
@@ -746,42 +727,107 @@ object ClassOrInterfaceType:
   def apply(identifier: String): ClassOrInterfaceType =
     new ClassOrInterfaceType(identifier, Vector())
 
+private type TemporaryTypeOps = TypeOps[
+  TemporaryType,
+  ClassOrInterfaceType,
+  TemporaryType,
+  TemporaryType,
+  TemporaryType,
+  TemporaryType,
+  TemporaryType,
+  TemporaryType,
+  TemporaryType,
+  SomeClassOrInterfaceType,
+  TemporaryType
+]
+
+/** A temporary ClassOrInterfaceType that can be combined with another ClassOrInterfaceType in the
+  * future (if necessary)
+  * @param id
+  *   the ID of this type
+  * @param args
+  *   the type arguments
+  * @param static
+  *   the static type
+  */
 final case class TemporaryType(
     id: Int,
     args: Vector[Type],
     static: Boolean = false
-) extends SomeClassOrInterfaceType:
+) extends SomeClassOrInterfaceType,
+      TemporaryTypeOps:
+  /** `ξ<id>` */
+  override val identifier = s"ξ$id"
+
+  /** The upward projection of a temporary type is itself */
+  override val upwardProjection: TemporaryType = this
+
+  /** The downward projection of a temporary type is itself */
+  override val downwardProjection: TemporaryType = this
+
+  /** The static type of a temporary type */
   override def toStaticType: TemporaryType = copy(static = true)
-  def fix: ClassOrInterfaceType            = ClassOrInterfaceType(s"UNKNOWN_$id", args.map(_.fix))
-  val toBeCaptured: Boolean                = false
-  val toBeWildcardCaptured: Boolean        = false
-  def captured                             = copy(args = args.map(_.wildcardCaptured))
-  def wildcardCaptured: TemporaryType      = this
-  override def breadth                     = args.size
-  override def depth = if args.size == 0 then 0 else args.map(x => (x.depth + 1)).max
-  val numArgs        = args.size
-  val identifier     = s"ξ$id"
-  override def toString =
-    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
-    s"$identifier$a"
-  override def isSomehowUnknown   = args.exists(_.isSomehowUnknown)
+
+  /** Fixes this type as a [[configuration.types.ClassOrInterfaceType]] of identifier `UNKNOWN_<id>`
+    */
+  override def fix: ClassOrInterfaceType = ClassOrInterfaceType(s"UNKNOWN_$id", args.map(_.fix))
+
+  /** Performs capture conversion on this type */
+  override def captured = copy(args = args.map(_.wildcardCaptured))
+
+  /** Performs a wildcard-capture on this type */
+  override def wildcardCaptured: TemporaryType = this
+
+  /** This type without its arguments */
   override def raw: TemporaryType = copy(args = Vector())
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TemporaryType =
+
+  /** Reorders the type parameters in this type via some scheme
+    * @param scheme
+    *   the scheme to reorder the type parameters with
+    * @return
+    *   the resulting type after reordering the type parameters
+    */
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TemporaryType =
     copy(args = args.map(_.reorderTypeParameters(scheme)))
-  val upwardProjection: TemporaryType   = this
-  val downwardProjection: TemporaryType = this
-  def replace(oldType: InferenceVariable, newType: Type): TemporaryType =
+
+  /** Replaces all occurrences of an inference variable in this type with a new type
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   the resulting type
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): TemporaryType =
     copy(args = args.map(_.replace(oldType, newType)))
-  def substitute(function: Substitution): TemporaryType =
+
+  /** Performs a substitution on this type
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting type
+    */
+  override def substitute(function: Substitution): TemporaryType =
     copy(args = args.map(_.substitute(function)))
+
+  /** Performs an expansion on this type */
   override def expansion: (TemporaryType, Substitution) =
     val base = copy(args = (0 until numArgs).map(TypeParameterIndex(identifier, _)).toVector)
     val subs = (0 until numArgs)
       .map[(TTypeParameter, Type)](i => (TypeParameterIndex(identifier, i) -> args(i)))
       .toMap
     (base, subs)
-  val substitutions = Nil
-  def combineTemporaryType(
+
+  /** Combines all instances of a temporary type (could be itself) within this type with another
+    * class or interface type
+    * @param oldType
+    *   the type to combine
+    * @param newType
+    *   the type to combine it with
+    * @return
+    *   the resulting type
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): SomeClassOrInterfaceType =
@@ -792,20 +838,126 @@ final case class TemporaryType(
         args.map(_.combineTemporaryType(oldType, newType))
       )
 
-private type CaptureOps =
-  TypeOps[
-    Capture,
-    Capture,
-    Capture,
-    Capture,
-    Type,
-    Type,
-    Capture,
-    Capture,
-    Capture,
-    Capture,
-    Capture
-  ]
+  override def toString =
+    val a = if args.size == 0 then "" else "<" + args.mkString(", ") + ">"
+    s"$identifier$a"
+
+private type ArrayTypeOps = SimpleTypeOps[ArrayType]
+
+/** An array
+  * @param base
+  *   the type of the elements of this array
+  */
+case class ArrayType(base: Type) extends Type, ArrayTypeOps:
+  /** There are no static array types */
+  override val static: Boolean = false
+
+  /** the identifier of an array type is its elements identifier, with [] */
+  override val identifier = base.identifier + "[]"
+
+  /** Arrays have no type arguments */
+  override val numArgs = 0
+
+  /** The upward projection of an array type is itself */
+  override val upwardProjection: ArrayType = this
+
+  /** The downward projection of an array type is itself */
+  override val downwardProjection: ArrayType = this
+
+  /** Arrays have no type arguments */
+  override val args = Vector()
+
+  /** The static type of an array type is itself */
+  override def toStaticType: ArrayType = this
+
+  /** To capture an array type is to capture its elements */
+  override def captured: ArrayType = copy(base = base.captured)
+
+  /** To wildcard-capture an array type is to wildcard-capture its elements */
+  override def wildcardCaptured: ArrayType = copy(base = base.wildcardCaptured)
+
+  /** The breadth of an array type is 0 */
+  override def breadth = 0
+
+  /** The depth of an array type is the depth of its elements + 1 */
+  override def depth = base.depth + 1
+
+  override def toString = base.toString + "[]"
+
+  /** To fix an array type is to fix its elements */
+  override def fix: ArrayType = copy(base = base.fix)
+
+  /** Replaces all occurrences of an inference variable in its element type with a new type
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   the resulting array type
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): ArrayType =
+    copy(base = base.replace(oldType, newType))
+
+  /** An array type is unknown if its base is unknown */
+  override def isSomehowUnknown = base.isSomehowUnknown
+
+  /** Combines all occurrences of a temporary type in its element type with a new type
+    * @param oldType
+    *   the type to combine
+    * @param newType
+    *   the type to combine it with
+    * @return
+    *   the resulting array type
+    */
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): ArrayType =
+    copy(base = base.combineTemporaryType(oldType, newType))
+
+  /** Returns the type after making its element type raw
+    * @return
+    *   the resulting raw type
+    */
+  override def raw: ArrayType = copy(base = base.raw)
+
+  /** Reorders the type parameters in this type using a scheme
+    *
+    * @param scheme
+    *   the scheme to reorder type parameters with
+    * @return
+    *   the resulting type
+    */
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]) =
+    copy(base = base.reorderTypeParameters(scheme))
+
+  /** Performs a substitution on this type
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting type
+    */
+  override def substitute(function: Substitution): ArrayType =
+    copy(base = base.substitute(function))
+
+  /** Performs an expansion on this type */
+  override def expansion: (ArrayType, Substitution) =
+    val (a, b) = base.expansion
+    (ArrayType(a), b)
+
+private type CaptureOps = TypeOps[
+  Capture,
+  Capture,
+  Capture,
+  Capture,
+  Type,
+  Type,
+  Capture,
+  Capture,
+  Capture,
+  Capture,
+  Capture
+]
 
 /** A type after Java capture conversion
   * @param id
@@ -973,12 +1125,6 @@ case class JavaInferenceVariable(
   /** Java inference variables will never be wildcard-captured */
   override val toBeWildcardCaptured: Boolean = false
 
-  /** The raw type of a Java inference variable is itself
-    * @return
-    *   itself
-    */
-  override def raw = this
-
   /** The expansion of a java inference variable is itself and the empty substitution function
     * @return
     *   itself and the empty substitution function
@@ -1052,181 +1198,310 @@ case class JavaInferenceVariable(
   ): JavaInferenceVariable =
     this
 
-private type ArrayTypeOps = TypeOps[
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType,
-  ArrayType
-]
+private type BottomTypeOps = SimpleTypeOps[Bottom.type]
 
-/** An array
-  * @param base
-  *   the type of the elements of this array
-  */
-case class ArrayType(base: Type) extends Type, ArrayTypeOps:
-  /** There are no static array types */
-  override val static: Boolean = false
+/** The bottom type, usually a null */
+case object Bottom extends Type, BottomTypeOps:
+  /** `⊥` */
+  override val identifier = "⊥"
 
-  /** the identifier of an array type is its elements identifier, with [] */
-  override val identifier = base.identifier + "[]"
-
-  /** Arrays have no type arguments */
+  /** ⊥ has no arguments */
   override val numArgs = 0
 
-  /** The upward projection of an array type is itself */
-  override val upwardProjection: ArrayType = this
+  /** There is no ⊥ static type */
+  override val static: Boolean = false
 
-  /** The downward projection of an array type is itself */
-  override val downwardProjection: ArrayType = this
+  /** The upward projection of ⊥ is itself */
+  override val upwardProjection: Bottom.type = this
 
-  /** Arrays have no type arguments */
+  /** The downward projection of ⊥ is itself */
+  override val downwardProjection: Bottom.type = this
+
+  /** ⊥ has no arguments */
   override val args = Vector()
 
-  /** The static type of an array type is itself */
-  override def toStaticType: ArrayType = this
+  /** There is no ⊥ static type */
+  override def toStaticType: Bottom.type = this
 
-  /** To capture an array type is to capture its elements */
-  override def captured: ArrayType = copy(base = base.captured)
+  /** Fixing ⊥ gives itself */
+  override def fix: Bottom.type = this
 
-  /** To wildcard-capture an array type is to wildcard-capture its elements */
-  override def wildcardCaptured: ArrayType = copy(base = base.wildcardCaptured)
+  /** Capture conversion on ⊥ just gives itself */
+  override def captured: Bottom.type = this
 
-  /** The breadth of an array type is 0 */
+  /** A wildcard-capture on ⊥ just produces itself */
+  override def wildcardCaptured: Bottom.type = this
+
+  /** The breadth of ⊥ is 0 */
   override def breadth = 0
 
-  /** The depth of an array type is the depth of its elements + 1 */
-  override def depth = base.depth + 1
+  /** The depth of ⊥ is 0 */
+  override def depth = 0
 
-  override def toString = base.toString + "[]"
+  /** A replacement on ⊥ is itself
+    * @param oldType
+    *   the old type to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   itself
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): Bottom.type = this
 
-  /** To fix an array type is to fix its elements */
-  override def fix: ArrayType = copy(base = base.fix)
+  /** Reordering the type parameters of ⊥ just gives itself
+    * @param scheme
+    *   the scheme to reorder type parameters with
+    * @return
+    *   itself
+    */
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Bottom.type =
+    this
 
-  /** Replaces all occurrences of an inference variable in its element type with a new type
+  /** ⊥ is not an unknown type */
+  override def isSomehowUnknown = false
+
+  /** The raw type of ⊥ is itself */
+  override def raw: Bottom.type = this
+
+  /** An expansion on ⊥ just produces itself and the empty substitution function */
+  override def expansion: (Bottom.type, Substitution) = (this, Map())
+
+  /** Performing a substitution on ⊥ just produces itself
+    * @param function
+    *   the substitution function
+    * @return
+    *   itself
+    */
+  override def substitute(function: Substitution): Bottom.type = this
+
+  /** Combining temporary types on ⊥ just produces itself
+    * @param oldType
+    *   the type to combine
+    * @param newType
+    *   the type to combine with
+    * @return
+    *   itself
+    */
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Bottom.type =
+    this
+
+private type WildcardTypeOps = TypeOps[
+  Wildcard.type,
+  Wildcard.type,
+  Wildcard.type,
+  Capture,
+  ClassOrInterfaceType,
+  Bottom.type,
+  Wildcard.type,
+  Wildcard.type,
+  Wildcard.type,
+  Wildcard.type,
+  Wildcard.type
+]
+
+/** the `?` type */
+case object Wildcard extends Type, WildcardTypeOps:
+  /** The upward projection of `?` is `java.lang.Object` */
+  override val upwardProjection: ClassOrInterfaceType = OBJECT
+
+  /** The downward projection of `?` is ⊥ */
+  override val downwardProjection: Bottom.type = Bottom
+
+  /** `?` */
+  override val identifier = "?"
+
+  /** `?` has no type arguments */
+  override val numArgs = 0
+
+  /** There is no `?` static type */
+  override val static = false
+
+  /** `?` has no type arguments */
+  override val args = Vector()
+
+  /** There is no `?` static type */
+  override def toStaticType: Wildcard.type = this
+
+  /** Performing capture conversion on `?` gives itself */
+  override def captured: Wildcard.type = this
+
+  /** Performing a wildcard-capture on `?` gives a new open type variable ⊥ <: X <:
+    * `java.lang.Object`
+    */
+  override def wildcardCaptured: Capture = InferenceVariableFactory.createCapture(Bottom, OBJECT)
+
+  /** The breadth of `?` is 0 */
+  override def breadth = 0
+
+  /** The depth of `?` is 0 */
+  override def depth = 0
+
+  /** Performing a replacement on `?` produces itself
+    * @param oldType
+    *   the inference variable to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   itself
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): Wildcard.type = this
+
+  /** Reordering the type parameters of `?` simply produces itself
+    * @param scheme
+    *   the scheme to reorder type parameters
+    * @return
+    *   itself
+    */
+  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Wildcard.type =
+    this
+
+  /** `?` is not unknown */
+  override def isSomehowUnknown = false
+
+  /** The raw type of `?` is itself */
+  override def raw: Wildcard.type = this
+
+  /** Performing a substitution on `?` produces itself
+    * @param function
+    *   the substitution function
+    * @return
+    *   itself
+    */
+  override def substitute(function: Substitution): Wildcard.type = this
+
+  /** Performing an expansion on `?` produces itself and the empty substitution */
+  override def expansion: (Wildcard.type, Substitution) = (this, Map())
+
+  /** Combining temporary types in `?` produces itself
+    * @param oldType
+    *   the temporary type to combine
+    * @param newType
+    *   the type to combine it with
+    * @return
+    *   itself
+    */
+  override def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Wildcard.type = this
+
+  /** Fixing `?` produces itself */
+  override def fix: Wildcard.type = this
+
+  override def toString = identifier
+
+private type ExtendsWildcardTypeOps = TypeOps[
+  ExtendsWildcardType,
+  ExtendsWildcardType,
+  ExtendsWildcardType,
+  Capture,
+  Type,
+  Bottom.type,
+  ExtendsWildcardType,
+  ExtendsWildcardType,
+  ExtendsWildcardType,
+  ExtendsWildcardType,
+  ExtendsWildcardType,
+]
+
+/** the `? extends Foo` type
+  * @param upper
+  *   the upper bound of this type, i.e. if this type represents `? extends A<B>` then `upper =
+  *   A<B>`
+  */
+final case class ExtendsWildcardType(
+    upper: Type
+) extends Type,
+      ExtendsWildcardTypeOps:
+  /** `? extends <upper>` */
+  override val identifier = s"? extends $upper"
+
+  /** `? extends T` has no type arguments */
+  override val numArgs = 0
+
+  /** The upward projection of `? extends T` is the upward projection of `T` */
+  override val upwardProjection = upper.upwardProjection
+
+  /** The downward projection of `? extends T` is ⊥ */
+  override val downwardProjection: Bottom.type = Bottom
+
+  /** There is no static `? extends T` type */
+  override val static: Boolean = false
+
+  /** `? extends T` has no type arguments */
+  override val args = Vector()
+
+  /** There is no static `? extends T` type */
+  override def toStaticType: ExtendsWildcardType = this
+
+  /** Fixing this type simply fixes the upper bound */
+  override def fix: ExtendsWildcardType = copy(upper = upper.fix)
+
+  /** Performing capture conversion on `? extends T` gives itself */
+  override def captured: ExtendsWildcardType = this
+
+  /** Performing a wildcard-capture on `? extends T` gives a new open type variable `⊥ <: X <:
+    * upper`
+    */
+  override def wildcardCaptured: Capture = InferenceVariableFactory.createCapture(Bottom, upper)
+
+  /** The breadth of a `? extends T` is the breadth of `T` */
+  override def breadth = upper.breadth
+
+  /** The depth of `? extends T` is the depth of `T` */
+  override def depth = upper.depth
+
+  /** Replaces all occurrences of an inference variable in its upper bound with some other type
     * @param oldType
     *   the type to replace
     * @param newType
     *   the type to replace it with
     * @return
-    *   the resulting array type
+    *   the resulting type
     */
-  override def replace(oldType: InferenceVariable, newType: Type): ArrayType =
-    copy(base = base.replace(oldType, newType))
+  override def replace(oldType: InferenceVariable, newType: Type): ExtendsWildcardType =
+    copy(upper = upper.replace(oldType, newType))
 
-  /** An array type is unknown if its base is unknown */
-  override def isSomehowUnknown = base.isSomehowUnknown
-
-  /** Combines all occurrences of a temporary type in its element type with a new type
-    * @param oldType
-    *   the type to combine
-    * @param newType
-    *   the type to combine it with
+  /** Reorders the type parameters given a scheme
+    * @param scheme
+    *   the scheme to reorder type parameters
     * @return
-    *   the resulting array type
+    *   the resulting type
+    */
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): ExtendsWildcardType =
+    copy(upper = upper.reorderTypeParameters(scheme))
+
+  /** This type is unknown if the upper bound is unknown */
+  override def isSomehowUnknown = upper.isSomehowUnknown
+
+  /** Performs a substitution on this type
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting type
+    */
+  override def substitute(function: Substitution): ExtendsWildcardType =
+    copy(upper = upper.substitute(function))
+
+  /** Performs an expansion on this type */
+  override def expansion: (ExtendsWildcardType, Substitution) =
+    val (a, b) = upper.expansion
+    (ExtendsWildcardType(a), b)
+
+  /** Combines all occurrences of an old type in this type with a new type
+    * @param oldType
+    *   the old type to combine
+    * @param newType
+    *   the new type after combining
+    * @return
+    *   the resulting type
     */
   override def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): ArrayType =
-    copy(base = base.combineTemporaryType(oldType, newType))
-
-  /** Returns the type after making its element type raw
-    * @return
-    *   the resulting raw type
-    */
-  override def raw: ArrayType = copy(base = base.raw)
-
-  override def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]) =
-    copy(base = base.reorderTypeParameters(scheme))
-
-  override def substitute(function: Substitution): ArrayType =
-    copy(base = base.substitute(function))
-
-  /** Nothing */
-  override def expansion: (ArrayType, Substitution) = (this, Map())
-
-/** The bottom type, usually a null */
-case object Bottom extends Type:
-  val static: Boolean                                                                 = false
-  def toStaticType: Bottom.type                                                       = this
-  def fix: Bottom.type                                                                = this
-  def captured: Bottom.type                                                           = this
-  def wildcardCaptured: Bottom.type                                                   = this
-  def breadth                                                                         = 0
-  def depth                                                                           = 0
-  val upwardProjection: Bottom.type                                                   = this
-  val downwardProjection: Bottom.type                                                 = this
-  val identifier                                                                      = "⊥"
-  val numArgs                                                                         = 0
-  def replace(oldType: InferenceVariable, newType: Type): Bottom.type                 = this
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Bottom.type = this
-  val args                                                                            = Vector()
-  def isSomehowUnknown                                                                = false
-  def raw: Bottom.type                                                                = this
-  def expansion: (Bottom.type, Substitution)          = (this, Map())
-  def substitute(function: Substitution): Bottom.type = this
-  def combineTemporaryType(oldType: TemporaryType, newType: SomeClassOrInterfaceType): Bottom.type =
-    this
-
-/** the `?` type */
-case object Wildcard extends Type:
-  val static                      = false
-  def toStaticType: Wildcard.type = this
-  def captured: Wildcard.type     = this
-  def wildcardCaptured: Type      = InferenceVariableFactory.createCapture(Bottom, OBJECT)
-  def breadth                     = 0
-  def depth                       = 0
-  val upwardProjection: ClassOrInterfaceType                                            = OBJECT
-  val downwardProjection: Bottom.type                                                   = Bottom
-  val identifier                                                                        = "?"
-  val numArgs                                                                           = 0
-  def replace(oldType: InferenceVariable, newType: Type): Wildcard.type                 = this
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Wildcard.type = this
-  val args                                                                              = Vector()
-  def isSomehowUnknown                                                                  = false
-  override def toString                                                                 = identifier
-  def raw: Wildcard.type                                                                = this
-  def substitute(function: Substitution): Wildcard.type                                 = this
-  def expansion: (Wildcard.type, Substitution) = (this, Map())
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): Wildcard.type = this
-  def fix: Wildcard.type = this
-
-/** the `? extends Foo` type */
-final case class ExtendsWildcardType(
-    upper: Type
-) extends Type:
-  val static: Boolean                   = false
-  def toStaticType: ExtendsWildcardType = this
-  def fix: ExtendsWildcardType          = copy(upper = upper.fix)
-  def captured: ExtendsWildcardType     = this
-  def wildcardCaptured: Capture         = InferenceVariableFactory.createCapture(Bottom, upper)
-  def breadth                           = upper.breadth
-  def depth                             = upper.depth
-  val identifier                        = ""
-  val numArgs                           = 0
-  val upwardProjection                  = upper.upwardProjection
-  val downwardProjection: Bottom.type   = Bottom
-  def replace(oldType: InferenceVariable, newType: Type): ExtendsWildcardType =
-    copy(upper = upper.replace(oldType, newType))
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): ExtendsWildcardType =
-    copy(upper = upper.reorderTypeParameters(scheme))
-  val args              = Vector()
-  def isSomehowUnknown  = upper.isSomehowUnknown
-  override def toString = s"? extends $upper"
-  def substitute(function: Substitution): ExtendsWildcardType =
-    copy(upper = upper.substitute(function))
-  def expansion: (ExtendsWildcardType, Substitution) = (this, Map())
-  def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): ExtendsWildcardType = copy(upper = upper.combineTemporaryType(oldType, newType))
@@ -1235,33 +1510,101 @@ final case class ExtendsWildcardType(
     * @return
     *   the resulting type
     */
-  def raw: ExtendsWildcardType = copy(upper = upper.raw)
+  override def raw: ExtendsWildcardType = copy(upper = upper.raw)
+
+  override def toString = identifier
+
+private type SuperWildcardTypeOps = TypeOps[
+  SuperWildcardType,
+  SuperWildcardType,
+  SuperWildcardType,
+  Capture,
+  ClassOrInterfaceType,
+  Type,
+  SuperWildcardType,
+  SuperWildcardType,
+  SuperWildcardType,
+  SuperWildcardType,
+  SuperWildcardType,
+]
 
 /** the `? super Foo` type */
 final case class SuperWildcardType(
     lower: Type
-) extends Type:
-  val static: Boolean                        = false
-  def toStaticType: SuperWildcardType        = this
-  def fix: SuperWildcardType                 = copy(lower = lower.fix)
-  def captured: SuperWildcardType            = this
-  def wildcardCaptured: Capture              = InferenceVariableFactory.createCapture(lower, OBJECT)
-  def breadth                                = lower.breadth
-  def depth                                  = lower.depth
-  val identifier                             = ""
-  val numArgs                                = 0
-  val substitutions: SubstitutionList        = Nil
-  val upwardProjection: ClassOrInterfaceType = OBJECT
-  val downwardProjection =
-    lower.downwardProjection
-  def replace(oldType: InferenceVariable, newType: Type): SuperWildcardType =
+) extends Type,
+      SuperWildcardTypeOps:
+  /** `? super <lower>` */
+  override val identifier = s"? super ${lower}"
+
+  /** `? super T` has no type arguments */
+  override val numArgs = 0
+
+  /** The upward projection of `? super T` is `java.lang.Object` */
+  override val upwardProjection: ClassOrInterfaceType = OBJECT
+
+  /** The downward projection of `? super T` is the downward projection of `T` */
+  override val downwardProjection = lower.downwardProjection
+
+  /** There is no `? super T` static type */
+  override val static: Boolean = false
+
+  /** `? super T` has no type arguments */
+  override val args = Vector()
+
+  /** There is no `? super T` static type */
+  override def toStaticType: SuperWildcardType = this
+
+  /** Fixes the lower bound of this type */
+  override def fix: SuperWildcardType = copy(lower = lower.fix)
+
+  /** Performing capture conversion on `? super T` produces itself */
+  override def captured: SuperWildcardType = this
+
+  /** Performing a wildcard-capture on `? super T` produces a new open type variable `T <: X <:
+    * java.lang.Object`
+    */
+  override def wildcardCaptured: Capture = InferenceVariableFactory.createCapture(lower, OBJECT)
+
+  /** The breadth of `? super T` is the breadth of `T` */
+  override def breadth = lower.breadth
+
+  /** The depth of `? super T` is the depth of `T` */
+  override def depth = lower.depth
+
+  /** Replace any occurrences of an old type in this type with a new type
+    * @param oldType
+    *   the old type to be replaced
+    * @param newType
+    *   the new type after replacement
+    * @return
+    *   the resulting type
+    */
+  override def replace(oldType: InferenceVariable, newType: Type): SuperWildcardType =
     copy(lower = lower.replace(oldType, newType))
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): SuperWildcardType =
+
+  /** Reorders type parameters by replacing all type parameters given a scheme
+    * @param scheme
+    *   the scheme to replace all type parameters
+    * @return
+    *   the resulting type after re-ordering
+    */
+  override def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): SuperWildcardType =
     copy(lower = lower.reorderTypeParameters(scheme))
-  val args              = Vector()
-  def isSomehowUnknown  = lower.isSomehowUnknown
-  override def toString = s"? super ${lower}"
-  def combineTemporaryType(
+
+  /** `? super T` is unknown if `T` is unknown */
+  override def isSomehowUnknown = lower.isSomehowUnknown
+
+  /** Combines all occurrences of an old type in this type with a new type
+    * @param oldType
+    *   the old type to combine
+    * @param newType
+    *   the new type after combining
+    * @return
+    *   the resulting type
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): SuperWildcardType = copy(lower = lower.combineTemporaryType(oldType, newType))
@@ -1270,36 +1613,103 @@ final case class SuperWildcardType(
     * @return
     *   the resulting type
     */
-  def raw: SuperWildcardType = copy(lower.raw)
-  def substitute(function: Substitution): SuperWildcardType =
+  override def raw: SuperWildcardType = copy(lower.raw)
+
+  /** Performs a substitution on this type
+    * @param function
+    *   the function that maps type parameters to types
+    * @return
+    *   the type after substitution
+    */
+  override def substitute(function: Substitution): SuperWildcardType =
     copy(lower = lower.substitute(function))
-  def expansion: (SuperWildcardType, Substitution) = (this, Map())
+
+  /** Performs an expansion on this type
+    * @return
+    *   the type after expansion, and its corresponding substitution; such that
+    *   A.substitute(Substitution) = this
+    */
+  override def expansion: (SuperWildcardType, Substitution) =
+    val (a, b) = lower.expansion
+    (SuperWildcardType(a), b)
+
+  override def toString = identifier
+
+private type TypeParameterOps[A <: TTypeParameter] =
+  TypeOps[A, A, A, A, A, A, Type, A, A, A, TTypeParameter]
 
 /** A type parameter of some sort */
-sealed trait TTypeParameter extends Type:
-  val static: Boolean         = false
-  def toStaticType: this.type = this
-  def fix: TTypeParameter
-  def captured: TTypeParameter         = this
-  def wildcardCaptured: TTypeParameter = this
-  def breadth                          = 0
-  def depth                            = 0
-  val upwardProjection: TTypeParameter
-  val downwardProjection: TTypeParameter
-  def replace(oldType: InferenceVariable, newType: Type): TTypeParameter
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): TTypeParameter =
+sealed trait TTypeParameter extends Type, TypeParameterOps[TTypeParameter]:
+  /** There is no static type parameter */
+  override final val static: Boolean = false
+
+  /** The upward projection of a type parameter is itself */
+  override final val upwardProjection: this.type = this
+
+  /** The downward projection of a type parameter is itself */
+  override final val downwardProjection: this.type = this
+
+  /** Type parameters have no type arguments */
+  override final val args = Vector()
+
+  /** Type parameters have no type arguments */
+  override final val numArgs = 0
+
+  /** There is no static type parameter */
+  override final def toStaticType: this.type = this
+
+  /** Performing capture conversion on a type parameter produces itself */
+  override final def captured: this.type = this
+
+  /** Performing a wildcard-capture on a type parameter produces itself */
+  override final def wildcardCaptured: this.type = this
+
+  /** The breadth of a type parameter is 0 */
+  override final def breadth = 0
+
+  /** The depth of a type parameter is 0 */
+  override final def depth = 0
+
+  /** Performing a replacement on a type parameter produces itself
+    * @param oldType
+    *   the type to replace
+    * @param newType
+    *   the type to replace it with
+    * @return
+    *   itself
+    */
+  override final def replace(oldType: InferenceVariable, newType: Type): this.type = this
+
+  /** Reorders type parameters by replacing all type parameters given a scheme
+    * @param scheme
+    *   the scheme to replace all type parameters
+    * @return
+    *   the resulting object after re-ordering
+    */
+  override final def reorderTypeParameters(
+      scheme: Map[TTypeParameter, TTypeParameter]
+  ): TTypeParameter =
     if scheme contains this then scheme(this) else this
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): TTypeParameter
 
   /** The type who contains this type parameter */
   def containingTypeIdentifier: String
-  def isSomehowUnknown                     = false
-  def raw: this.type                       = this
-  def expansion: (this.type, Substitution) = (this, Map())
-  def substitute(function: Substitution): Type =
+
+  /** Type parameters are not unknown */
+  override final def isSomehowUnknown = false
+
+  /** The raw type of a type parameter is itself */
+  override final def raw: this.type = this
+
+  /** The expansion of a type parameter is itself with the empty substitution */
+  override final def expansion: (this.type, Substitution) = (this, Map())
+
+  /** Performs a substitution on this type parameter
+    * @param function
+    *   the substitution function
+    * @return
+    *   the resulting type
+    */
+  override final def substitute(function: Substitution): Type =
     if function contains this then function(this) else this
 
 /** A type parameter by index (something like de Bruijn indexing)
@@ -1307,22 +1717,31 @@ sealed trait TTypeParameter extends Type:
   *   the type containing this parameter
   * @param index
   *   the index of this parameter
-  * @param substitutions
-  *   the substitutions of this type
   */
 final case class TypeParameterIndex(
     source: String,
     index: Int
-) extends TTypeParameter:
-  def fix: TypeParameterIndex  = copy(source = SomeClassOrInterfaceType(source).fix.identifier)
-  def containingTypeIdentifier = source
-  val numArgs                  = 0
-  val identifier               = s"$source#${(84 + index).toChar.toString}"
-  val upwardProjection: TypeParameterIndex                                   = this
-  val downwardProjection: TypeParameterIndex                                 = this
-  def replace(oldType: InferenceVariable, newType: Type): TypeParameterIndex = this
-  val args                                                                   = Vector()
-  def combineTemporaryType(
+) extends TTypeParameter,
+      TypeParameterOps[TypeParameterIndex]:
+  /** `<source>#<T + index>` */
+  override val identifier = s"$source#${(84 + index).toChar.toString}"
+
+  /** Fixes this type parameter */
+  override def fix: TypeParameterIndex =
+    copy(source = SomeClassOrInterfaceType(source).fix.identifier)
+
+  /** The source of the type parameter */
+  override def containingTypeIdentifier = source
+
+  /** Combines all occurrences of an old type in the source with a new type
+    * @param oldType
+    *   the old type to combine
+    * @param newType
+    *   the new type after combining
+    * @return
+    *   the resulting type parameter
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): TypeParameterIndex =
@@ -1335,24 +1754,30 @@ final case class TypeParameterIndex(
   *   the full container id (including the method signature)
   * @param qualifiedName
   *   the name of the type parameter
-  * @param substitutions
-  *   the substitutions to this type parameter
   */
 final case class TypeParameterName(
     sourceType: String,
     source: String,
     qualifiedName: String
 ) extends TTypeParameter:
-  def fix: TypeParameterName   = this
-  def containingTypeIdentifier = sourceType
-  val identifier               = s"$source#$qualifiedName"
-  val numArgs                  = 0
-  val upwardProjection         = this
-  val downwardProjection       = this
-  def replace(oldType: InferenceVariable, newType: Type): TypeParameterName = this
-  // copy(substitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType))))
-  val args = Vector()
-  def combineTemporaryType(
+  /** `Foo.bar(T,int)#T` */
+  override val identifier = s"$source#$qualifiedName"
+
+  /** Fixes this type parameter */
+  override def fix: TypeParameterName = this
+
+  /** The source of the type parameter */
+  override def containingTypeIdentifier = sourceType
+
+  /** Combines all occurrences of an old type in the source with a new type
+    * @param oldType
+    *   the old type to combine
+    * @param newType
+    *   the new type after combining
+    * @return
+    *   the resulting type parameter
+    */
+  override def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): TypeParameterName =
@@ -1365,19 +1790,27 @@ final case class TypeParameterName(
 
 /** Some placeholder for inference */
 sealed trait InferenceVariable extends Type:
+  /** Whether this inference variable has been capture converted */
   val toBeCaptured: Boolean
+
+  /** Whether this inference variable has been wildcard-captured */
   val toBeWildcardCaptured: Boolean
 
   /** the ID of this type */
   val id: Int
-  def isSomehowUnknown = true
+
+  /** The list of substitutions on this type */
+  val substitutions: SubstitutionList
+
+  /** An inference variable is always an unknown type */
+  override final def isSomehowUnknown = true
 
   /** The raw type of an inference variable is simply itself
     * @return
     *   itself
     */
-  def raw: InferenceVariable = this
-  val substitutions: SubstitutionList
+  override final def raw: this.type = this
+
   def expansion: (InferenceVariable, Substitution) = (this, Map())
   def breadth                                      = 0
   def depth                                        = 0
@@ -1403,13 +1836,13 @@ final case class PlaceholderType(
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
 ) extends InferenceVariable:
-  val static: Boolean                     = false
-  def toStaticType: PlaceholderType       = this
-  def fix: PlaceholderType                = ???
-  val substitutions                       = Nil
-  val numArgs                             = 0
-  val identifier                          = s"δ$id"
-  val upwardProjection: PlaceholderType   = this
+  val static: Boolean                   = false
+  def toStaticType: PlaceholderType     = this
+  def fix: Nothing                      = throw IllegalOperationException(s"$this cannot be fixed!")
+  val substitutions                     = Nil
+  val numArgs                           = 0
+  val identifier                        = s"δ$id"
+  val upwardProjection: PlaceholderType = this
   val downwardProjection: PlaceholderType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this

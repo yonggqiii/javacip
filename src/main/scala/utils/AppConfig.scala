@@ -15,5 +15,10 @@ case class AppConfig(
     in: String = ".",
     out: String = ".",
     debug: Boolean = false,
-    benchmark: Boolean = false
+    benchmark: Boolean = false,
+    maxBreadth: Int = 1,
+    maxDepth: Int = 1,
+    numIterations: Int = 100000,
+    heuristicSearch: Boolean = false,
+    noOverloading: Boolean = false
 )

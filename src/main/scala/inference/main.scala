@@ -18,7 +18,7 @@ def infer(log: Log, config: Configuration): LogWithOption[Configuration] =
     println(
       s"Config Transitions | No. Configs | Current Breadth | Current Depth"
     )
-  val res = infer(log, addAllToConfigs(Map(), config :: Nil))
+  val res = infer(log, addAllToConfigs(log, Map(), config :: Nil))
   if !log.appConfig.debug && !log.appConfig.benchmark then println()
   res
 
@@ -29,24 +29,26 @@ private def infer(
     a: Int = 0
 ): LogWithOption[Configuration] =
   getConfig(configs) match
-    case None =>
-      if !log.appConfig.debug then println("cannot be compiled")
-      LogWithNone(log.addError(s"Terminating as type errors exist"))
+    case None => LogWithNone(log.addError(s"Terminating as type errors exist"))
     case Some((x, xs)) =>
-      if a > 200000 then
+      if a > log.appConfig.numIterations then
         return LogWithNone(
-          log.addError("max hit", if !log.appConfig.benchmark then x.toString else "")
+          log.addError(
+            "max number of iterations hit",
+            if !log.appConfig.benchmark then x.toString else ""
+          )
         )
       if a % 1000 == 0 && !log.appConfig.debug && !log.appConfig.benchmark then
         print(
           "\r" + f"$a%18d | ${configs.map((k, v) => v.size).sum}%11d | ${x.maxBreadth}%15d | ${x.maxDepth}%14d"
         )
-      if x.maxBreadth > 3 || x.maxDepth > 2 then infer(log, xs, a + 1)
+      if x.maxBreadth > log.appConfig.maxBreadth || x.maxDepth > log.appConfig.maxDepth then
+        infer(log, xs, a + 1)
       else
         val res =
           resolve(log, x) >>= deconflict >>= concretize >>= parameterizeMembers >>= typecheck
         if res.isLeft then
-          val allConfigs = addAllToConfigs(xs, res.left.reverse)
+          val allConfigs = addAllToConfigs(log, xs, res.left.reverse)
           infer(res.log, allConfigs, a + 1)
         else
           LogWithSome(
@@ -68,6 +70,7 @@ private def getConfig(
 
 //@tailrec
 private def addAllToConfigs(
+    log: Log,
     configs: Map[Int, List[Configuration]],
     newConfigs: List[Configuration]
 ): Map[Int, List[Configuration]] =
@@ -75,8 +78,9 @@ private def addAllToConfigs(
     case Nil     => configs
     case x :: xs =>
       // val res = addAllToConfigs(configs, xs)
-      val key = 0 //x.heuristicValue // 0
+      val key =
+        if log.appConfig.heuristicSearch then x.heuristicValue else 0 // x.heuristicValue // 0
       // print(key)
       if key > 100 then configs
-      else if !configs.contains(key) then addAllToConfigs(configs + (key -> (x :: Nil)), xs)
-      else addAllToConfigs(configs + (key -> (x :: configs(key))), xs)
+      else if !configs.contains(key) then addAllToConfigs(log, configs + (key -> (x :: Nil)), xs)
+      else addAllToConfigs(log, configs + (key -> (x :: configs(key))), xs)

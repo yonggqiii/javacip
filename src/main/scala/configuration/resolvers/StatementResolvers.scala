@@ -98,25 +98,41 @@ private def resolveForEachStmt(
       Option[Type]
     ]
 ): LogWithOption[MutableConfiguration] =
-  val iterable     = stmt.getIterable
-  val loopVariable = stmt.getVariable
+  val iterable = stmt.getIterable
+  val varType = resolveSolvedType(
+    stmt.getVariable.getVariables().asScala.toVector(0).getType().resolve()
+  )
   resolveExpression(log, iterable, config, memo)
-    .flatMap((log, iterableType) =>
-      resolveExpression(log, loopVariable, config, memo).rightmap(varType =>
-        // two cases: first case where it is some Iterable<T>
-        val iterableTTypeArg = createTypeArgumentFromContext(iterable, config)
-        val iterableTType    = ClassOrInterfaceType("java.lang.Iterable", Vector(iterableTTypeArg))
-        val iterableTAssertion = (iterableType <:~ iterableTType) && (iterableTTypeArg =:~ varType)
-        // second case where it is array
-        val arrayElementType = createDisjunctiveTypeWithPrimitivesFromContext(iterable, config)
-        val arrayType        = ArrayType(arrayElementType)
-        val arrayAssertion   = (arrayElementType =:~ varType) && (iterableType <:~ arrayType)
-        // one of these two must be true
-        config._3 += iterableTAssertion || arrayAssertion
-        config._4 += iterableTTypeArg
-        config._4 += arrayElementType
-      )
+    .rightmap(iterableType =>
+      // two cases: first case where it is some Iterable<T>
+      val iterableTTypeArg   = createTypeArgumentFromContext(iterable, config)
+      val iterableTType      = ClassOrInterfaceType("java.lang.Iterable", Vector(iterableTTypeArg))
+      val iterableTAssertion = (iterableType <:~ iterableTType) && (iterableTTypeArg =:~ varType)
+      // second case where it is array
+      val arrayElementType = createDisjunctiveTypeWithPrimitivesFromContext(iterable, config)
+      val arrayType        = ArrayType(arrayElementType)
+      val arrayAssertion   = (arrayElementType =:~ varType) && (iterableType <:~ arrayType)
+      // one of these two must be true
+      config._3 += iterableTAssertion || arrayAssertion
+      config._4 += iterableTTypeArg
+      config._4 += arrayElementType
     )
+    // .flatMap((log, iterableType) =>
+    //   resolveExpression(log, loopVariable, config, memo).rightmap(varType =>
+    //     // two cases: first case where it is some Iterable<T>
+    //     val iterableTTypeArg = createTypeArgumentFromContext(iterable, config)
+    //     val iterableTType    = ClassOrInterfaceType("java.lang.Iterable", Vector(iterableTTypeArg))
+    //     val iterableTAssertion = (iterableType <:~ iterableTType) && (iterableTTypeArg =:~ varType)
+    //     // second case where it is array
+    //     val arrayElementType = createDisjunctiveTypeWithPrimitivesFromContext(iterable, config)
+    //     val arrayType        = ArrayType(arrayElementType)
+    //     val arrayAssertion   = (arrayElementType =:~ varType) && (iterableType <:~ arrayType)
+    //     // one of these two must be true
+    //     config._3 += iterableTAssertion || arrayAssertion
+    //     config._4 += iterableTTypeArg
+    //     config._4 += arrayElementType
+    //   )
+    // )
     .rightmap(x => config)
 
 private def resolveForStmt(
@@ -187,7 +203,7 @@ private def resolveThrowStmt(
     ]
 ): LogWithOption[MutableConfiguration] =
   resolveExpression(log, stmt.getExpression, config, memo).rightmap(exprType =>
-    config._3 += exprType =:~ ClassOrInterfaceType("java.lang.Throwable")
+    config._3 += exprType =:~ ClassOrInterfaceType("java.lang.RuntimeException")
     config
   )
 

@@ -1,7 +1,7 @@
 class A {
 
         void main() {
-                B<Integer, Integer, Integer> b = null;
+                B<Integer, Integer, Integer> b = new B<>();
                 b.x = b.x.a;
                 b.x.a = b.x;
                 int y = b.x.t;
@@ -9,7 +9,7 @@ class A {
                 y = b.x.a.t;
                 b.x.a.t = y;
 
-                B<Object, String, Cat> b2 = null;
+                B<Object, String, Cat> b2 = new B<>();
                 Object o = b2.x.t;
                 b2.x.t = o;
                 String s = b2.x.a.t;
@@ -18,16 +18,3 @@ class A {
                 b2.x.a.a.t = c;
         }
 }
-
-
-// class Cat {
-// }
-
-// class B<T, U, V> {
-// C<T, U, V> x;
-// }
-
-// class C<T, U, V> {
-//         T t;
-//         C<U, V, T> a;
-// }

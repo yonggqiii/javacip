@@ -412,20 +412,23 @@ private def resolveBinaryExpr(
         case BinaryExpr.Operator.PLUS =>
           if left == STRING || right == STRING then STRING
           else
-            val rt = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
-              scala.util.Left(""),
-              Nil,
-              false,
-              Set(),
-              false
-            )
+            val rt = InferenceVariableFactory.createPlaceholderType()
+            // val rt = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
+            //   scala.util.Left(""),
+            //   Nil,
+            //   false,
+            //   Set(),
+            //   false
+            // )
             config._4 += rt
             config._2._2(rt) = InferenceVariableMemberTable(rt)
             config._3 += (IsNumericAssertion(left) &&
               IsNumericAssertion(right) &&
               IsNumericAssertion(rt) &&
               (left =:~ rt) &&
-              (right =:~ rt)) ||
+              (right =:~ rt) &&
+              IsPrimitiveAssertion(rt) &&
+              (PRIMITIVE_INT =:~ rt)) ||
               (((left ~=~ STRING) ||
                 (right ~=~ STRING)) &&
                 (rt ~=~ STRING))

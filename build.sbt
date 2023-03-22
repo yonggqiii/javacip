@@ -12,5 +12,6 @@ lazy val app = (project in file("."))
     libraryDependencies += javaparser,
     libraryDependencies += scopt,
     assembly / mainClass       := Some("Main"),
-    assembly / assemblyJarName := "javacip-0.0.1.jar"
+    assembly / assemblyJarName := "javacip-0.0.1.jar",
+    assembly / assemblyOption ~= { _.withCacheOutput(false) }
   )
