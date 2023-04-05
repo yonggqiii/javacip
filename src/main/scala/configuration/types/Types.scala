@@ -1129,7 +1129,7 @@ case class JavaInferenceVariable(
     * @return
     *   itself and the empty substitution function
     */
-  override def expansion = (this, Map())
+  // override def expansion = (this, Map())
 
   /** The static type of a java inference variable is itself
     * @return
@@ -1154,7 +1154,7 @@ case class JavaInferenceVariable(
     * @return
     *   itself
     */
-  override def fix: JavaInferenceVariable = this
+  // override def fix: JavaInferenceVariable = this
 
   /** Performs a replacement on this inference variable if it is the target of replacement
     * @param oldType
@@ -1788,8 +1788,10 @@ final case class TypeParameterName(
         source = newType.identifier + source.substring(sourceType.length, source.length)
       )
 
+private type InferenceVariableOps[A <: Type] = TypeOps[A, Nothing, A, A, A, A, A, A, Type, A, A]
+
 /** Some placeholder for inference */
-sealed trait InferenceVariable extends Type:
+sealed trait InferenceVariable extends Type, InferenceVariableOps[InferenceVariable]:
   /** Whether this inference variable has been capture converted */
   val toBeCaptured: Boolean
 
@@ -1811,13 +1813,15 @@ sealed trait InferenceVariable extends Type:
     */
   override final def raw: this.type = this
 
-  def expansion: (InferenceVariable, Substitution) = (this, Map())
-  def breadth                                      = 0
-  def depth                                        = 0
+  override final def expansion: (this.type, Substitution) = (this, Map())
+  override final def breadth                              = 0
+  override final def depth                                = 0
   def combineTemporaryType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
-  ): Type
+  ): InferenceVariable
+
+  override final def fix: Nothing = throw IllegalOperationException(s"$this cannot be fixed!")
 
 sealed trait DisjunctiveType extends InferenceVariable:
   val choices: Vector[Type]
@@ -1836,13 +1840,13 @@ final case class PlaceholderType(
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
 ) extends InferenceVariable:
-  val static: Boolean                   = false
-  def toStaticType: PlaceholderType     = this
-  def fix: Nothing                      = throw IllegalOperationException(s"$this cannot be fixed!")
-  val substitutions                     = Nil
-  val numArgs                           = 0
-  val identifier                        = s"δ$id"
-  val upwardProjection: PlaceholderType = this
+  val static: Boolean               = false
+  def toStaticType: PlaceholderType = this
+  // def fix: Nothing                      = throw IllegalOperationException(s"$this cannot be fixed!")
+  val substitutions                       = Nil
+  val numArgs                             = 0
+  val identifier                          = s"δ$id"
+  val upwardProjection: PlaceholderType   = this
   val downwardProjection: PlaceholderType = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this
@@ -1886,10 +1890,10 @@ final case class ReferenceOnlyDisjunctiveType(
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
 ) extends DisjunctiveType:
-  def fix: ReferenceOnlyDisjunctiveType = ???
-  def captured: Type                    = copy(toBeCaptured = true)
-  def wildcardCaptured: Type            = copy(toBeWildcardCaptured = true)
-  val numArgs                           = 0
+  // def fix: ReferenceOnlyDisjunctiveType = ???
+  def captured: ReferenceOnlyDisjunctiveType         = copy(toBeCaptured = true)
+  def wildcardCaptured: ReferenceOnlyDisjunctiveType = copy(toBeWildcardCaptured = true)
+  val numArgs                                        = 0
   val identifier =
     val str = choices.mkString(", ")
     s"τ$id=V{$str}"
@@ -1956,7 +1960,7 @@ final case class PrimitivesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
   val canBeSubsequentlyBounded: Boolean     = false
   val canBeUnknown: Boolean                 = false
   val parameterChoices: Set[TTypeParameter] = Set()
-  def fix: PrimitivesOnlyDisjunctiveType    = this
+  // def fix: PrimitivesOnlyDisjunctiveType    = this
   def replace(oldType: InferenceVariable, newType: Type): Type =
     if id != oldType.id then this else newType
   val choices                                         = PRIMITIVES.toVector
@@ -1983,10 +1987,10 @@ final case class BoxesOnlyDisjunctiveType(id: Int) extends DisjunctiveType:
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): BoxesOnlyDisjunctiveType = this
-  val canBeSubsequentlyBounded: Boolean          = false
-  val canBeUnknown: Boolean                      = false
-  val parameterChoices: Set[TTypeParameter]      = Set()
-  def fix: BoxesOnlyDisjunctiveType              = ???
+  val canBeSubsequentlyBounded: Boolean     = false
+  val canBeUnknown: Boolean                 = false
+  val parameterChoices: Set[TTypeParameter] = Set()
+  // def fix: BoxesOnlyDisjunctiveType              = ???
   val toBeCaptured: Boolean                      = false
   val toBeWildcardCaptured: Boolean              = false
   def captured: BoxesOnlyDisjunctiveType         = this
@@ -2018,7 +2022,7 @@ final case class DisjunctiveTypeWithPrimitives(
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = true
 ) extends DisjunctiveType:
-  def fix                                             = ???
+  // def fix                                             = ???
   def captured: DisjunctiveTypeWithPrimitives         = copy(toBeCaptured = true)
   def wildcardCaptured: DisjunctiveTypeWithPrimitives = copy(toBeWildcardCaptured = true)
   def combineTemporaryType(
@@ -2078,8 +2082,8 @@ final case class VoidableDisjunctiveType(
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
 ) extends DisjunctiveType:
-  val canBeSubsequentlyBounded: Boolean         = true // why not
-  def fix                                       = ???
+  val canBeSubsequentlyBounded: Boolean = true // why not
+  // def fix                                       = ???
   def captured: VoidableDisjunctiveType         = copy(toBeCaptured = true)
   def wildcardCaptured: VoidableDisjunctiveType = copy(toBeWildcardCaptured = true)
   def combineTemporaryType(
@@ -2152,9 +2156,9 @@ final case class Alpha(
     toBeCaptured: Boolean = false,
     canBeTemporaryType: Boolean = true
 ) extends InferenceVariable:
-  val static: Boolean               = false
-  def toStaticType: Alpha           = this
-  def fix                           = ???
+  val static: Boolean     = false
+  def toStaticType: Alpha = this
+  // def fix                           = ???
   val toBeWildcardCaptured: Boolean = false
   def captured: Alpha               = copy(toBeCaptured = true)
   def wildcardCaptured: Alpha       = this

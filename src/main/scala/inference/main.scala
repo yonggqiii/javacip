@@ -79,8 +79,9 @@ private def addAllToConfigs(
     case x :: xs =>
       // val res = addAllToConfigs(configs, xs)
       val key =
-        if log.appConfig.heuristicSearch then x.heuristicValue else 0 // x.heuristicValue // 0
+        if log.appConfig.heuristicSearch then x.heuristicValue else 0
       // print(key)
-      if key > 100 then configs
+      if key > 100 || x.maxBreadth > log.appConfig.maxBreadth || x.maxDepth > log.appConfig.maxDepth then
+        addAllToConfigs(log, configs, xs)
       else if !configs.contains(key) then addAllToConfigs(log, configs + (key -> (x :: Nil)), xs)
       else addAllToConfigs(log, configs + (key -> (x :: configs(key))), xs)

@@ -4,8 +4,8 @@ public class test10 {
         Box<String> b2 = new Box<>();
         Box<Dog> b3 = new Box<>();
         Wrap<Integer> o1 = f(b);
-        Wrap<String> o1 = f(b2);
-        Wrap<Dog> o1 = f(b3);
+        Wrap<String> o2 = f(b2);
+        Wrap<Dog> o3 = f(b3);
     }    
 }
 

@@ -77,7 +77,9 @@ private def finalizeMethod(
     log.addInfo(
       s"combining $methodToFinalize in $x"
     ),
-    (configsFromExistingMethods ++ configWithAddedAssertionsAndTypes).toList
+    if configsFromExistingMethods.isEmpty || !log.appConfig.noOverloading then
+      (configsFromExistingMethods ++ configWithAddedAssertionsAndTypes).toList
+    else configsFromExistingMethods.toList
   )
 
 private def normalizedMethod(methodToFinalize: MethodWithContext): Option[Method] =

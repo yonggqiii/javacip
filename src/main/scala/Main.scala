@@ -10,6 +10,7 @@ object Main:
     parseCommandLineArgs(args) match
       case None => ()
       case Some(config) =>
+        val t1 = System.nanoTime()
         LogWithSome(Log(config), config.in)
           // .map(hasGenerics)
           // .consume((log, x) =>
@@ -23,6 +24,7 @@ object Main:
           .map(buildSource)
           .consume(writeFiles)
           .flush()
+        println((System.nanoTime - t1) / 1e9d)
 
   def writeFiles(log: Log, cu: Vector[CompilationUnit]) =
     mapWithLog(log, cu)(writeFile(_, _))._1

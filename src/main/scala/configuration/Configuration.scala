@@ -389,7 +389,7 @@ case class Configuration(
             else methodTracker((d.identifier, k, numParams)) += 1
             methodMaxBreadth = methodMaxBreadth.max(m.typeParameterBounds.size)
     val overloadValue = if methodTracker.isEmpty then 1 else methodTracker.values.max
-    (((b + 1) * (d + 1))) + ((overloadValue - 1) * 10000) // + methodMaxBreadth * 2
+    (((b + 1) * (d + 1))) //+ ((overloadValue - 1) * 10000) // + methodMaxBreadth * 2
 
   def addToPsi(`type`: Type) =
     copy(psi = psi + `type`)
@@ -596,7 +596,9 @@ case class Configuration(
 
   private def proveSubtype(left: Type, right: Type): Boolean =
     val (sub, sup) = (left.upwardProjection, right.downwardProjection)
-    if sup == OBJECT then true
+    if sup == OBJECT then
+      sub.isInstanceOf[Alpha] || sub.isInstanceOf[SomeClassOrInterfaceType] || sub
+        .isInstanceOf[ArrayType] || sub.isInstanceOf[TTypeParameter]
     else if sub == Bottom then
       sup match
         case _: PrimitiveType            => false
@@ -831,7 +833,7 @@ case class Configuration(
               case Some(d) =>
                 (
                   d.getLeftmostReferenceTypeBoundOfTypeParameter(x),
-                  d.getAllReferenceTypeBoundsOfTypeParameter(x)
+                  d.getAllReferenceTypeBoundsOfTypeParameter(x).toSet
                 )
           if newTable.mustBeClass then newAssertions += erasure.isClass
           if newTable.mustBeInterface then newAssertions += erasure.isInterface

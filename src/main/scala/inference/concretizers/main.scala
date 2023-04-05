@@ -55,6 +55,8 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
           SubtypeAssertion(source.boxed, target)
         case CompatibilityAssertion(target: Alpha, source: Alpha) =>
           SubtypeAssertion(source, target)
+        case CompatibilityAssertion(target: SomeClassOrInterfaceType, source: Alpha) =>
+          SubtypeAssertion(source, target)
         case y => y
     }
     .filter { x =>

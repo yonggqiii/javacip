@@ -715,4 +715,4 @@ class MissingTypeDeclaration(
   def getAllReferenceTypeBoundsOfTypeParameter(
       `type`: Type,
       exclusions: Set[Type] = Set()
-  ): Vector[ClassOrInterfaceType] = ???
+  ): Vector[ClassOrInterfaceType] = Vector(OBJECT)

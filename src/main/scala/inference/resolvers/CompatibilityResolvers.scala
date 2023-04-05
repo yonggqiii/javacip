@@ -42,6 +42,10 @@ private def resolveCompatibilityAssertion(
           t.widenedFrom.map(_.boxed).map(s <:~ _).toVector
         )) :: Nil
       )
+    case (s: Alpha, t: TTypeParameter) =>
+      (log.addWarn(s"$s can never be compatible with $t"), Nil)
+    case (s: Alpha, t: TemporaryType) =>
+      (log, (config asserts (s <:~ t)) :: Nil)
     case (
           s @ (_: SomeClassOrInterfaceType | _: Alpha),
           t @ (_: SomeClassOrInterfaceType | _: Alpha)
@@ -54,6 +58,12 @@ private def resolveCompatibilityAssertion(
           t.widenedFrom.map(_.boxed).map(s <:~ _).toVector
         )) :: Nil
       )
+    case (s: TTypeParameter, t: TTypeParameter) =>
+      (log, (config asserts s <:~ t) :: Nil)
+    case (s: PrimitiveType, t: TTypeParameter) =>
+      (log.addWarn(s"$s can never be compatible with $t"), Nil)
+    case (s: SomeClassOrInterfaceType, t: TTypeParameter) =>
+      (log.addWarn(s"$s can never be compatible with $t"), Nil)
     // val B = InferenceVariableFactory.createBoxesOnlyDisjunctiveType()
     // val P = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
     // val asst =
