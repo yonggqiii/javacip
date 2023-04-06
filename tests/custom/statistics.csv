@@ -25,3 +25,7 @@ Filename,Output written,Time taken for disambiguation,Compilable
 24.java,False,2.326088956,False
 25.java,False,0.402488173,False
 26.java,False,0.776542463,False
+27.java,False,0.559211055,False
+28.java,False,0.239726191,False
+29.java,True,0.470740403,True
+30.java,True,0.782720986,True
