@@ -1,0 +1,9 @@
+// added by JavaCIP
+public class ArrayList<A> {
+
+    public void add(String arg0) {
+    }
+
+    public ArrayList() {
+    }
+}

@@ -1,0 +1,7 @@
+// added by JavaCIP
+public interface UNKNOWN_65 {
+
+    public abstract int getStatusCode();
+
+    public abstract boolean getReasonPhrase();
+}

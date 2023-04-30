@@ -1101,9 +1101,6 @@ case class JavaInferenceVariable(
   /** The identifier of a java inference variable is `iv<id>` */
   override val identifier = s"iv$id"
 
-  /** There will never be the static type of a java inference variable */
-  override val static: Boolean = false
-
   /** Java inference variables have no type arguments */
   override val args: Vector[Type] = Vector()
 
@@ -1130,12 +1127,6 @@ case class JavaInferenceVariable(
     *   itself and the empty substitution function
     */
   // override def expansion = (this, Map())
-
-  /** The static type of a java inference variable is itself
-    * @return
-    *   itself
-    */
-  override def toStaticType: JavaInferenceVariable = this
 
   /** Java inference variables do not contain any temporary types
     * @param oldType
@@ -1813,23 +1804,34 @@ sealed trait InferenceVariable extends Type, InferenceVariableOps[InferenceVaria
     */
   override final def raw: this.type = this
 
+  /** The expansion of an inference variable is itself and the empty substitution function
+    */
   override final def expansion: (this.type, Substitution) = (this, Map())
-  override final def breadth                              = 0
-  override final def depth                                = 0
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): InferenceVariable
 
+  /** The breadth of an inference variable is 0
+    */
+  override final def breadth = 0
+
+  /** The depth of an inference variable is 0 */
+  override final def depth = 0
+
+  // def combineTemporaryType(
+  //     oldType: TemporaryType,
+  //     newType: SomeClassOrInterfaceType
+  // ): InferenceVariable
+
+  /** An inference variable cannot be fixed
+    * @return
+    *   Nothing
+    * @throws An
+    *   [[utils.IllegalOperationException]]
+    */
   override final def fix: Nothing = throw IllegalOperationException(s"$this cannot be fixed!")
 
-sealed trait DisjunctiveType extends InferenceVariable:
-  val choices: Vector[Type]
-  val canBeSubsequentlyBounded: Boolean
-  val parameterChoices: Set[TTypeParameter]
-  val canBeUnknown: Boolean
-  val static: Boolean         = false
-  def toStaticType: this.type = this
+  /** There is no static inference variable */
+  override final val static: Boolean = false
+
+  override final def toStaticType: this.type = this
 
 /** Some random placeholder type
   * @param id
@@ -1839,9 +1841,8 @@ final case class PlaceholderType(
     id: Int,
     toBeCaptured: Boolean = false,
     toBeWildcardCaptured: Boolean = false
-) extends InferenceVariable:
-  val static: Boolean               = false
-  def toStaticType: PlaceholderType = this
+) extends InferenceVariable,
+      InferenceVariableOps[PlaceholderType]:
   // def fix: Nothing                      = throw IllegalOperationException(s"$this cannot be fixed!")
   val substitutions                       = Nil
   val numArgs                             = 0
@@ -1862,6 +1863,135 @@ final case class PlaceholderType(
       oldType: TemporaryType,
       newType: SomeClassOrInterfaceType
   ): PlaceholderType = this
+
+/** Some unknown concrete reference type
+  * @param id
+  *   the ID of this alpha
+  * @param source
+  *   the containing type
+  * @param substitutions
+  *   any substitutions to this type
+  * @param canBeBounded
+  *   whether the arguments to this type can be (bounded) wildcards
+  * @param parameterChoices
+  *   the parameters this type can contain
+  */
+final case class Alpha(
+    id: Int,
+    source: Either[String, Type],
+    substitutions: SubstitutionList = Nil,
+    canBeBounded: Boolean = false,
+    parameterChoices: Set[TTypeParameter] = Set(),
+    toBeCaptured: Boolean = false,
+    canBeTemporaryType: Boolean = true
+) extends InferenceVariable,
+      InferenceVariableOps[Alpha]:
+  // def fix                           = ???
+  val toBeWildcardCaptured: Boolean = false
+  def captured: Alpha               = copy(toBeCaptured = true)
+  def wildcardCaptured: Alpha       = this
+  def combineTemporaryType(
+      oldType: TemporaryType,
+      newType: SomeClassOrInterfaceType
+  ): Alpha =
+    val newSource =
+      if source.isLeft && source.asInstanceOf[Left[String, Type]].value == oldType.identifier then
+        Left(newType.identifier)
+      else source
+    val newSubstitutions = substitutions.map(m =>
+      m.map((k, v) =>
+        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
+      )
+    )
+    val newParameterChoices = parameterChoices.map(_.combineTemporaryType(oldType, newType))
+    copy(
+      source = newSource,
+      substitutions = newSubstitutions,
+      parameterChoices = newParameterChoices
+    )
+  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Alpha =
+    copy(
+      source = source.map(_.reorderTypeParameters(scheme)),
+      parameterChoices = parameterChoices.map(_.reorderTypeParameters(scheme)),
+      substitutions = substitutions.map(m =>
+        m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
+      )
+    )
+  val numArgs            = 0
+  val identifier         = s"α$id"
+  val upwardProjection   = this
+  val downwardProjection = this
+  override def toString() =
+    val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
+    val subsstring = substitutions.map(subs => s"{${subsFn(subs)}}").mkString
+    s"$identifier$subsstring"
+
+  def replace(oldType: InferenceVariable, newType: Type): Type =
+    val newSource        = source.map(_.replace(oldType, newType))
+    val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
+    if id != oldType.id then copy(source = newSource, substitutions = newSubstitutions)
+    else if toBeCaptured then substitutions.foldLeft(newType)((t, s) => t.substitute(s)).captured
+    else if toBeWildcardCaptured then
+      substitutions.foldLeft(newType)((t, s) => t.substitute(s)).wildcardCaptured
+    else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
+  def substituted = this
+  val args        = Vector()
+  def substitute(function: Substitution): Alpha =
+    copy(substitutions = (substitutions ::: (function :: Nil)).filter(!_.isEmpty))
+
+  /** Given an identifier of a type and the arity of its type constructor, convert this alpha into
+    * an instance of that type
+    * @param identifier
+    *   the type to concretize into
+    * @param numArgs
+    *   the arity of the new type's type constructor, or effectively, the number of arguments this
+    *   type should have
+    * @return
+    *   the resulting type
+    */
+  def concretizeToReference(identifier: String, numArgs: Int): SomeClassOrInterfaceType =
+    SomeClassOrInterfaceType(
+      identifier,
+      (0 until numArgs)
+        .map(i =>
+          InferenceVariableFactory.createDisjunctiveType(
+            source,
+            Nil,
+            canBeBounded,
+            parameterChoices,
+            canBeBounded,
+            canBeTemporaryType
+          )
+        )
+        .toVector
+    )
+
+  def concretizeToTemporary(typeId: Int, numArgs: Int): (TemporaryType) =
+    TemporaryType(
+      typeId,
+      (0 until numArgs)
+        .map(i =>
+          InferenceVariableFactory.createDisjunctiveType(
+            source,
+            Nil,
+            canBeBounded,
+            parameterChoices,
+            canBeBounded,
+            canBeTemporaryType
+          )
+        )
+        .toVector
+    )
+
+  override def ⊆(that: Type): Boolean = that match
+    case x: Alpha => this.id == x.id
+    case _        => super.⊆(that)
+
+sealed trait DisjunctiveType extends InferenceVariable:
+  val choices: Vector[Type]
+  val canBeSubsequentlyBounded: Boolean
+  val parameterChoices: Set[TTypeParameter]
+  val canBeUnknown: Boolean
 
 /** A disjunctive type is a type who could be one of several possible other reference types
   * (including Type Parameters)
@@ -2134,130 +2264,6 @@ final case class VoidableDisjunctiveType(
   val downwardProjection: VoidableDisjunctiveType = this
   def substitute(function: Substitution): VoidableDisjunctiveType =
     copy(substitutions = (this.substitutions ::: (function :: Nil)).filter(!_.isEmpty))
-
-/** Some unknown concrete reference type
-  * @param id
-  *   the ID of this alpha
-  * @param source
-  *   the containing type
-  * @param substitutions
-  *   any substitutions to this type
-  * @param canBeBounded
-  *   whether the arguments to this type can be (bounded) wildcards
-  * @param parameterChoices
-  *   the parameters this type can contain
-  */
-final case class Alpha(
-    id: Int,
-    source: Either[String, Type],
-    substitutions: SubstitutionList = Nil,
-    canBeBounded: Boolean = false,
-    parameterChoices: Set[TTypeParameter] = Set(),
-    toBeCaptured: Boolean = false,
-    canBeTemporaryType: Boolean = true
-) extends InferenceVariable:
-  val static: Boolean     = false
-  def toStaticType: Alpha = this
-  // def fix                           = ???
-  val toBeWildcardCaptured: Boolean = false
-  def captured: Alpha               = copy(toBeCaptured = true)
-  def wildcardCaptured: Alpha       = this
-  def combineTemporaryType(
-      oldType: TemporaryType,
-      newType: SomeClassOrInterfaceType
-  ): Alpha =
-    val newSource =
-      if source.isLeft && source.asInstanceOf[Left[String, Type]].value == oldType.identifier then
-        Left(newType.identifier)
-      else source
-    val newSubstitutions = substitutions.map(m =>
-      m.map((k, v) =>
-        (k.combineTemporaryType(oldType, newType) -> v.combineTemporaryType(oldType, newType))
-      )
-    )
-    val newParameterChoices = parameterChoices.map(_.combineTemporaryType(oldType, newType))
-    copy(
-      source = newSource,
-      substitutions = newSubstitutions,
-      parameterChoices = newParameterChoices
-    )
-  def reorderTypeParameters(scheme: Map[TTypeParameter, TTypeParameter]): Alpha =
-    copy(
-      source = source.map(_.reorderTypeParameters(scheme)),
-      parameterChoices = parameterChoices.map(_.reorderTypeParameters(scheme)),
-      substitutions = substitutions.map(m =>
-        m.map((k, v) => (k.reorderTypeParameters(scheme) -> v.reorderTypeParameters(scheme)))
-      )
-    )
-  val numArgs            = 0
-  val identifier         = s"α$id"
-  val upwardProjection   = this
-  val downwardProjection = this
-  override def toString() =
-    val subsFn: Map[TTypeParameter, Type] => String = subs => subs.mkString(", ")
-    val subsstring = substitutions.map(subs => s"{${subsFn(subs)}}").mkString
-    s"$identifier$subsstring"
-
-  def replace(oldType: InferenceVariable, newType: Type): Type =
-    val newSource        = source.map(_.replace(oldType, newType))
-    val newSubstitutions = substitutions.map(_.map((x, y) => x -> y.replace(oldType, newType)))
-    if id != oldType.id then copy(source = newSource, substitutions = newSubstitutions)
-    else if toBeCaptured then substitutions.foldLeft(newType)((t, s) => t.substitute(s)).captured
-    else if toBeWildcardCaptured then
-      substitutions.foldLeft(newType)((t, s) => t.substitute(s)).wildcardCaptured
-    else substitutions.foldLeft(newType)((t, s) => t.substitute(s))
-  def substituted = this
-  val args        = Vector()
-  def substitute(function: Substitution): Alpha =
-    copy(substitutions = (substitutions ::: (function :: Nil)).filter(!_.isEmpty))
-
-  /** Given an identifier of a type and the arity of its type constructor, convert this alpha into
-    * an instance of that type
-    * @param identifier
-    *   the type to concretize into
-    * @param numArgs
-    *   the arity of the new type's type constructor, or effectively, the number of arguments this
-    *   type should have
-    * @return
-    *   the resulting type
-    */
-  def concretizeToReference(identifier: String, numArgs: Int): SomeClassOrInterfaceType =
-    SomeClassOrInterfaceType(
-      identifier,
-      (0 until numArgs)
-        .map(i =>
-          InferenceVariableFactory.createDisjunctiveType(
-            source,
-            Nil,
-            canBeBounded,
-            parameterChoices,
-            canBeBounded,
-            canBeTemporaryType
-          )
-        )
-        .toVector
-    )
-
-  def concretizeToTemporary(typeId: Int, numArgs: Int): (TemporaryType) =
-    TemporaryType(
-      typeId,
-      (0 until numArgs)
-        .map(i =>
-          InferenceVariableFactory.createDisjunctiveType(
-            source,
-            Nil,
-            canBeBounded,
-            parameterChoices,
-            canBeBounded,
-            canBeTemporaryType
-          )
-        )
-        .toVector
-    )
-
-  override def ⊆(that: Type): Boolean = that match
-    case x: Alpha => this.id == x.id
-    case _        => super.⊆(that)
 
 /** Object that contains helper methods to create inference variables
   */

@@ -8,5 +8,4 @@ target/
 .bsp/
 .metals/
 .gitignore
-out/
 
