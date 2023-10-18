@@ -313,9 +313,31 @@ case class Configuration(
       for method <- methodSet.map(_.combineTemporaryType(t, other)) do
         val paramTypes = method.signature.formalParameters
         val returnType = method.returnType
-        val context    = method.asInstanceOf[MethodWithContext].context
-        val callSiteParameterChoices =
-          method.asInstanceOf[MethodWithContext].callSiteParameterChoices
+        val (context: Substitution, callSiteParameterChoices: Set[TTypeParameter]) =
+          if method.isInstanceOf[MethodWithContext] then
+            val methodWContext = method.asInstanceOf[MethodWithContext]
+            (methodWContext.context, methodWContext.callSiteParameterChoices)
+          else
+            val otherDecl = getUnderlyingDeclaration(other).asInstanceOf[FixedDeclaration]
+            if otherDecl.methodTypeParameterBounds.size < method.typeParameterBounds.size then
+              return None
+            (Map(), (0 until x.numArgs).map(i => TypeParameterIndex(x.identifier, i)).toSet)
+        // val context    = 
+        //   if !method.isInstanceOf[MethodWithContext] then
+        //     Map()
+        //   else
+        //     method.asInstanceOf[MethodWithContext].context
+        // val callSiteParameterChoices =
+        //   if !method.isInstanceOf[MethodWithContext] then
+        //     val classtp = (0 until x.numArgs).map(i => TypeParameterIndex(x.identifier, i))
+            
+        //     val methodTp = method.typeParameterBounds.map(_._1)
+        //     val otherDecl = getUnderlyingDeclaration(other).asInstanceOf[FixedDeclaration]
+        //     if otherDecl 
+        //     println(methodTp)
+        //     (classtp ++ methodTp).toSet
+        //   else 
+        //     method.asInstanceOf[MethodWithContext].callSiteParameterChoices
         // find the types that may actually contain the methods
         val methodContainers =
           upcastAllToMethodContainer(Set(x), methodName, paramTypes.size)
@@ -664,7 +686,7 @@ case class Configuration(
     *   cannot be done
     */
   def replace(oldType: InferenceVariable, newType: Type): Option[Configuration] =
-    if newType == PRIMITIVE_VOID && unvoidable.contains(oldType) then return None
+    if newType == PRIMITIVE_VOID && unvoidable.exists(t => t.isInstanceOf[DisjunctiveType] && t.asInstanceOf[DisjunctiveType].id == oldType.id) then return None
     val newAssertions = ArrayBuffer[Assertion]()
     var newJVBounds   = javaIVBounds
     val newUnvoidable = unvoidable.map(_.replace(oldType, newType))

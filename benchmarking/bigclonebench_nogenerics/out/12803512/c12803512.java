@@ -1,0 +1,48 @@
+class c12803512 {
+
+    public CheckAvailabilityResult execute(final CheckAvailabilityAction action, final ExecutionContext context) throws ActionRuntimeException {
+        if (JavaCIPUnknownScope.LOGGER.isDebugEnabled()) {
+            String serverName = null;
+            if (action.getServerId() == CheckAvailability.FEDORA_ID) {
+                serverName = "fedora";
+            } else if (action.getServerId() == CheckAvailability.KRAMERIUS_ID) {
+                serverName = "kramerius";
+            }
+            JavaCIPUnknownScope.LOGGER.debug("Processing action: CheckAvailability: " + serverName);
+        }
+        ServerUtils.checkExpiredSession(JavaCIPUnknownScope.httpSessionProvider);
+        boolean status = true;
+        String url = null;
+        String usr = "";
+        String pass = "";
+        if (action.getServerId() == CheckAvailability.FEDORA_ID) {
+            url = JavaCIPUnknownScope.configuration.getFedoraHost();
+            usr = JavaCIPUnknownScope.configuration.getFedoraLogin();
+            pass = JavaCIPUnknownScope.configuration.getFedoraPassword();
+        } else if (action.getServerId() == CheckAvailability.KRAMERIUS_ID) {
+            url = JavaCIPUnknownScope.configuration.getKrameriusHost() + JavaCIPUnknownScope.SOME_STATIC_KRAMERIUS_PAGE;
+        } else {
+            throw new ActionRuntimeException("Unknown server id");
+        }
+        try {
+            URLConnection con = RESTHelper.openConnection(url, usr, pass, false);
+            if (con instanceof HttpURLConnection) {
+                HttpURLConnection httpConnection = (HttpURLConnection) con;
+                int resp = httpConnection.getResponseCode();
+                if (resp < 200 || resp >= 308) {
+                    status = false;
+                    JavaCIPUnknownScope.LOGGER.info("Server " + url + " answered with HTTP code " + httpConnection.getResponseCode());
+                }
+            } else {
+                status = false;
+            }
+        } catch (MalformedURLRuntimeException e) {
+            status = false;
+            e.printStackTrace();
+        } catch (IORuntimeException e) {
+            status = false;
+            e.printStackTrace();
+        }
+        return new CheckAvailabilityResult(status, url);
+    }
+}

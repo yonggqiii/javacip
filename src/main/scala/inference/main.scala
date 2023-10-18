@@ -3,6 +3,7 @@ package inference
 import configuration.Configuration
 import utils.*
 import scala.annotation.tailrec
+import scala.collection.mutable.Map as MutableMap
 import configuration.assertions.*
 import configuration.types.*
 import inference.resolvers.resolve

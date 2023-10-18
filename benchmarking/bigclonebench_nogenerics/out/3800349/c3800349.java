@@ -1,0 +1,20 @@
+class c3800349 {
+
+    private boolean _copyPath(String source, String destination, Object handler) {
+        try {
+            FileInputStream fis = new FileInputStream(JavaCIPUnknownScope._fullPathForPath(source));
+            FileOutputStream fos = new FileOutputStream(JavaCIPUnknownScope._fullPathForPath(destination));
+            byte[] buffer = new byte[fis.available()];
+            int read;
+            for (read = fis.read(buffer); read >= 0; read = fis.read(buffer)) {
+                fos.write(buffer, 0, read);
+            }
+            fis.close();
+            fos.close();
+            return true;
+        } catch (IORuntimeException ioe) {
+            ioe.printStackTrace();
+            return false;
+        }
+    }
+}

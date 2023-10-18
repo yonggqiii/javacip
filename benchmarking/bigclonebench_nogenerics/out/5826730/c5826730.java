@@ -1,0 +1,32 @@
+class c5826730 {
+
+    private void copyFromZip(File zipFile) throws GLMRessourceManagerRuntimeException {
+        if (zipFile == null)
+            throw new GLMRessourceZIPRuntimeException(1);
+        if (!zipFile.exists())
+            throw new GLMRessourceZIPRuntimeException(2);
+        int len = 0;
+        byte[] buffer = ContentManager.getDefaultBuffer();
+        try {
+            ZipInputStream zip_in = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile)));
+            ZipEntry zipEntry;
+            File rootDir = null;
+            while ((zipEntry = zip_in.getNextEntry()) != null) {
+                File destFile = new File(JavaCIPUnknownScope.tempDirectory, zipEntry.getName());
+                if (rootDir == null)
+                    rootDir = destFile.getParentFile();
+                if (!zipEntry.isDirectory() && destFile.getParentFile().equals(rootDir)) {
+                    if (!zipEntry.getName().equals(ContentManager.IMS_MANIFEST_FILENAME)) {
+                        FileOutputStream file_out = new FileOutputStream(new File(JavaCIPUnknownScope.tempDirectory, zipEntry.getName()));
+                        while ((len = zip_in.read(buffer)) > 0) file_out.write(buffer, 0, len);
+                        file_out.flush();
+                        file_out.close();
+                    }
+                }
+            }
+            zip_in.close();
+        } catch (RuntimeException e) {
+            throw new GLMRessourceZIPRuntimeException(3);
+        }
+    }
+}

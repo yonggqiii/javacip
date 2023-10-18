@@ -57,6 +57,10 @@ private def createErasureGraph(config: Configuration): ErasureGraph =
           SubtypeAssertion(source, target)
         case CompatibilityAssertion(target: SomeClassOrInterfaceType, source: Alpha) =>
           SubtypeAssertion(source, target)
+        case CompatibilityAssertion(target: Alpha, source: SomeClassOrInterfaceType) => 
+          SubtypeAssertion(source, target)
+        case CompatibilityAssertion(target: PrimitiveType, source: Alpha) =>
+          SubtypeAssertion(source, target.boxed)
         case y => y
     }
     .filter { x =>
@@ -183,7 +187,18 @@ def concretize(
     log: Log,
     config: Configuration
 ): LogWithEither[List[Configuration], Configuration] =
-  val erasureGraph = createErasureGraph(config)
+  val erasureGraph = 
+    try {
+      createErasureGraph(config)
+    } catch {
+      case e: Throwable =>
+        println("lol")
+        return LogWithLeft(log.addWarn(
+          s"cannot create erasure graph",
+          e.getMessage
+        ),
+        Nil)
+    }
   // get all relevant vertices
   val alphas       = config.psi.filter(x => x.isInstanceOf[Alpha]).map(x => x.identifier).toSet
   val allVertices  = erasureGraph.adjList.keys.toSet

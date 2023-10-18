@@ -1,0 +1,23 @@
+class c12800568 {
+
+    public void exportFile() {
+        String expfolder = PropertyHandler.getInstance().getProperty(PropertyHandler.KINDLE_EXPORT_FOLDER_KEY);
+        File out = new File(expfolder + File.separator + JavaCIPUnknownScope.previewInfo.getTitle() + ".prc");
+        File f = new File(JavaCIPUnknownScope.absPath);
+        try {
+            FileOutputStream fout = new FileOutputStream(out);
+            FileInputStream fin = new FileInputStream(f);
+            int read = 0;
+            byte[] buffer = new byte[1024 * 1024];
+            while ((read = fin.read(buffer)) > 0) {
+                fout.write(buffer, 0, read);
+            }
+            fin.close();
+            fout.close();
+        } catch (FileNotFoundRuntimeException e) {
+            e.printStackTrace();
+        } catch (IORuntimeException e) {
+            e.printStackTrace();
+        }
+    }
+}

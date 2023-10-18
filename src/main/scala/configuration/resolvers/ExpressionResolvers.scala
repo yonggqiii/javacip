@@ -75,8 +75,7 @@ private[configuration] def resolveExpression(
           config,
           memo
         )
-      else if expr.isLiteralExpr then
-        LogWithOption(log, Some(resolveSolvedType(expr.calculateResolvedType)))
+      else if expr.isLiteralExpr then LogWithSome(log, resolveSolvedType(expr.calculateResolvedType))
       else
         println(expr.getClass)
         ???
@@ -281,7 +280,7 @@ private def resolveArrayAccessExpr(
           val paramChoices = getParamChoicesFromExpression(expr)
           val rt           = createDisjunctiveTypeWithPrimitivesFromContext(expr, config)
           // nameexpr must be an instance of rt[]
-          config._3 += (name <:~ ArrayType(rt))
+          config._3 += (name ~=~ ArrayType(rt))
           config._4 += rt
           rt
     )
@@ -366,31 +365,35 @@ private def resolveBinaryExpr(
       config._6 += right
       expr.getOperator match
         case BinaryExpr.Operator.AND | BinaryExpr.Operator.OR =>
-          config._3 += (left =:~ PRIMITIVE_BOOLEAN && right =:~ PRIMITIVE_BOOLEAN)
+          config._3 += ((left ~=~ PRIMITIVE_BOOLEAN || left ~=~ BOXED_BOOLEAN) && (right ~=~ PRIMITIVE_BOOLEAN || right ~=~ BOXED_BOOLEAN))
           PRIMITIVE_BOOLEAN
         case BinaryExpr.Operator.BINARY_AND | BinaryExpr.Operator.BINARY_OR |
             BinaryExpr.Operator.XOR =>
-          val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
-          config._4 += rt
-          config._2._2(rt) = InferenceVariableMemberTable(rt)
-          config._3 += (IsIntegralAssertion(left) &&
-            IsIntegralAssertion(right) &&
-            IsIntegralAssertion(rt)) ||
-            ((left =:~ PRIMITIVE_BOOLEAN) &&
-              (right =:~ PRIMITIVE_BOOLEAN) &&
-              (rt ~=~ PRIMITIVE_BOOLEAN))
-          rt
+          if left == PRIMITIVE_BOOLEAN && right == PRIMITIVE_BOOLEAN then
+            PRIMITIVE_BOOLEAN
+          else
+            val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+            config._4 += rt
+            config._2._2(rt) = InferenceVariableMemberTable(rt)
+            config._3 += (IsIntegralAssertion(left) &&
+              IsIntegralAssertion(right) &&
+              IsIntegralAssertion(rt)) ||
+              ((left ~=~ PRIMITIVE_BOOLEAN || left ~=~ BOXED_BOOLEAN) && (right ~=~ PRIMITIVE_BOOLEAN || right ~=~ BOXED_BOOLEAN) &&
+                (rt ~=~ PRIMITIVE_BOOLEAN))
+            rt
         case BinaryExpr.Operator.DIVIDE | BinaryExpr.Operator.MINUS | BinaryExpr.Operator.MULTIPLY |
             BinaryExpr.Operator.REMAINDER =>
-          val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
-          config._4 += rt
-          config._2._2(rt) = InferenceVariableMemberTable(rt)
-          config._3 += IsNumericAssertion(left) &&
-            IsNumericAssertion(right) &&
-            IsNumericAssertion(rt) &&
-            left =:~ rt &&
-            right =:~ rt
-          rt
+          if (left == PRIMITIVE_INT && right == PRIMITIVE_INT) then PRIMITIVE_INT
+          else
+            val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+            config._4 += rt
+            config._2._2(rt) = InferenceVariableMemberTable(rt)
+            config._3 += IsNumericAssertion(left) &&
+              IsNumericAssertion(right) &&
+              IsNumericAssertion(rt) &&
+              left =:~ rt &&
+              right =:~ rt
+            rt
         case BinaryExpr.Operator.EQUALS | BinaryExpr.Operator.NOT_EQUALS =>
           config._3 += (left =:~ right) || (right =:~ left)
           PRIMITIVE_BOOLEAN
@@ -411,6 +414,7 @@ private def resolveBinaryExpr(
           rt
         case BinaryExpr.Operator.PLUS =>
           if left == STRING || right == STRING then STRING
+          else if left == PRIMITIVE_INT && right == PRIMITIVE_INT then PRIMITIVE_INT
           else
             val rt = InferenceVariableFactory.createPlaceholderType()
             // val rt = InferenceVariableFactory.createDisjunctiveTypeWithPrimitives(
@@ -668,7 +672,19 @@ private def resolveMethodCallExpr(
                   memo,
                   x.captured.asInstanceOf[InferenceVariable]
                 )
-              case _ => ???
+              case x: ClassOrInterfaceType =>
+                resolveMethodFromAReferenceType(
+                  newLog,
+                  expr,
+                  config,
+                  memo,
+                  Vector(x),
+                  x
+                )
+              case _ => 
+                println(expr)
+                println(x)
+                ???
           )
     case None =>
       // no scope.
@@ -753,17 +769,30 @@ def getAllRelevantMethods(
     nameOfMethod: String,
     numArgs: Int
 ): Vector[Method] =
-  val sd =
-    if !config._1.contains(t.identifier) then
-      val c = Configuration.createEmptyConfiguration()
-      c.getSubstitutedDeclaration(t)
-    else
-      val ud           = config._1(t.identifier)
-      val (_, context) = t.expansion
-      ud.substitute(context)
-  val methods = sd.methods
-  if !methods.contains(nameOfMethod) then Vector()
-  else methods(nameOfMethod).filter(m => m.callableWithNArgs(numArgs))
+  if (t.identifier.contains("java")) then
+    val sd =
+      if !config._1.contains(t.identifier) then
+        val c = Configuration.createEmptyConfiguration()
+        c.getSubstitutedDeclaration(t)
+      else
+        val ud           = config._1(t.identifier)
+        val (_, context) = t.expansion
+        ud.substitute(context)
+    val methods = sd.methods
+    if !methods.contains(nameOfMethod) then Vector()
+    else methods(nameOfMethod).filter(m => m.callableWithNArgs(numArgs)).filter(m => m.accessModifier == PUBLIC)
+  else
+    val sd =
+      if !config._1.contains(t.identifier) then
+        val c = Configuration.createEmptyConfiguration()
+        c.getSubstitutedDeclaration(t)
+      else
+        val ud           = config._1(t.identifier)
+        val (_, context) = t.expansion
+        ud.substitute(context)
+    val methods = sd.methods
+    if !methods.contains(nameOfMethod) then Vector()
+    else methods(nameOfMethod).filter(m => m.callableWithNArgs(numArgs))
 
 private def resolveMethodFromABunchOfResolvedReferenceTypes(
     log: Log,
@@ -820,7 +849,33 @@ private def resolveMethodFromABunchOfResolvedReferenceTypes(
         config._5 += Invocation(originalScope, nameOfMethod, args, x._2, paramChoices)
         x._2
       )
+  else if relevantMethods.size > 1 &&
+      missingScopes.size == 0 &&
+      relevantMethods.map(m => m.returnType).forall(t => t == relevantMethods(0).returnType) &&
+      relevantMethods.map(m => m.typeParameterBounds).forall(v => v.size == 0) then
+    // we know what the return type is
+    val returnType = relevantMethods(0).returnType
+    originalArguments.rightmap(v =>
+      config._5 += Invocation(originalScope, nameOfMethod, v, returnType, paramChoices)
+    )
+    val ambiguousDeclaredMethods = originalArguments
+      .rightmap(args => relevantMethods.map(method => method.callWith(args, paramChoices)))
+      .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion]((argsAssts, rt) =>
+        ConjunctiveAssertion(argsAssts)
+      )
 
+    ambiguousDeclaredMethods match 
+      case LogWithSome(log1, conjassts) =>
+        config._3 += DisjunctiveAssertion(conjassts)
+        LogWithSome(log1, returnType)
+      case LogWithNone(x) => LogWithNone(x)
+
+    // (ambiguousDeclaredMethods, ambiguousMissingTypes) match
+    //   case (LogWithSome(log1, conjassts), LogWithSome(log2, hmassts)) =>
+    //     config._3 += DisjunctiveAssertion(conjassts ++ hmassts)
+    //     LogWithSome(log1, returnType)
+    //   case (LogWithNone(log), _) => LogWithNone(log)
+    //   case (_, LogWithNone(log)) => LogWithNone(log)
   // case of no methods and only one missing supertype
   else if relevantMethods.size == 0 && missingScopes.size == 1 then
     // get and/or add the method to the declaration since we must be
@@ -1247,26 +1302,32 @@ private def resolveUnaryExpr(
     config._6 += x
     expr.getOperator match
       case UnaryExpr.Operator.BITWISE_COMPLEMENT =>
-        val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
-        config._4 += rt
-        config._2._2(rt) = InferenceVariableMemberTable(rt)
-        config._3 += IsIntegralAssertion(x) &&
-          IsIntegralAssertion(rt) &&
-          (x =:~ rt)
-        rt
+        if x == PRIMITIVE_INT || x == PRIMITIVE_SHORT || x == PRIMITIVE_BYTE || x == PRIMITIVE_CHAR || x == PRIMITIVE_LONG then
+          x
+        else
+          val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+          config._4 += rt
+          config._2._2(rt) = InferenceVariableMemberTable(rt)
+          config._3 += IsIntegralAssertion(x) &&
+            IsIntegralAssertion(rt) &&
+            (x =:~ rt)
+          rt
       case UnaryExpr.Operator.LOGICAL_COMPLEMENT =>
         config._3 += x =:~ PRIMITIVE_BOOLEAN
         PRIMITIVE_BOOLEAN
       case UnaryExpr.Operator.MINUS | UnaryExpr.Operator.PLUS |
           UnaryExpr.Operator.POSTFIX_DECREMENT | UnaryExpr.Operator.POSTFIX_INCREMENT |
           UnaryExpr.Operator.PREFIX_DECREMENT | UnaryExpr.Operator.PREFIX_INCREMENT =>
-        val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
-        config._4 += rt
-        config._2._2(rt) = InferenceVariableMemberTable(rt)
-        config._3 += IsNumericAssertion(x) &&
-          IsNumericAssertion(rt) &&
-          (x =:~ rt)
-        rt
+        if x == PRIMITIVE_INT || x == PRIMITIVE_SHORT || x == PRIMITIVE_BYTE || x == PRIMITIVE_CHAR || x == PRIMITIVE_LONG || x == PRIMITIVE_FLOAT || x == PRIMITIVE_DOUBLE then
+          x
+        else
+          val rt = InferenceVariableFactory.createPrimitivesOnlyDisjunctiveType()
+          config._4 += rt
+          config._2._2(rt) = InferenceVariableMemberTable(rt)
+          config._3 += IsNumericAssertion(x) &&
+            IsNumericAssertion(rt) &&
+            (x =:~ rt)
+          rt
   )
 
 private def resolveVariableDeclarationExpr(
@@ -1284,3 +1345,166 @@ private def resolveVariableDeclarationExpr(
   //     println(expr)
   //     LogWithNone(log)
   LogWithSome(log, Bottom)
+
+private def resolveMethodFromAReferenceType(
+    log: Log,
+    expr: MethodCallExpr,
+    config: MutableConfiguration,
+    memo: MutableMap[
+      String,
+      Option[Type]
+    ],
+    scope: Vector[ClassOrInterfaceType],
+    originalScope: Type
+): LogWithOption[Type] =
+  // get all the supertypes where methods may be defined
+  val capturedScopes = (scope
+    .map(_.captured)
+    .toSet[ClassOrInterfaceType]
+    .flatMap(x => getAllKnownSuperTypesOfOneType(config, x, Set()))) + OBJECT
+  val (missingScopes, fixedScopes) =
+    capturedScopes.partition(x => config._2._1.contains(x.identifier))
+  val nameOfMethod   = expr.getNameAsString
+  val numOfArguments = expr.getArguments.size
+
+  val relevantMethods = fixedScopes
+    .flatMap(getAllRelevantMethods(_, config, nameOfMethod, numOfArguments))
+    .toVector
+  val paramChoices = getParamChoicesFromExpression(expr)
+
+  // get the types of the arguments suplied to the method
+  val originalArguments = flatMapWithLog(log, expr.getArguments.asScala.toVector)(
+    resolveExpression(_, _, config, memo)
+  )
+  originalArguments.rightmap(v => v.foreach(x => config._6 += x))
+  // case of no methods and no missing supertypes
+  if relevantMethods.size == 0 && missingScopes.size == 0 then
+    LogWithOption(
+      log.addError(
+        s"$expr cannot be resolved",
+        s"method declaration for ${nameOfMethod} cannot be" +
+          s" found in fully-declared ${originalScope}"
+      ),
+      None
+    )
+  // case of only one method and no missing supertypes
+  else if relevantMethods.size == 1 && missingScopes.size == 0 then
+    // get the method in question since we unambiguously must be referring
+    // to this method
+    val method = relevantMethods(0)
+    originalArguments
+      .rightmap(v => (v -> method.callWith(v, paramChoices)))
+      .rightmap((args, x) =>
+        x._1.foreach(y => config._3 += y)
+        config._5 += Invocation(originalScope, nameOfMethod, args, x._2, paramChoices)
+        x._2
+      )
+  else if relevantMethods.size > 1 &&
+      missingScopes.size == 0 &&
+      relevantMethods.map(m => m.returnType).forall(t => t == relevantMethods(0).returnType) &&
+      relevantMethods.map(m => m.typeParameterBounds).forall(v => v.size == 0) then
+    // we know what the return type is
+    val returnType = relevantMethods(0).returnType
+    originalArguments.rightmap(v =>
+      config._5 += Invocation(originalScope, nameOfMethod, v, returnType, paramChoices)
+    )
+    val ambiguousDeclaredMethods = originalArguments
+      .rightmap(args => relevantMethods.map(method => method.callWith(args, paramChoices)))
+      .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion]((argsAssts, rt) =>
+        ConjunctiveAssertion(argsAssts)
+      )
+
+    ambiguousDeclaredMethods match 
+      case LogWithSome(log1, conjassts) =>
+        config._3 += DisjunctiveAssertion(conjassts)
+        LogWithSome(log1, returnType)
+      case LogWithNone(x) => LogWithNone(x)
+
+    // (ambiguousDeclaredMethods, ambiguousMissingTypes) match
+    //   case (LogWithSome(log1, conjassts), LogWithSome(log2, hmassts)) =>
+    //     config._3 += DisjunctiveAssertion(conjassts ++ hmassts)
+    //     LogWithSome(log1, returnType)
+    //   case (LogWithNone(log), _) => LogWithNone(log)
+    //   case (_, LogWithNone(log)) => LogWithNone(log)
+  // case of no methods and only one missing supertype
+  else if relevantMethods.size == 0 && missingScopes.size == 1 then
+    // get and/or add the method to the declaration since we must be
+    // umambiguously referring to this method
+    // the type itself; safe since its a missing type, must be a ClassOrInterfaceType
+    val missingTType = missingScopes.toVector(0)
+    //resolveSolvedType(missingScopes(0)).asInstanceOf[ClassOrInterfaceType]
+    // the declaration of the type
+    val missingDeclaration = config._2._1(missingTType.identifier)
+    // the context (type arguments) of this type
+    val (_, context) = missingTType.expansion
+
+    val z = originalArguments.rightflatMap(argTypes =>
+      missingDeclaration.getMethodReturnType(nameOfMethod, argTypes, paramChoices, context)
+    )
+    z match
+      case LogWithSome(_, _) => z
+      case LogWithNone(_)    =>
+        // either the original arguments were None, or the method doesn't exist
+        // in the declaration yet
+        originalArguments.rightmap(args =>
+          val returnType = createReturnTypeFromContext(expr, config)
+          config._4 += returnType
+          // create the new declaration by adding the method
+          config._2._1 += (missingDeclaration.identifier -> missingDeclaration
+            .addMethod(
+              nameOfMethod,
+              args,
+              returnType,
+              Vector(),
+              PUBLIC,
+              false,
+              false,
+              false,
+              paramChoices,
+              context
+            ))
+          config._5 += Invocation(
+            originalScope,
+            nameOfMethod,
+            args,
+            returnType,
+            paramChoices
+          )
+          returnType
+        )
+  else
+    // we're not sure what the return type should be, so we have a placeholder
+    // and encode the choices using a disjunctive assertion of conjuctive assertions
+    val returnType = InferenceVariableFactory.createPlaceholderType()
+    config._4 += returnType
+    originalArguments.rightmap(v =>
+      config._5 += Invocation(originalScope, nameOfMethod, v, returnType, paramChoices)
+    )
+    val missingReturnType = createReturnTypeFromContext(expr, config)
+    config._4 += missingReturnType
+
+    val ambiguousDeclaredMethods = originalArguments
+      .rightmap(args => relevantMethods.map(method => method.callWith(args, paramChoices)))
+      .rightvmap[(Vector[Assertion], Type), ConjunctiveAssertion]((argsAssts, rt) =>
+        ConjunctiveAssertion(argsAssts :+ (returnType ~=~ rt))
+      )
+
+    val ambiguousMissingTypes = originalArguments.rightmap(args =>
+      // create conjunctive assertions
+      missingScopes.map(rrt =>
+        // val missingTType = resolveSolvedType(rrt).asInstanceOf[ClassOrInterfaceType]
+        HasMethodAssertion(
+          rrt,
+          nameOfMethod,
+          args,
+          missingReturnType,
+          paramChoices
+        ) && returnType ~=~ missingReturnType
+      )
+    )
+    (ambiguousDeclaredMethods, ambiguousMissingTypes) match
+      case (LogWithSome(log1, conjassts), LogWithSome(log2, hmassts)) =>
+        config._3 += DisjunctiveAssertion(conjassts ++ hmassts)
+        LogWithSome(log1, returnType)
+      case (LogWithNone(log), _) => LogWithNone(log)
+      case (_, LogWithNone(log)) => LogWithNone(log)

@@ -1,0 +1,22 @@
+class c8665323 {
+
+    public String GetMemberName(String id) {
+        String name = null;
+        try {
+            String line;
+            URL url = new URL(JavaCIPUnknownScope.intvasmemberDeatails + "?CID=" + id);
+            URLConnection connection = url.openConnection();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            while ((line = reader.readLine()) != null) {
+                name = line;
+            }
+        } catch (MalformedURLRuntimeException e) {
+            e.printStackTrace();
+        } catch (IORuntimeException e) {
+            e.printStackTrace();
+        }
+        String[] parts = name.split(" ");
+        JavaCIPUnknownScope.rating = parts[2];
+        return parts[0] + " " + parts[1];
+    }
+}

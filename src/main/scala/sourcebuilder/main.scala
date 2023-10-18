@@ -1,6 +1,6 @@
 package sourcebuilder
-
-import scala.collection.mutable.ArrayBuffer
+import scala.annotation.tailrec
+import scala.collection.mutable.{ArrayBuffer, Map as MutableMap}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 
@@ -61,9 +61,10 @@ def buildSource(log: Log, configuration: Configuration): (Log, Vector[Compilatio
   val prohibitedNames = configuration.delta.keys.toSet ++ configuration.phi1.keys.toSet
   // parse the original source code
   val originalCompilationUnit = configuration.cu
-
+  // get the corresponding constructor bodies
+  val constructorBodies = f(configuration)
   val res = mapWithLog(log, configuration.phi1.toVector) { case (l, (k, v)) =>
-    buildType(l, k, v.fix(configuration), configuration, prohibitedNames)
+    buildType(l, k, v.fix(configuration), configuration, prohibitedNames, constructorBodies)
   }
 
   originalCompilationUnit.getPackageDeclaration.toScala match
@@ -77,7 +78,8 @@ def buildType(
     identifier: String,
     decl: FixedDeclaration,
     config: Configuration,
-    prohibitedNames: Set[String]
+    prohibitedNames: Set[String],
+    constructorBodies: Map[String, String]
 ): (Log, CompilationUnit) =
   val cu = CompilationUnit()
   // create the declaration
@@ -230,8 +232,9 @@ def buildType(
     )
     if !params.isEmpty && c.signature.hasVarArgs then params(params.size - 1).setVarArgs(true)
     if !params.isEmpty then cd.setParameters(NodeList(params: _*))
-    val bd = cd.getBody()
-    bd.addStatement("super();")
+    if constructorBodies.contains(identifier) then
+      val bd = cd.getBody()
+      bd.addStatement(constructorBodies(identifier))
     //cd.setType(typeToASTType(c.returnType, prohibitedNames))
     // if decl.isInterface then
     //   md.setAbstract(true)
@@ -247,6 +250,63 @@ def buildType(
   )
 
   (log, cu)
+
+
+private def f(config: Configuration) = 
+  val tpo = tp(config)
+  handleConstructors(config, tpo, Map())
+
+@tailrec
+private def handleConstructors(config: Configuration, ls: List[String], aux: Map[String, String]): Map[String, String] =
+  if ls.isEmpty then aux
+  else
+    val x :: xs = ls
+    if (config.delta.contains(x) || config._cache.contains(x)) then handleConstructors(config, xs, aux)
+    else
+      val decl = config.getUnderlyingDeclaration(SomeClassOrInterfaceType(x))
+      if decl.isInterface then handleConstructors(config, xs, aux)
+      else
+        val supertypes = decl.getDirectAncestors.map(x => config.getUnderlyingDeclaration(x)).filter(x => !x.isInterface)
+        if supertypes.isEmpty then handleConstructors(config, xs, aux)
+        else
+          val supertypeDecl = supertypes(0)
+          val constructors = supertypeDecl.constructors.filter(x => x.accessModifier == PUBLIC || x.accessModifier == PROTECTED)
+          if constructors.isEmpty then handleConstructors(config, xs, aux + (x -> "super();"))
+          else
+            val sortedConstructors = constructors.sortBy(c => c.signature.formalParameters.size)
+            val constructorArgs = sortedConstructors(0).signature.formalParameters.map(arg => {
+                if arg == PRIMITIVE_BOOLEAN then "false"
+                else if arg == PRIMITIVE_CHAR then "a"
+                else if arg.isInstanceOf[PrimitiveType] then "0"
+                else s"(${arg.fix}) null"
+              }).mkString(", ")
+            handleConstructors(config, xs, aux + (x -> s"super($constructorArgs);"))
+
+private def tp(config: Configuration): List[String] =
+  val vertices = config.delta.keySet | config.phi1.keySet | config._cache.keySet
+  // build the erasure graph, containing only the right vertices
+  val graph =
+    Map(
+      vertices
+        .map(i =>
+          i -> config
+            .getUnderlyingDeclaration(SomeClassOrInterfaceType(i))
+            .getDirectAncestors
+            .map(_.identifier)
+            .filter(x => vertices.contains(x))
+        )
+        .toSeq: _*
+    )
+  val counts = MutableMap(graph.map((k, v) => k -> v.size).toSeq: _*)
+  if counts.values.min != 0 then ???
+  var res: List[String] = Nil
+  while !counts.isEmpty do
+    val x = counts.find((k, v) => v == 0).get
+    res = x._1 :: res
+    counts.remove(x._1)
+    for (k, v) <- graph do if v.contains(x._1) then counts(k) -= 1
+  res.reverse
+
 
 def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
   case x: PrimitiveType =>
@@ -275,7 +335,7 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
   case TypeParameterIndex(_, i) => ASTClassOrInterfaceType(null, numToLetter(i, prohibitedNames))
   case ClassOrInterfaceType(x, args, _) =>
     val res =
-      if x.slice(0, 10) == "java.lang." then ASTClassOrInterfaceType(null, x.substring(10))
+      if x.slice(0, 10) == "java.lang." && !x.contains("reflect") then ASTClassOrInterfaceType(null, x.substring(10))
       else ASTClassOrInterfaceType(null, x)
     if args.size == 0 then res
     else
@@ -285,7 +345,7 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
   case z @ TemporaryType(id, args, _) =>
     val x = z.identifier
     val res =
-      if x.slice(0, 10) == "java.lang." then ASTClassOrInterfaceType(null, x.substring(10))
+      if x.slice(0, 10) == "java.lang." && !x.contains("reflect") then ASTClassOrInterfaceType(null, x.substring(10))
       else ASTClassOrInterfaceType(null, x)
     if args.size == 0 then res
     else
@@ -294,4 +354,5 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
       res.setTypeArguments(NodeList(astArgs: _*))
   case _ =>
     println(t)
-    ???
+    // ???
+    ASTClassOrInterfaceType(null, "Object")

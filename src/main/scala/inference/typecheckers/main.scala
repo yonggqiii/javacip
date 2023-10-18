@@ -11,7 +11,7 @@ import configuration.Invocation
 import configuration.assertions.*
 import configuration.types.*
 import utils.*
-import configuration.declaration.DEFAULT
+import configuration.declaration.{PRIVATE, PUBLIC}
 import inference.resolvers.resolve
 import inference.concretizers.concretize
 import inference.deconflicters.deconflict
@@ -25,8 +25,14 @@ private[inference] def typecheck(
   for invocation <- newConfig.theta do
     val Invocation(source, methodName, args, returnType, paramChoices) = invocation
     // why underlying declartion? val decl       = config.getUnderlyingDeclaration(source.asInstanceOf[SomeClassOrInterfaceType])
-    val decl = newConfig.getSubstitutedDeclaration(source.asInstanceOf[SomeClassOrInterfaceType])
-    val allMethods = decl.getAccessibleMethods(newConfig, DEFAULT)
+    val decl = 
+      if source.isInstanceOf[TTypeParameter] then
+        val containingDecl = newConfig.getUnderlyingDeclaration(SomeClassOrInterfaceType(source.asInstanceOf[TTypeParameter].containingTypeIdentifier))
+        val bd = containingDecl.getLeftmostReferenceTypeBoundOfTypeParameter(source)
+        newConfig.getSubstitutedDeclaration(bd)
+      else
+        newConfig.getSubstitutedDeclaration(source.asInstanceOf[SomeClassOrInterfaceType])
+    val allMethods = decl.getAccessibleMethods(newConfig, (if decl.identifier.contains("java.") then PUBLIC else PRIVATE))
     if !allMethods.contains(methodName) then
       return LogWithLeft(log.addWarn(s"$source does not contain $methodName!"), Nil)
     val possibleMethods = allMethods(methodName)

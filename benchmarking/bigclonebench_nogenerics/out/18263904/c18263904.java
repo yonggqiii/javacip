@@ -1,0 +1,13 @@
+class c18263904 {
+
+    private void uploadConfiguration(URL url, IUser iUser) throws IORuntimeException, ContributionServiceRuntimeException {
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append(System.getProperty("line.separator"));
+        }
+        JavaCIPUnknownScope.SYSTEM_SETTINGS_SVC.setElementMetadata(sb.toString(), iUser);
+        GetSystemScriptServlet.resetScript();
+    }
+}

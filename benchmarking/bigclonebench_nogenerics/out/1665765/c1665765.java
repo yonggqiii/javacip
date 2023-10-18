@@ -1,0 +1,14 @@
+class c1665765 {
+
+    public InputStream openFileInputStream(String fileName) throws IORuntimeException {
+        if (fileName.indexOf(':') > 1) {
+            URL url = new URL(fileName);
+            InputStream in = url.openStream();
+            return in;
+        }
+        fileName = JavaCIPUnknownScope.translateFileName(fileName);
+        FileInputStream in = new FileInputStream(fileName);
+        JavaCIPUnknownScope.trace("openFileInputStream", fileName, in);
+        return in;
+    }
+}

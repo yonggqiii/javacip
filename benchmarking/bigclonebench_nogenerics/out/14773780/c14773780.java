@@ -1,0 +1,19 @@
+class c14773780 {
+
+    public void testImageInfo() throws MalformedURLRuntimeException, IORuntimeException {
+        System.out.println("ImageInfo:");
+        long start = Calendar.getInstance().getTimeInMillis();
+        for (int i = 0; i < JavaCIPUnknownScope.images.length; i++) {
+            String url = Constants.getDefaultURIMediaConnectorBasePath() + "albums/hund/" + JavaCIPUnknownScope.images[i];
+            InputStream istream = (new URL(url)).openStream();
+            ImageInfo ii = new ImageInfo();
+            ii.setInput(istream);
+            JavaCIPUnknownScope.assertTrue("Not a supported image file format.", ii.check());
+            int width = ii.getWidth();
+            int height = ii.getHeight();
+            System.out.println(width + "x" + height);
+        }
+        long stop = Calendar.getInstance().getTimeInMillis();
+        System.out.println("zeit: " + (stop - start));
+    }
+}
