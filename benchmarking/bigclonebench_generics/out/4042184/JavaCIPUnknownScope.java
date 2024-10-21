@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_166 downloadedFiles;
+    public static UNKNOWN_162 downloadedFiles = null;
 
-    public static boolean downloadDir;
+    public static boolean downloadDir = false;
 
-    public static UNKNOWN_153 LOG;
+    public static UNKNOWN_149 LOG = null;
 
     public static URL generateUrl(String arg0) {
         return null;

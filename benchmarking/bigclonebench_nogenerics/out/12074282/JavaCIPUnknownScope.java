@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_84 solrUrl;
+    public static UNKNOWN_84 solrUrl = null;
 
-    public static boolean POST_ENCODING;
+    public static boolean POST_ENCODING = false;
 
     public static void pipe(Reader arg0, Writer arg1) {
     }

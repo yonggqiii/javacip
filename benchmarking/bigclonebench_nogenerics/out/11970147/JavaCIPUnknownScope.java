@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_58 LOG;
+    public static UNKNOWN_58 LOG = null;
 
-    public static UNKNOWN_97 org;
+    public static UNKNOWN_97 org = null;
 
     public static UNKNOWN_45 getParams() {
         return null;

@@ -1,0 +1,38 @@
+class c21337941 {
+
+    public static void main(String[] argv) throws IORuntimeException {
+        int i;
+        for (i = 0; i < argv.length; i++) {
+            if (argv[i].charAt(0) != '-')
+                break;
+            ++i;
+            switch(argv[i - 1].charAt(1)) {
+                case 'b':
+                    try {
+                        JavaCIPUnknownScope.flag_predict_probability = (JavaCIPUnknownScope.atoi(argv[i]) != 0);
+                    } catch (NumberFormatRuntimeException e) {
+                        JavaCIPUnknownScope.exit_with_help();
+                    }
+                    break;
+                default:
+                    System.err.printf("unknown option: -%d%n", argv[i - 1].charAt(1));
+                    JavaCIPUnknownScope.exit_with_help();
+                    break;
+            }
+        }
+        if (i >= argv.length || argv.length <= i + 2) {
+            JavaCIPUnknownScope.exit_with_help();
+        }
+        BufferedReader reader = null;
+        Writer writer = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(argv[i]), Linear.FILE_CHARSET));
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(argv[i + 2]), Linear.FILE_CHARSET));
+            Model model = Linear.loadModel(new File(argv[i + 1]));
+            JavaCIPUnknownScope.doPredict(reader, writer, model);
+        } finally {
+            JavaCIPUnknownScope.closeQuietly(reader);
+            JavaCIPUnknownScope.closeQuietly(writer);
+        }
+    }
+}

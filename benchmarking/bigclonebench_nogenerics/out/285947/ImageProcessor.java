@@ -7,7 +7,7 @@ public interface ImageProcessor {
 
     public abstract ColorModel getColorModel();
 
-    public abstract double getMin();
+    public abstract byte getMin();
 
     public abstract ImageProcessor convertToByte(boolean arg0);
 

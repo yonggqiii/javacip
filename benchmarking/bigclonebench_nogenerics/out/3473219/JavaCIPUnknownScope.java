@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean isGetCalled;
+    public static boolean isGetCalled = false;
 
-    public static UNKNOWN_59 url;
+    public static UNKNOWN_59 url = null;
 
-    public static HttpURLConnection uc;
+    public static HttpURLConnection uc = null;
 
-    public static boolean isPutCalled;
+    public static boolean isPutCalled = false;
 
-    public static boolean isAbortCalled;
+    public static boolean isAbortCalled = false;
 
     public static void assertTrue(boolean arg0) {
     }

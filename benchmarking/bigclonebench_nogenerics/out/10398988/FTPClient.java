@@ -16,8 +16,8 @@ public class FTPClient {
     public void connect(String arg0) {
     }
 
-    public int getReplyString() {
-        return 0;
+    public String getReplyString() {
+        return null;
     }
 
     public FTPClient() {

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class HttpConnectionParams {
+public interface HttpConnectionParams {
 
-    public static boolean SO_TIMEOUT;
-
-    HttpConnectionParams() {
-        super();
-    }
+    public static boolean SO_TIMEOUT = false;
 }

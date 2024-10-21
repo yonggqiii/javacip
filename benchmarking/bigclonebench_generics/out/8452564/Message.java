@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class Message {
 
-    public Comparable<String> obj;
+    public java.io.Serializable obj;
 
     public Message() {
         super();

@@ -7,7 +7,7 @@ public interface File {
 
     public abstract void setLastModified(long arg0);
 
-    public abstract long length();
+    public abstract byte length();
 
     public abstract String getAbsolutePath();
 

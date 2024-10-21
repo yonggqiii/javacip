@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JFileChooser {
+public interface JFileChooser {
 
-    public static int APPROVE_OPTION;
-
-    JFileChooser() {
-        super();
-    }
+    public static int APPROVE_OPTION = 0;
 }

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class AbstractDepParser {
 
-    public static boolean ALG_SHIFT_EAGER;
+    public static boolean ALG_SHIFT_EAGER = false;
 
-    public static boolean ALG_SHIFT_POP;
+    public static boolean ALG_SHIFT_POP = false;
 
     public boolean a_trans;
 

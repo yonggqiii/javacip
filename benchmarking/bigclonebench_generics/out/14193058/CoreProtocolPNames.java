@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class CoreProtocolPNames {
+public interface CoreProtocolPNames {
 
-    public static boolean USER_AGENT;
-
-    CoreProtocolPNames() {
-        super();
-    }
+    public static boolean USER_AGENT = false;
 }

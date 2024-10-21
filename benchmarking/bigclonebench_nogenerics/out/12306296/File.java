@@ -5,7 +5,7 @@ public interface File {
 
     public abstract boolean lastModified();
 
-    public abstract UNKNOWN_1859 getParentFile();
+    public abstract UNKNOWN_203 getParentFile();
 
     public abstract boolean canWrite();
 

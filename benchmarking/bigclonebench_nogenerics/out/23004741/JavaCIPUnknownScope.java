@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean entry;
+    public static boolean entry = false;
 
     public static JdbcRequestCycle getRequestCycle() {
         return null;

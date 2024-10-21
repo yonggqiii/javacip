@@ -1,23 +1,13 @@
 // added by JavaCIP
-public class FileChannel {
+public interface FileChannel {
 
-    public static UNKNOWN_177 MapMode;
+    public static UNKNOWN_175 MapMode = null;
 
-    public int size() {
-        return 0;
-    }
+    public abstract int size();
 
-    public ByteBuffer map(boolean arg0, int arg1, int arg2) {
-        return null;
-    }
+    public abstract ByteBuffer map(boolean arg0, int arg1, int arg2);
 
-    public void close() {
-    }
+    public abstract void close();
 
-    public void write(ByteBuffer arg0) {
-    }
-
-    FileChannel() {
-        super();
-    }
+    public abstract void write(ByteBuffer arg0);
 }

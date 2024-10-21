@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static byte separator;
+    public static byte separator = 0;
 
     public double getName() {
         return 0;

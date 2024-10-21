@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class File {
 
-    public static double separatorChar;
+    public static double separatorChar = 0;
 
     public byte getCanonicalPath() {
         return 0;
     }
 
-    public double getName() {
+    public byte getName() {
         return 0;
     }
 

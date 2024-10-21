@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean image;
+    public static boolean image = false;
 
     JavaCIPUnknownScope() {
         super();

@@ -5,5 +5,5 @@ public interface ResultSet {
 
     public abstract void close();
 
-    public abstract double getString(int arg0);
+    public abstract char[] getString(int arg0);
 }

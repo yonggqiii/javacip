@@ -1,22 +1,13 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static boolean HTTP_OK;
+    public static boolean HTTP_OK = false;
 
-    public void setUseCaches(boolean arg0) {
-    }
+    public abstract void setUseCaches(boolean arg0);
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public boolean getResponseCode() {
-        return false;
-    }
+    public abstract boolean getResponseCode();
 
-    public void disconnect() {
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract void disconnect();
 }

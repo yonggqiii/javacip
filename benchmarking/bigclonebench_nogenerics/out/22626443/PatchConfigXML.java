@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class PatchConfigXML {
+public interface PatchConfigXML {
 
-    public static boolean OP_CREATE;
+    public static boolean OP_CREATE = false;
 
-    public boolean allowFileAction(String arg0, boolean arg1) {
-        return false;
-    }
-
-    PatchConfigXML() {
-        super();
-    }
+    public abstract boolean allowFileAction(String arg0, boolean arg1);
 }

@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean ARTIFACT_ID_2;
+    public static boolean ARTIFACT_ID_2 = false;
 
-    public static boolean GROUP_REPO_ID;
+    public static boolean GROUP_REPO_ID = false;
 
-    public static boolean SECONDS;
+    public static boolean SECONDS = false;
 
-    public static boolean ARTIFACT_ID_1;
+    public static boolean ARTIFACT_ID_1 = false;
 
-    public static boolean NEXUS_BASE_URL;
+    public static boolean NEXUS_BASE_URL = false;
 
     public static void assertThat(boolean arg0, boolean arg1) {
     }

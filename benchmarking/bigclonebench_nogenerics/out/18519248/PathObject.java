@@ -7,5 +7,5 @@ public interface PathObject {
 
     public abstract Object getType();
 
-    public abstract double getPath();
+    public abstract byte getPath();
 }

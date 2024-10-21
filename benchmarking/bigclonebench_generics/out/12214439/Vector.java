@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface Vector<A> {
 
-    public abstract Iterator<Link> listIterator();
+    public abstract ListIterator<Link> listIterator();
 }

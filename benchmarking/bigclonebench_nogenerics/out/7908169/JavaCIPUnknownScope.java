@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean description;
+    public static boolean description = false;
 
-    public static UNKNOWN_25 homeMapDao;
+    public static UNKNOWN_25 homeMapDao = null;
 
-    public static boolean imageFile;
+    public static boolean imageFile = false;
 
     public static String list() {
         return null;

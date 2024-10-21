@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_249 conn;
+    public static UNKNOWN_425 conn = null;
 
     public static boolean escapeCharacters(boolean arg0) {
         return false;

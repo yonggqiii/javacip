@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Drawable TELKA;
+    public static Drawable TELKA = null;
 
     JavaCIPUnknownScope() {
         super();

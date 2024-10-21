@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean userId;
+    public static boolean userId = false;
 
-    public static UNKNOWN_72 accessibility;
+    public static UNKNOWN_72 accessibility = null;
 
     public static boolean getTags() {
         return false;

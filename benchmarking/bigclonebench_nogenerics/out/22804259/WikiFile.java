@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class WikiFile {
+public interface WikiFile {
 
-    public static String UNKNOWN_MIME_TYPE;
-
-    WikiFile() {
-        super();
-    }
+    public static String UNKNOWN_MIME_TYPE = null;
 }

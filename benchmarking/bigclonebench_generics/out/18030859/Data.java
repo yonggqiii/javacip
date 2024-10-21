@@ -1,9 +1,9 @@
 // added by JavaCIP
 public interface Data {
 
-    public abstract long getKeyHash();
+    public abstract CharSequence getKeyHash();
 
-    public abstract int getVersion();
+    public abstract CharSequence getVersion();
 
-    public abstract UNKNOWN_110 getContent();
+    public abstract UNKNOWN_130 getContent();
 }

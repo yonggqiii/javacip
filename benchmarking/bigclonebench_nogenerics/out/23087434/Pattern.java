@@ -1,17 +1,11 @@
 // added by JavaCIP
-public class Pattern {
+public interface Pattern {
 
-    public static boolean CASE_INSENSITIVE;
+    public static boolean CASE_INSENSITIVE = false;
 
     public static Pattern compile(boolean arg0, boolean arg1) {
         return null;
     }
 
-    public Matcher matcher(StringBuffer arg0) {
-        return null;
-    }
-
-    Pattern() {
-        super();
-    }
+    public abstract Matcher matcher(StringBuffer arg0);
 }

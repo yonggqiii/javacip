@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static FTPClient cl;
+    public static FTPClient cl = null;
 
-    public static UNKNOWN_58 ap;
+    public static UNKNOWN_58 ap = null;
 
-    public static UNKNOWN_84 FTP;
+    public static UNKNOWN_84 FTP = null;
 
     public static boolean getSite() {
         return false;

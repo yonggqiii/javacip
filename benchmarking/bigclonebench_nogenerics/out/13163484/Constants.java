@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static boolean VERSION_FILE_URL;
-
-    Constants() {
-        super();
-    }
+    public static boolean VERSION_FILE_URL = false;
 }

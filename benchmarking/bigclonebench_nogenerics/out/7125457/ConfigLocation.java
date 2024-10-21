@@ -5,5 +5,5 @@ public interface ConfigLocation {
 
     public abstract boolean getJarDirectory();
 
-    public abstract byte getDirectory();
+    public abstract double getDirectory();
 }

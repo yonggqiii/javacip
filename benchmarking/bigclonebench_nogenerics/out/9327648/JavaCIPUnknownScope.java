@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int CHUNK_SIZE;
+    public static int CHUNK_SIZE = 0;
 
     public static String getSeparatorSequence() {
         return null;

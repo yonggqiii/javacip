@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ZorobotSystem {
+public interface ZorobotSystem {
 
-    public static UNKNOWN_54 props;
-
-    ZorobotSystem() {
-        super();
-    }
+    public static UNKNOWN_56 props = null;
 }

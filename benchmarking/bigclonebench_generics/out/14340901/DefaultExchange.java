@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class DefaultExchange implements Exchange {
 
-    public UNKNOWN_23301 getIn() {
+    public UNKNOWN_6555 getIn() {
         return null;
     }
 

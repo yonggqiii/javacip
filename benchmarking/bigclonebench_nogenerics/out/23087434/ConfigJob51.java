@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ConfigJob51 {
+public interface ConfigJob51 {
 
-    public static boolean STR_51JOB_ADVANCE;
-
-    ConfigJob51() {
-        super();
-    }
+    public static boolean STR_51JOB_ADVANCE = false;
 }

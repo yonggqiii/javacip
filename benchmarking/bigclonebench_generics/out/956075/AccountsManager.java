@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface AccountsManager {
 
-    public static UNKNOWN_162 getInstance() {
+    public static UNKNOWN_160 getInstance() {
         return null;
     }
 }

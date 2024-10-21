@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_110 logger;
+    public static UNKNOWN_110 logger = null;
 
     public static String decodePercent(String arg0) {
         return null;

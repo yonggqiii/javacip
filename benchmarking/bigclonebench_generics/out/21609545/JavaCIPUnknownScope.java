@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean params;
+    public static boolean params = false;
 
-    public static boolean UPDATE_URI;
+    public static boolean UPDATE_URI = false;
 
-    public static UNKNOWN_49 HTTP;
+    public static UNKNOWN_49 HTTP = null;
 
     JavaCIPUnknownScope() {
         super();

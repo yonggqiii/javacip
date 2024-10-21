@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class KeyboardHero {
+public interface KeyboardHero {
 
-    public static boolean APP_NAME;
+    public static boolean APP_NAME = false;
 
     public static UNKNOWN_74 getDialogs() {
         return null;
-    }
-
-    KeyboardHero() {
-        super();
     }
 }

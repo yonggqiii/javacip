@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JOptionPane {
+public interface JOptionPane {
 
-    public static int OK_OPTION;
-
-    JOptionPane() {
-        super();
-    }
+    public static int OK_OPTION = 0;
 }

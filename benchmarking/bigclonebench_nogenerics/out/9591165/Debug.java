@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Debug {
+public interface Debug {
 
-    public static byte level;
-
-    Debug() {
-        super();
-    }
+    public static byte level = 0;
 }

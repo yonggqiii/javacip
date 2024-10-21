@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class CompressFormat {
+public interface CompressFormat {
 
-    public static boolean JPEG;
-
-    CompressFormat() {
-        super();
-    }
+    public static boolean JPEG = false;
 }

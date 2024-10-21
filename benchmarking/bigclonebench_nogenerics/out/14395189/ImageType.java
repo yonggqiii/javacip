@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ImageType {
+public interface ImageType {
 
-    public static boolean JPEG;
-
-    ImageType() {
-        super();
-    }
+    public static boolean JPEG = false;
 }

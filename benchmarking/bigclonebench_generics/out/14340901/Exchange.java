@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface Exchange {
 
-    public abstract UNKNOWN_23301 getIn();
+    public abstract UNKNOWN_6555 getIn();
 }

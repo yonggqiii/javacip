@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static boolean separatorChar;
+    public static boolean separatorChar = false;
 
     public UNKNOWN_51 listFiles() {
         return null;

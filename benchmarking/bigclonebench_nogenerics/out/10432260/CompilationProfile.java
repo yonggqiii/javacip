@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class CompilationProfile {
+public interface CompilationProfile {
 
-    public static boolean UNIX_GCC;
+    public static boolean UNIX_GCC = false;
 
-    public static boolean MINGW_WINDOWS;
-
-    CompilationProfile() {
-        super();
-    }
+    public static boolean MINGW_WINDOWS = false;
 }

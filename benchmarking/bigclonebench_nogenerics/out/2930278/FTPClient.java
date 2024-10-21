@@ -20,8 +20,8 @@ public class FTPClient {
     public void connect(boolean arg0) {
     }
 
-    public long getReplyString() {
-        return 0;
+    public Object getReplyString() {
+        return null;
     }
 
     public FTPClient() {

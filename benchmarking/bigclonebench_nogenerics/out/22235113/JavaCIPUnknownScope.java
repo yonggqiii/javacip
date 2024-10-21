@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_36 LOGGER;
+    public static UNKNOWN_36 LOGGER = null;
 
-    public static byte xmlRequestNumber;
+    public static byte xmlRequestNumber = 0;
 
     public static String readWithStringBuffer(BufferedReader arg0) {
         return null;

@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class BuildRuntimeException extends RuntimeException {
 
-    public BuildRuntimeException(String arg0) {
+    public BuildRuntimeException(RuntimeException arg0) {
         super();
     }
 
-    public BuildRuntimeException(RuntimeException arg0) {
+    public BuildRuntimeException(String arg0) {
         super();
     }
 

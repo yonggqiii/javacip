@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean URL_STR;
+    public static boolean URL_STR = false;
 
-    public static boolean USER_AGENT;
+    public static boolean USER_AGENT = false;
 
     public static boolean getProxy() {
         return false;

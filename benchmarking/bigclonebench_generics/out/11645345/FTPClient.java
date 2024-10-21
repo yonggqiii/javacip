@@ -4,8 +4,8 @@ public class FTPClient {
     public void connect(String arg0) {
     }
 
-    public String getReplyString() {
-        return null;
+    public int getReplyString() {
+        return 0;
     }
 
     public boolean login(String arg0, String arg1) {

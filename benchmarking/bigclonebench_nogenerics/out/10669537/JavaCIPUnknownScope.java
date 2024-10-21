@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_49 inputs;
+    public static UNKNOWN_49 inputs = null;
 
     public static void logAndThrow(String arg0) {
     }

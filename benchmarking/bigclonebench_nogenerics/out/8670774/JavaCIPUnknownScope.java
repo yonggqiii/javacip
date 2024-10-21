@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static String HTML_FILTER_RE;
+    public static String HTML_FILTER_RE = null;
 
     JavaCIPUnknownScope() {
         super();

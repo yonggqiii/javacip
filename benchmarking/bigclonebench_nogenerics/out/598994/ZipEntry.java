@@ -5,10 +5,6 @@ public class ZipEntry {
         return null;
     }
 
-    public ZipEntry(String arg0) {
-        super();
-    }
-
     public ZipEntry(Object arg0) {
         super();
     }

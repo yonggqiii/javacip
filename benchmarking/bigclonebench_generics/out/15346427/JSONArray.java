@@ -3,5 +3,5 @@ public interface JSONArray {
 
     public abstract byte length();
 
-    public abstract UNKNOWN_188 getJSONObject(int arg0);
+    public abstract UNKNOWN_366 getJSONObject(int arg0);
 }

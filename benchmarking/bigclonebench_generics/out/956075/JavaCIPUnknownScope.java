@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean ssuicookie;
+    public static boolean ssuicookie = false;
 
-    public static boolean loginsuccessful;
+    public static boolean loginsuccessful = false;
 
-    public static Comparable<?> username;
+    public static Object username = null;
 
-    public static boolean HOSTNAME;
+    public static boolean HOSTNAME = false;
 
-    public static String ssalcookie;
+    public static java.io.Serializable ssalcookie = null;
 
-    public static boolean sidcookie;
+    public static boolean sidcookie = false;
 
-    public static java.io.Serializable password;
+    public static java.io.Serializable password = null;
 
     public static boolean getUsername() {
         return false;

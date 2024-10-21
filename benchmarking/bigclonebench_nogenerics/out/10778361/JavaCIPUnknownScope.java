@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean f;
+    public static boolean f = false;
 
     public static PrintWriter getWriter(String arg0) {
         return null;

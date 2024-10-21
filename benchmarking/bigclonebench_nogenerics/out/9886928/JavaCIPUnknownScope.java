@@ -1,16 +1,16 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double regsCnt;
+    public static int regsCnt = 0;
 
-    public static byte MAX_REGISTER_WITHOUT_CLEAN;
+    public static byte MAX_REGISTER_WITHOUT_CLEAN = 0;
 
-    public static UNKNOWN_719 logger;
+    public static UNKNOWN_193 logger = null;
 
     public static void saveAID(AID arg0) {
     }
 
-    public static UNKNOWN_667 getConnectionWrapper() {
+    public static UNKNOWN_141 getConnectionWrapper() {
         return null;
     }
 

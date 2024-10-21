@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean dvdCsvFileUrl;
+    public static boolean dvdCsvFileUrl = false;
 
-    public static boolean dvdCsvZipFileName;
+    public static boolean dvdCsvZipFileName = false;
 
-    public static boolean dvdCsvFileName;
+    public static boolean dvdCsvFileName = false;
 
     public static void writeFromTo(InputStream arg0, OutputStream arg1) {
     }

@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static String __urlTempl4;
+    public static String __urlTempl4 = null;
 
-    public static boolean __connTimeout;
+    public static boolean __connTimeout = false;
 
-    public static boolean __readTimeout;
+    public static boolean __readTimeout = false;
 
     public static String join(Set<String> arg0) {
         return null;

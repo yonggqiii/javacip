@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_51 zipFile;
+    public static UNKNOWN_71 zipFile = null;
 
-    public static UNKNOWN_77 toIgnore;
+    public static UNKNOWN_97 toIgnore = null;
 
-    public static UNKNOWN_64 zipOutput;
+    public static UNKNOWN_84 zipOutput = null;
 
     public static boolean normalizePath(boolean arg0) {
         return false;

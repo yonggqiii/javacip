@@ -8,7 +8,7 @@ public class LineNumberReader {
     public void close() {
     }
 
-    public LineNumberReader(FileReader arg0) {
+    public LineNumberReader(InputStreamReader arg0) {
         super();
     }
 

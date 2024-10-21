@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean flag_predict_probability;
+    public static boolean flag_predict_probability = false;
 
     public static int atoi(String arg0) {
         return 0;

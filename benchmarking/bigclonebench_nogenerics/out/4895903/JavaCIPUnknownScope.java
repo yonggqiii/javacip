@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_32 log;
+    public static UNKNOWN_32 log = null;
 
     public static String sourceTypeFromExt(String arg0) {
         return null;

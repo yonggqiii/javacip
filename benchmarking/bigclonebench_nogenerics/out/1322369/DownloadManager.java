@@ -1,13 +1,13 @@
 // added by JavaCIP
-public class DownloadManager {
+public interface DownloadManager {
 
-    public static boolean JAVA_HOME;
+    public static boolean JAVA_HOME = false;
 
     public static boolean isWindowsVista() {
         return false;
     }
 
-    public static byte getKernelJREDir() {
+    public static double getKernelJREDir() {
         return 0;
     }
 
@@ -19,9 +19,5 @@ public class DownloadManager {
     }
 
     public static void send(JarInputStream arg0, OutputStream arg1) {
-    }
-
-    DownloadManager() {
-        super();
     }
 }

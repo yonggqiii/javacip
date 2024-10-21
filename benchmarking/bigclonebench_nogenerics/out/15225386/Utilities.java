@@ -5,7 +5,7 @@ public interface Utilities {
         return false;
     }
 
-    public static String escapeHTML(String arg0, boolean arg1) {
-        return null;
+    public static boolean escapeHTML(String arg0, boolean arg1) {
+        return false;
     }
 }

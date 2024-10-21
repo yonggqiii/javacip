@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean running_as_applet;
+    public static boolean running_as_applet = false;
 
     public static boolean getCodeBase() {
         return false;

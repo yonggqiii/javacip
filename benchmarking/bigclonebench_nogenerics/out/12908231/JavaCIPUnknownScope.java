@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Drawing fDrawing;
+    public static Drawing fDrawing = null;
 
     public static boolean getCodeBase() {
         return false;

@@ -7,5 +7,5 @@ public interface Session {
 
     public abstract void flush();
 
-    public abstract UNKNOWN_66 connection();
+    public abstract UNKNOWN_70 connection();
 }

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class IStatus {
+public interface IStatus {
 
-    public static boolean ERROR;
+    public static boolean ERROR = false;
 
-    public static boolean OK;
-
-    IStatus() {
-        super();
-    }
+    public static boolean OK = false;
 }

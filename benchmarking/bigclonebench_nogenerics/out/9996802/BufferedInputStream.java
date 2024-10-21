@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class BufferedInputStream implements InputStream {
 
-    public int read(byte[] arg0, int arg1, float arg2) {
+    public int read(byte[] arg0, int arg1, double arg2) {
         return 0;
     }
 

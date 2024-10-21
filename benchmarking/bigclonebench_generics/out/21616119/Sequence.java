@@ -1,20 +1,11 @@
 // added by JavaCIP
-public class Sequence {
+public interface Sequence {
 
-    public static Sequence EMPTY_SEQUENCE;
+    public static Sequence EMPTY_SEQUENCE = null;
 
-    public void add(IntegerValue arg0) {
-    }
+    public abstract void add(IntegerValue arg0);
 
-    public boolean isEmpty() {
-        return false;
-    }
+    public abstract boolean isEmpty();
 
-    public SequenceIterator iterate() {
-        return null;
-    }
-
-    Sequence() {
-        super();
-    }
+    public abstract SequenceIterator iterate();
 }

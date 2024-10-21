@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Schedules {
+public interface Schedules {
 
-    public static UNKNOWN_198 INFO;
-
-    Schedules() {
-        super();
-    }
+    public static UNKNOWN_198 INFO = null;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FTPConnectMode {
+public interface FTPConnectMode {
 
-    public static boolean ACTIVE;
-
-    FTPConnectMode() {
-        super();
-    }
+    public static boolean ACTIVE = false;
 }

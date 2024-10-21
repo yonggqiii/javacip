@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static double separator;
+    public static byte separator = 0;
 
     public boolean exists() {
         return false;
@@ -10,7 +10,7 @@ public class File {
     public void mkdirs() {
     }
 
-    public File(boolean arg0, double arg1) {
+    public File(boolean arg0, byte arg1) {
         super();
     }
 

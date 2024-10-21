@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean bufferSize;
+    public static boolean bufferSize = false;
 
-    public static UNKNOWN_21 url;
+    public static UNKNOWN_21 url = null;
 
     public static void setHeaders(HttpServletResponse arg0) {
     }

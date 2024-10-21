@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object _url;
+    public static URL _url = null;
 
-    public static Object lastLoadMessage;
+    public static CharSequence lastLoadMessage = null;
 
     JavaCIPUnknownScope() {
         super();

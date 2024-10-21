@@ -1,21 +1,11 @@
 // added by JavaCIP
-public class File {
+public interface File {
 
-    public static boolean separator;
+    public static boolean separator = false;
 
-    public boolean isDirectory() {
-        return false;
-    }
+    public abstract boolean isDirectory();
 
-    public File[] listFiles() {
-        return null;
-    }
+    public abstract File[] listFiles();
 
-    public boolean getName() {
-        return false;
-    }
-
-    File() {
-        super();
-    }
+    public abstract boolean getName();
 }

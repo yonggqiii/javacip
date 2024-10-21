@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static HashMap<String, ?> cache;
+    public static HashMap<String, ?> cache = null;
 
     public static URL[] getURLs() {
         return null;

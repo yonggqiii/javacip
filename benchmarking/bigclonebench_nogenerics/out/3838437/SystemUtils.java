@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SystemUtils {
+public interface SystemUtils {
 
-    public static UNKNOWN_36 LOG;
-
-    SystemUtils() {
-        super();
-    }
+    public static UNKNOWN_36 LOG = null;
 }

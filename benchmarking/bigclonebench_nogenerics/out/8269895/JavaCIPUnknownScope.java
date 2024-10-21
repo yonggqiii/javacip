@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_73 oauthAuthenticator;
+    public static UNKNOWN_9217 oauthAuthenticator = null;
 
-    public static UNKNOWN_47 profile;
+    public static UNKNOWN_9191 profile = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class GSIConstants {
+public interface GSIConstants {
 
-    public static boolean MODE_SSL;
-
-    GSIConstants() {
-        super();
-    }
+    public static boolean MODE_SSL = false;
 }

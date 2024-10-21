@@ -1,8 +1,5 @@
 // added by JavaCIP
-public class EchoReader implements InputStream {
-
-    public void close() {
-    }
+public class EchoReader {
 
     public EchoReader(InputStream arg0) {
         super();

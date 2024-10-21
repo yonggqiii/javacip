@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int[][] initialMatrix;
+    public static byte[][] initialMatrix = null;
 
-    public static int[] finalMatrix;
+    public static int[] finalMatrix = null;
 
     JavaCIPUnknownScope() {
         super();

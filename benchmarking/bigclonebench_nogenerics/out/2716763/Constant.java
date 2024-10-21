@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constant {
+public interface Constant {
 
-    public static boolean IMG_SMALL_FILEPREFIX;
-
-    Constant() {
-        super();
-    }
+    public static boolean IMG_SMALL_FILEPREFIX = false;
 }

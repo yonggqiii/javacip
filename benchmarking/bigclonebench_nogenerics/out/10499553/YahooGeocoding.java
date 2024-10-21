@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class YahooGeocoding {
+public interface YahooGeocoding {
 
-    public static boolean connectTimeOut;
+    public static boolean connectTimeOut = false;
 
-    public static boolean readTimeOut;
+    public static boolean readTimeOut = false;
 
-    public static boolean USER_AGENT;
-
-    YahooGeocoding() {
-        super();
-    }
+    public static boolean USER_AGENT = false;
 }

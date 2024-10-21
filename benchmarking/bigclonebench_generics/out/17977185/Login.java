@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Login {
+public interface Login {
 
-    public static boolean usuario;
-
-    Login() {
-        super();
-    }
+    public static boolean usuario = false;
 }

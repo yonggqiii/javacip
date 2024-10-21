@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class Dimension {
+public interface Dimension {
 
-    public static boolean MEDIABOX;
+    public static boolean MEDIABOX = false;
 
-    public static boolean CROPBOX;
+    public static boolean CROPBOX = false;
 
-    public static boolean TRIMBOX;
+    public static boolean TRIMBOX = false;
 
-    public static boolean BLEEDBOX;
-
-    Dimension() {
-        super();
-    }
+    public static boolean BLEEDBOX = false;
 }

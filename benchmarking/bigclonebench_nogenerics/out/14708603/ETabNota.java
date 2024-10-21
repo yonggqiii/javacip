@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ETabNota {
+public interface ETabNota {
 
-    public static UNKNOWN_153 ITEM;
+    public static UNKNOWN_153 ITEM = null;
 
-    public static UNKNOWN_205 VLRCOMIS;
-
-    ETabNota() {
-        super();
-    }
+    public static UNKNOWN_205 VLRCOMIS = null;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class HttpVersion {
+public interface HttpVersion {
 
-    public static boolean HTTP_1_1;
-
-    HttpVersion() {
-        super();
-    }
+    public static boolean HTTP_1_1 = false;
 }

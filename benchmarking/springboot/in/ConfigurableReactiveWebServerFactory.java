@@ -1,0 +1,3 @@
+public interface ConfigurableReactiveWebServerFactory extends ConfigurableWebServerFactory, ReactiveWebServerFactory {
+
+}

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean backupTempFilePath;
+    public static boolean backupTempFilePath = false;
 
     public static double getBackupTempFilePath() {
         return 0;

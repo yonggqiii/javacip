@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ProxyManager {
+public interface ProxyManager {
 
-    public static UNKNOWN_59 httpClient;
-
-    ProxyManager() {
-        super();
-    }
+    public static UNKNOWN_59 httpClient = null;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean utils_tmp;
+    public static boolean utils_tmp = false;
 
     public static boolean getFolderNameFromDigObject(DigitalObject arg0) {
         return false;

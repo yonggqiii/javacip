@@ -9,5 +9,5 @@ public interface MessageDigest {
 
     public abstract void update(boolean arg0);
 
-    public abstract UNKNOWN_70 digest();
+    public abstract UNKNOWN_76 digest();
 }

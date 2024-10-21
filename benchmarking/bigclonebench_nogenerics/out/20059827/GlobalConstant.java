@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class GlobalConstant {
+public interface GlobalConstant {
 
-    public static boolean RECORD_STATUS_ACTIVE;
-
-    GlobalConstant() {
-        super();
-    }
+    public static boolean RECORD_STATUS_ACTIVE = false;
 }

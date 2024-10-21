@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ResponseCodes {
+public interface ResponseCodes {
 
-    public static boolean OBEX_HTTP_OK;
-
-    ResponseCodes() {
-        super();
-    }
+    public static boolean OBEX_HTTP_OK = false;
 }

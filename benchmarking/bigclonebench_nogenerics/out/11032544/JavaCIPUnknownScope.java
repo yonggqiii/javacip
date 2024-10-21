@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_28 RANDOMIZER;
+    public static UNKNOWN_42 RANDOMIZER = null;
 
-    public static UNKNOWN_41 TEST_DATA;
+    public static UNKNOWN_55 TEST_DATA = null;
 
     public static void assertEquals(String arg0, int arg1, int arg2) {
     }

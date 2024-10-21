@@ -8,7 +8,7 @@ public class BufferedReader {
     public void close() {
     }
 
-    public BufferedReader(InputStreamReader arg0) {
+    public BufferedReader(FileReader arg0) {
         super();
     }
 

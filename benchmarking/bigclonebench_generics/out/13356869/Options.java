@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Options {
+public interface Options {
 
-    public static String fs;
-
-    Options() {
-        super();
-    }
+    public static String fs = null;
 }

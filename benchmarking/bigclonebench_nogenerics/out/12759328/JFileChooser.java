@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JFileChooser {
 
-    public static int APPROVE_OPTION;
+    public static int APPROVE_OPTION = 0;
 
     public void setMultiSelectionEnabled(boolean arg0) {
     }

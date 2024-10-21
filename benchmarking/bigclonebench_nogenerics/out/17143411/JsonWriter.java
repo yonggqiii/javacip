@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JsonWriter {
+public interface JsonWriter {
 
-    public static boolean CALLBACK;
-
-    JsonWriter() {
-        super();
-    }
+    public static boolean CALLBACK = false;
 }

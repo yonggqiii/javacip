@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class IntChatServerDefaults {
+public interface IntChatServerDefaults {
 
-    public static boolean ENCODING;
-
-    IntChatServerDefaults() {
-        super();
-    }
+    public static boolean ENCODING = false;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class NodePropertyFlag {
+public interface NodePropertyFlag {
 
-    public static boolean Data;
-
-    NodePropertyFlag() {
-        super();
-    }
+    public static boolean Data = false;
 }

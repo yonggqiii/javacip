@@ -5,8 +5,8 @@ public class Scanner {
         return false;
     }
 
-    public boolean next() {
-        return false;
+    public int next() {
+        return 0;
     }
 
     public Scanner(InputStream arg0) {

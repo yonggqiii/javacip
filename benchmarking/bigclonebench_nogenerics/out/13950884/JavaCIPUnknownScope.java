@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_132 urlFactory;
+    public static UNKNOWN_132 urlFactory = null;
 
-    public static UNKNOWN_41 textureLoader;
+    public static UNKNOWN_41 textureLoader = null;
 
-    public static boolean zip;
+    public static boolean zip = false;
 
-    public static UNKNOWN_80 url;
+    public static UNKNOWN_80 url = null;
 
     JavaCIPUnknownScope() {
         super();

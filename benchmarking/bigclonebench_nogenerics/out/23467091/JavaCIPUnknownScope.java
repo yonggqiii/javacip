@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean host;
+    public static boolean host = false;
 
-    public static boolean LISTEN_PORT;
+    public static boolean LISTEN_PORT = false;
 
-    public static int LISTEN_BUFFER;
+    public static int LISTEN_BUFFER = 0;
 
-    public static byte delay;
+    public static byte delay = 0;
 
     public static void error(String arg0, RuntimeException arg1) {
     }

@@ -1,28 +1,17 @@
 // added by JavaCIP
-public class Connection {
+public interface Connection {
 
-    public static boolean TRANSACTION_READ_COMMITTED;
+    public static boolean TRANSACTION_READ_COMMITTED = false;
 
-    public void commit() {
-    }
+    public abstract void commit();
 
-    public void rollback() {
-    }
+    public abstract void rollback();
 
-    public void close() {
-    }
+    public abstract void close();
 
-    public PreparedStatement prepareStatement(boolean arg0) {
-        return null;
-    }
+    public abstract PreparedStatement prepareStatement(boolean arg0);
 
-    public void setTransactionIsolation(boolean arg0) {
-    }
+    public abstract void setTransactionIsolation(boolean arg0);
 
-    public void setAutoCommit(boolean arg0) {
-    }
-
-    Connection() {
-        super();
-    }
+    public abstract void setAutoCommit(boolean arg0);
 }

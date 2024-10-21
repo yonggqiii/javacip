@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_71 ces;
+    public static UNKNOWN_71 ces = null;
 
-    public static ERDBOperation dbo;
+    public static ERDBOperation dbo = null;
 
     public static ERDBOperation createDBOperation() {
         return null;

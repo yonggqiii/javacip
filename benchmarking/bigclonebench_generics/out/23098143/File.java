@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class File {
 
-    public UNKNOWN_884 getPath() {
+    public UNKNOWN_104 getPath() {
         return null;
     }
 
-    public File(boolean arg0) {
+    public File(String arg0) {
         super();
     }
 
-    public File(String arg0) {
+    public File(boolean arg0) {
         super();
     }
 

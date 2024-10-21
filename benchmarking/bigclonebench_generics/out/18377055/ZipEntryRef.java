@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ZipEntryRef {
 
-    public static boolean JOB;
+    public static boolean JOB = false;
 
     public boolean getUri() {
         return false;

@@ -1,21 +1,13 @@
 // added by JavaCIP
-public class BookPage {
+public interface BookPage {
 
-    public static boolean TYPE_RESOURCE;
+    public static boolean TYPE_RESOURCE = false;
 
-    public static boolean TYPE_URL;
+    public static boolean TYPE_URL = false;
 
-    public static boolean TYPE_IMAGE;
+    public static boolean TYPE_IMAGE = false;
 
-    public boolean getType() {
-        return false;
-    }
+    public abstract boolean getType();
 
-    public UNKNOWN_48 getUri() {
-        return null;
-    }
-
-    BookPage() {
-        super();
-    }
+    public abstract UNKNOWN_48 getUri();
 }

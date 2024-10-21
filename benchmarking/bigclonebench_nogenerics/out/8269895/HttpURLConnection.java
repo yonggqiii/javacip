@@ -1,26 +1,15 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static boolean HTTP_UNAUTHORIZED;
+    public static boolean HTTP_UNAUTHORIZED = false;
 
-    public static boolean HTTP_OK;
+    public static boolean HTTP_OK = false;
 
-    public void setRequestProperty(String arg0, String arg1) {
-    }
+    public abstract void setRequestProperty(String arg0, String arg1);
 
-    public boolean getResponseCode() {
-        return false;
-    }
+    public abstract boolean getResponseCode();
 
-    public boolean getInputStream() {
-        return false;
-    }
+    public abstract boolean getInputStream();
 
-    public boolean getResponseMessage() {
-        return false;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract boolean getResponseMessage();
 }

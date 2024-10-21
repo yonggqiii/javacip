@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class PreferenceConstants {
+public interface PreferenceConstants {
 
-    public static boolean P_CRASH_REPORTING;
+    public static boolean P_CRASH_REPORTING = false;
 
-    public static boolean P_SERVER;
+    public static boolean P_SERVER = false;
 
-    public static boolean P_USERNAME;
-
-    PreferenceConstants() {
-        super();
-    }
+    public static boolean P_USERNAME = false;
 }

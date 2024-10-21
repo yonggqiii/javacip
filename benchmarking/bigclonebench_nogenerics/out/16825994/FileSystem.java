@@ -9,5 +9,5 @@ public interface FileSystem {
 
     public abstract FileStatus[] listStatus(Path arg0);
 
-    public abstract InputStream open(char arg0);
+    public abstract InputStream open(String arg0);
 }

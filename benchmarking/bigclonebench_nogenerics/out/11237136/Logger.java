@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface Logger {
 
-    public static UNKNOWN_35 getInstancia() {
+    public static UNKNOWN_39 getInstancia() {
         return null;
     }
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface FileChannel {
 
-    public abstract double size();
+    public abstract Object size();
 
     public abstract int read(ByteBuffer arg0);
 

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ConfigType {
+public interface ConfigType {
 
-    public static boolean ErrorServer;
-
-    ConfigType() {
-        super();
-    }
+    public static boolean ErrorServer = false;
 }

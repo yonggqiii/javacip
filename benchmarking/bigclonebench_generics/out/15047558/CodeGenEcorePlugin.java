@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class CodeGenEcorePlugin {
+public interface CodeGenEcorePlugin {
 
-    public static UNKNOWN_147 INSTANCE;
-
-    CodeGenEcorePlugin() {
-        super();
-    }
+    public static UNKNOWN_160 INSTANCE = null;
 }

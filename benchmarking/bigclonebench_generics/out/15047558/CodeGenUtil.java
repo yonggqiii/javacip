@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class CodeGenUtil {
+public interface CodeGenUtil {
 
-    public static UNKNOWN_186 EclipseUtil;
-
-    CodeGenUtil() {
-        super();
-    }
+    public static UNKNOWN_199 EclipseUtil = null;
 }

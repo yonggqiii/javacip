@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class NNTPConnection implements URLConnection {
 
-    public UNKNOWN_103 getURL() {
+    public UNKNOWN_95 getURL() {
         return null;
     }
 

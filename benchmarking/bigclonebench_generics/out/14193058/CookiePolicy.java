@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class CookiePolicy {
+public interface CookiePolicy {
 
-    public static boolean ACCEPT_NONE;
-
-    CookiePolicy() {
-        super();
-    }
+    public static boolean ACCEPT_NONE = false;
 }

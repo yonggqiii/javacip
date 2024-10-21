@@ -5,11 +5,11 @@ public class URL {
         return null;
     }
 
-    public URL(String arg0, Object arg1, boolean arg2, boolean arg3) {
+    public URL(boolean arg0) {
         super();
     }
 
-    public URL(boolean arg0) {
+    public URL(String arg0, Object arg1, boolean arg2, boolean arg3) {
         super();
     }
 

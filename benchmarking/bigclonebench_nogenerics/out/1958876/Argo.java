@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Argo {
+public interface Argo {
 
-    public static UNKNOWN_17 log;
-
-    Argo() {
-        super();
-    }
+    public static UNKNOWN_17 log = null;
 }

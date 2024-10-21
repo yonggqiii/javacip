@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JeeServiceComponentUIPlugin {
+public interface JeeServiceComponentUIPlugin {
 
-    public static boolean PLUGIN_ID;
-
-    JeeServiceComponentUIPlugin() {
-        super();
-    }
+    public static boolean PLUGIN_ID = false;
 }

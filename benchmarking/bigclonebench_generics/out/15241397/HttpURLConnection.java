@@ -10,5 +10,5 @@ public interface HttpURLConnection {
 
     public abstract InputStream getInputStream();
 
-    public abstract UNKNOWN_243 getHeaderFields();
+    public abstract UNKNOWN_127 getHeaderFields();
 }

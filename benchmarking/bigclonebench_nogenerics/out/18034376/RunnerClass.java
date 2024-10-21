@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class RunnerClass {
+public interface RunnerClass {
 
-    public static UNKNOWN_19 nfh;
+    public static UNKNOWN_19 nfh = null;
 
-    public static boolean homedir;
-
-    RunnerClass() {
-        super();
-    }
+    public static boolean homedir = false;
 }

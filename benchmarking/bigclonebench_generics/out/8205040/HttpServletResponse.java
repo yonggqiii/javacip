@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class HttpServletResponse {
+public interface HttpServletResponse {
 
-    public static boolean SC_OK;
+    public static boolean SC_OK = false;
 
-    public static boolean SC_NOT_FOUND;
-
-    HttpServletResponse() {
-        super();
-    }
+    public static boolean SC_NOT_FOUND = false;
 }

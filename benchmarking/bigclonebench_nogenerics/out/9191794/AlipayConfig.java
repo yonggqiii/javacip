@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class AlipayConfig {
+public interface AlipayConfig {
 
-    public static java.nio.charset.Charset CharSet;
-
-    AlipayConfig() {
-        super();
-    }
+    public static java.nio.charset.Charset CharSet = null;
 }

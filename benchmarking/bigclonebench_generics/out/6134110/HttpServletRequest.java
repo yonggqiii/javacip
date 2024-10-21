@@ -5,5 +5,5 @@ public interface HttpServletRequest {
 
     public abstract String getHeader(String arg0);
 
-    public abstract UNKNOWN_256 getInputStream();
+    public abstract UNKNOWN_904 getInputStream();
 }

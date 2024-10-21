@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface ScenariosManager {
 
-    public static UNKNOWN_169 getInstance() {
+    public static UNKNOWN_167 getInstance() {
         return null;
     }
 }

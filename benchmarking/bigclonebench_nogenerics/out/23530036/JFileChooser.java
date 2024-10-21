@@ -1,17 +1,9 @@
 // added by JavaCIP
-public class JFileChooser {
+public interface JFileChooser {
 
-    public static int APPROVE_OPTION;
+    public static int APPROVE_OPTION = 0;
 
-    public int showSaveDialog(boolean arg0) {
-        return 0;
-    }
+    public abstract int showSaveDialog(boolean arg0);
 
-    public File getSelectedFile() {
-        return null;
-    }
-
-    JFileChooser() {
-        super();
-    }
+    public abstract File getSelectedFile();
 }

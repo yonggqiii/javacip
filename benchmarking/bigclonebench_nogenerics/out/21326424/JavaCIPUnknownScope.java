@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static HttpURLConnection connection;
+    public static HttpURLConnection connection = null;
 
-    public static boolean url;
+    public static boolean url = false;
 
-    public static boolean TIMEOUT;
+    public static boolean TIMEOUT = false;
 
     JavaCIPUnknownScope() {
         super();

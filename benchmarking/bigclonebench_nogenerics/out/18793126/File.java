@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public UNKNOWN_174 getAbsoluteFile() {
+    public UNKNOWN_78 getAbsoluteFile() {
         return null;
     }
 

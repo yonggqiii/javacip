@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class XmlRpc {
+public interface XmlRpc {
 
-    public static boolean debug;
-
-    XmlRpc() {
-        super();
-    }
+    public static boolean debug = false;
 }

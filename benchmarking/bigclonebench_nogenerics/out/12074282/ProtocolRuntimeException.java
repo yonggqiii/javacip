@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class ProtocolRuntimeException extends IORuntimeException {
+public class ProtocolRuntimeException extends RuntimeException {
 
     ProtocolRuntimeException() {
         super();

@@ -1,12 +1,8 @@
 // added by JavaCIP
-public class TDebug {
+public interface TDebug {
 
-    public static boolean TraceAudioFileReader;
+    public static boolean TraceAudioFileReader = false;
 
     public static void out(String arg0) {
-    }
-
-    TDebug() {
-        super();
     }
 }

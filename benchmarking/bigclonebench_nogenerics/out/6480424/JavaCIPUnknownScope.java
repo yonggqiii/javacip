@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte anInt772;
+    public static double anInt772 = 0;
 
-    public static int[] anIntArray774;
+    public static int[] anIntArray774 = null;
 
-    public static long[] aLongArray773;
+    public static long[] aLongArray773 = null;
 
     JavaCIPUnknownScope() {
         super();

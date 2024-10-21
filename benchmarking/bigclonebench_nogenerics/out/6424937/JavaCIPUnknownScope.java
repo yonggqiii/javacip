@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean closed;
+    public static boolean closed = false;
 
-    public static UNKNOWN_19 memoryOutputStream;
+    public static UNKNOWN_19 memoryOutputStream = null;
 
-    public static boolean outputFile;
+    public static boolean outputFile = false;
 
     public static boolean isInMemory() {
         return false;

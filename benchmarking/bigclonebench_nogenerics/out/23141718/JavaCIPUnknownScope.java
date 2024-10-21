@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object bundleEntry;
+    public static Object bundleEntry = null;
 
-    public static UNKNOWN_43 NLS;
+    public static UNKNOWN_45 NLS = null;
 
-    public static UNKNOWN_56 context;
+    public static UNKNOWN_58 context = null;
 
-    public static boolean SECURITY_AUTHORIZED;
+    public static boolean SECURITY_AUTHORIZED = false;
 
     public static void checkAdminPermission(AbstractBundle arg0) {
     }

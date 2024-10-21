@@ -9,5 +9,5 @@ public interface Obra {
 
     public abstract boolean getSelec();
 
-    public abstract UNKNOWN_87 getCategoria();
+    public abstract UNKNOWN_85 getCategoria();
 }

@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean prefix;
+    public static boolean prefix = false;
 
-    public static boolean workdir;
+    public static boolean workdir = false;
 
-    public static UNKNOWN_35 fileList;
+    public static UNKNOWN_35 fileList = null;
 
-    public static UNKNOWN_61 log;
+    public static UNKNOWN_61 log = null;
 
     JavaCIPUnknownScope() {
         super();

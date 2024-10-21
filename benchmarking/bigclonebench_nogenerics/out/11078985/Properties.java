@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Properties {
+public interface Properties {
 
-    public static boolean downloadFolder;
-
-    Properties() {
-        super();
-    }
+    public static boolean downloadFolder = false;
 }

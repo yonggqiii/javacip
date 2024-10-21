@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class UserError extends RuntimeException {
 
-    public UserError(FileNotFoundRuntimeException arg0) {
+    public UserError(FileAlreadyExistsAsDirectoryRuntimeException arg0) {
         super();
     }
 

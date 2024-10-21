@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FTPTransferType {
+public interface FTPTransferType {
 
-    public static boolean ASCII;
-
-    FTPTransferType() {
-        super();
-    }
+    public static boolean ASCII = false;
 }

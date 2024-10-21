@@ -7,6 +7,7 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 import scala.collection.mutable.Map as MutableMap
 
+import configuration.Configuration
 import configuration.MutableConfiguration
 import configuration.assertions.*
 import configuration.types.*
@@ -87,7 +88,99 @@ private def resolveExplicitConstructorInvocationStmt(
       String,
       Option[Type]
     ]
-): LogWithOption[MutableConfiguration] = ???
+): LogWithOption[MutableConfiguration] = 
+  if stmt.isThis() then
+    // this(...)
+    // get all constructors in scope
+      stmt.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala match
+        case None =>
+          LogWithOption(
+            log.addError(
+              s"${stmt} is not found in class or interface declaration!"
+            ),
+            None
+          )
+        case Some(decl) =>
+          val nameOfDeclaration = decl.getNameAsString
+          val actualDeclaration = config._1(nameOfDeclaration)
+          // choose one constructor to invoke
+          val constructors = actualDeclaration.constructors
+          val constructorArgs = flatMapWithLog(log, stmt.getArguments().asScala.toVector)((l, a) =>
+            resolveExpression(l, a, config, memo).rightmap(x =>
+              config._6 += x
+              x
+            )
+          )
+          constructorArgs.rightmap(args =>
+            val relevantConstructors =
+              constructors.filter(c => c.callableWithNArgs(args.size)).map(c => c.asNArgs(args.size))
+            config._3 += DisjunctiveAssertion(
+              relevantConstructors.map(c => ConjunctiveAssertion(args.zip(c.signature.formalParameters).map(x => x._1 =:~ x._2)))
+            )
+            config
+          )
+    // ???
+  else
+    // super(...)
+      stmt.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala match
+        case None =>
+          LogWithOption(
+            log.addError(
+              s"${stmt} is not found in class or interface declaration!"
+            ),
+            None
+          )
+        case Some(decl) =>
+          val nameOfDeclaration = decl.getNameAsString
+          val actualDeclaration = config._1(nameOfDeclaration)
+          if actualDeclaration.isInterface then
+            LogWithOption(log.addError(s"$stmt found in interface!"), None)
+          else if actualDeclaration.extendedTypes.size != 1 then
+            if stmt.getArguments().asScala.toVector.size == 0 then
+              LogWithSome(log, config)
+            else 
+              LogWithOption(log.addError(s"$stmt found in class with no extended types "), None)
+          else
+            val superType = actualDeclaration.extendedTypes(0)
+            // only find supertype declaration if it is in the JDK
+            val supertypeDeclaration = Configuration.createEmptyConfiguration().getFixedDeclaration(superType) match
+              case Some(decl) => Some(Configuration.createEmptyConfiguration().getSubstitutedDeclaration(superType))
+              case None => None
+            supertypeDeclaration match
+              case Some(decl) =>
+                // choose one constructor to invoke
+                val constructors = decl.constructors
+                val constructorArgs = flatMapWithLog(log, stmt.getArguments().asScala.toVector)((l, a) =>
+                  resolveExpression(l, a, config, memo).rightmap(x =>
+                    config._6 += x
+                    x
+                  )
+                )
+                constructorArgs.rightmap(args =>
+                  val relevantConstructors =
+                    constructors.filter(c => c.callableWithNArgs(args.size)).map(c => c.asNArgs(args.size))
+                  config._3 += DisjunctiveAssertion(
+                    relevantConstructors.map(c => ConjunctiveAssertion(args.zip(c.signature.formalParameters).map(x => x._1 =:~ x._2)))
+                  )
+                  config
+                )
+              case None =>
+                // supertype missing
+                val constructorArgs = flatMapWithLog(log, stmt.getArguments().asScala.toVector)((l, a) =>
+                  resolveExpression(l, a, config, memo).rightmap(x =>
+                    config._6 += x
+                    x
+                  )
+                )
+                // create one in supertype
+                constructorArgs.rightmap(args =>
+                  val tps: Set[TTypeParameter] = (0 until actualDeclaration.typeParameterBounds.size)
+                    .map(i => TypeParameterIndex(actualDeclaration.identifier, i))
+                    .toSet
+                  config._3 += HasConstructorAssertion(superType, args, tps)
+                  config
+                )
+    // ???
 
 private def resolveForEachStmt(
     log: Log,

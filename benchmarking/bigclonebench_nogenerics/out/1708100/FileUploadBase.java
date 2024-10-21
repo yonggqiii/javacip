@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FileUploadBase {
+public interface FileUploadBase {
 
-    public static boolean CONTENT_LENGTH;
-
-    FileUploadBase() {
-        super();
-    }
+    public static boolean CONTENT_LENGTH = false;
 }

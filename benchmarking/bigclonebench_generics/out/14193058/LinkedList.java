@@ -4,7 +4,7 @@ public class LinkedList<A> {
     public void add(String arg0) {
     }
 
-    public byte size() {
+    public int size() {
         return 0;
     }
 

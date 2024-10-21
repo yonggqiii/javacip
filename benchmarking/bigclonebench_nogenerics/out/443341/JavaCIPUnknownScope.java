@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_173 jEdit;
+    public static UNKNOWN_100 jEdit = null;
 
     public static void newVersionAvailable(View arg0, String arg1, URL arg2) {
     }

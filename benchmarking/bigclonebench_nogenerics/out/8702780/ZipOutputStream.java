@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ZipOutputStream {
 
-    public static boolean DEFLATED;
+    public static boolean DEFLATED = false;
 
     public void setMethod(boolean arg0) {
     }

@@ -5,7 +5,7 @@ public class File {
         return false;
     }
 
-    public boolean renameTo(UNKNOWN_56 arg0) {
+    public boolean renameTo(UNKNOWN_42 arg0) {
         return false;
     }
 

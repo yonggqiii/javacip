@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean HTTP_PORT_DEFAULT;
+    public static boolean HTTP_PORT_DEFAULT = false;
 
-    public static boolean HTTPS_PORT_DEFAULT;
+    public static boolean HTTPS_PORT_DEFAULT = false;
 
     public static boolean getPropertyAsBoolean(BundleContext arg0, String arg1, String arg2) {
         return false;

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface AuthenticationCriteria {
 
-    public abstract UNKNOWN_122 getCredential();
+    public abstract UNKNOWN_100 getCredential();
 
     public abstract boolean getDn();
 }

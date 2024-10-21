@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_483 projectsList;
+    public static UNKNOWN_393 projectsList = null;
 
-    public static boolean workspaceDirectory;
+    public static boolean workspaceDirectory = false;
 
     JavaCIPUnknownScope() {
         super();

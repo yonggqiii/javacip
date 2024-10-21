@@ -1,12 +1,7 @@
 // added by JavaCIP
-public class TreeLogger {
+public interface TreeLogger {
 
-    public static boolean ERROR;
+    public static boolean ERROR = false;
 
-    public void log(boolean arg0, String arg1, IORuntimeException arg2) {
-    }
-
-    TreeLogger() {
-        super();
-    }
+    public abstract void log(boolean arg0, String arg1, IORuntimeException arg2);
 }

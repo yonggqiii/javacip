@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface MessageDigest {
 
-    public static UNKNOWN_118 getInstance(String arg0) {
+    public static UNKNOWN_122 getInstance(String arg0) {
         return null;
     }
 

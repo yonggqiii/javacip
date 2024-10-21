@@ -1,15 +1,9 @@
 // added by JavaCIP
-public class Action {
+public interface Action {
 
-    public static boolean ACTION_BROWSER_LOADING_DONE;
+    public static boolean ACTION_BROWSER_LOADING_DONE = false;
 
-    public static Object COMMAND_CARD_PREVIEW;
+    public static Object COMMAND_CARD_PREVIEW = null;
 
-    public boolean value() {
-        return false;
-    }
-
-    Action() {
-        super();
-    }
+    public abstract boolean value();
 }

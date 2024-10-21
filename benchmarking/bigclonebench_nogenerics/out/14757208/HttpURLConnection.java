@@ -1,26 +1,15 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_MOVED_TEMP;
+    public static int HTTP_MOVED_TEMP = 0;
 
-    public void disconnect() {
-    }
+    public abstract void disconnect();
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public void setInstanceFollowRedirects(boolean arg0) {
-    }
+    public abstract void setInstanceFollowRedirects(boolean arg0);
 
-    public String getHeaderField(String arg0) {
-        return null;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract String getHeaderField(String arg0);
 }

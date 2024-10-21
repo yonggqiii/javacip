@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean testId;
+    public static boolean testId = false;
 
-    public static byte MAX_KEY_VALUE;
+    public static byte MAX_KEY_VALUE = 0;
 
     public static int getNextKey() {
         return 0;

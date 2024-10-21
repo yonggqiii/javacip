@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class HttpHeaders {
+public interface HttpHeaders {
 
-    public static boolean CONTENT_TYPE;
+    public static boolean CONTENT_TYPE = false;
 
-    public static boolean CONTENT_LENGTH;
-
-    HttpHeaders() {
-        super();
-    }
+    public static boolean CONTENT_LENGTH = false;
 }

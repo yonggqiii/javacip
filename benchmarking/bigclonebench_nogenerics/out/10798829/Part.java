@@ -1,25 +1,13 @@
 // added by JavaCIP
-public class Part {
+public interface Part {
 
-    public static String ATTACHMENT;
+    public static String ATTACHMENT = null;
 
-    public String getFileName() {
-        return null;
-    }
+    public abstract String getFileName();
 
-    public boolean isMimeType(String arg0) {
-        return false;
-    }
+    public abstract boolean isMimeType(String arg0);
 
-    public String getDisposition() {
-        return null;
-    }
+    public abstract String getDisposition();
 
-    public InputStream getInputStream() {
-        return null;
-    }
-
-    Part() {
-        super();
-    }
+    public abstract InputStream getInputStream();
 }

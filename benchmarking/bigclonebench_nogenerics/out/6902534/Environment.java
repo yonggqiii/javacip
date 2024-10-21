@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Environment {
+public interface Environment {
 
-    public static boolean PROPERTY_ATTACHMENT_TYPE;
-
-    Environment() {
-        super();
-    }
+    public static boolean PROPERTY_ATTACHMENT_TYPE = false;
 }

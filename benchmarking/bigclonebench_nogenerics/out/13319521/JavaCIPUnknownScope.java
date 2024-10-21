@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object xmlSource;
+    public static Object xmlSource = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,6 +1,6 @@
 class c23677145<T extends Comparable<T>> {
 
-    public static void BubbleSortComparable1(T[] num) {
+    public void BubbleSortComparable1(T[] num) {
         int j;
         // set flag to true to begin first pass
         boolean flag = true;

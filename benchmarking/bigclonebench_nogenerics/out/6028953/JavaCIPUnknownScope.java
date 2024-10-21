@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_82 ftp;
+    public static UNKNOWN_86 ftp = null;
 
-    public static FTPCredentials theUserPass;
+    public static FTPCredentials theUserPass = null;
 
-    public static boolean TAG;
+    public static boolean TAG = false;
 
-    public static int NO_CONNECT;
+    public static int NO_CONNECT = 0;
 
-    public static int WAS_IN;
+    public static int WAS_IN = 0;
 
-    public static int LOGGED_IN;
+    public static int LOGGED_IN = 0;
 
-    public static int NO_LOGIN;
+    public static int NO_LOGIN = 0;
 
     JavaCIPUnknownScope() {
         super();

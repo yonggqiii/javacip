@@ -1,12 +1,8 @@
 // added by JavaCIP
-public class NoMuleRuntime {
+public interface NoMuleRuntime {
 
-    public static boolean DEBUG;
+    public static boolean DEBUG = false;
 
     public static void showDebug(String arg0) {
-    }
-
-    NoMuleRuntime() {
-        super();
     }
 }

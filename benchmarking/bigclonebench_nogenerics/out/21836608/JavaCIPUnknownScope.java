@@ -1,25 +1,25 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_139 _logger;
+    public static UNKNOWN_155 _logger = null;
 
-    public static boolean server;
+    public static boolean server = false;
 
-    public static boolean passiveMode;
+    public static boolean passiveMode = false;
 
-    public static boolean username;
+    public static boolean username = false;
 
-    public static UNKNOWN_110 FTP;
+    public static UNKNOWN_126 FTP = null;
 
-    public static boolean binaryMode;
+    public static boolean binaryMode = false;
 
-    public static boolean port;
+    public static boolean port = false;
 
-    public static FTPClient client;
+    public static FTPClient client = null;
 
-    public static boolean remoteRootDir;
+    public static boolean remoteRootDir = false;
 
-    public static boolean password;
+    public static boolean password = false;
 
     public static void disconnect() {
     }

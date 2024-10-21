@@ -13,5 +13,5 @@ public interface FileSystem {
 
     public abstract boolean delete(Path arg0, boolean arg1);
 
-    public abstract UNKNOWN_98 getFileStatus(Path arg0);
+    public abstract UNKNOWN_111 getFileStatus(Path arg0);
 }

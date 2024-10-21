@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class GeoNetworkContext {
+public interface GeoNetworkContext {
 
-    public static boolean url;
+    public static boolean url = false;
 
-    public static boolean logoutService;
-
-    GeoNetworkContext() {
-        super();
-    }
+    public static boolean logoutService = false;
 }

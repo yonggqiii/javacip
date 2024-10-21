@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface FileUtils {
 
-    public static UNKNOWN_83 getInstance() {
+    public static UNKNOWN_81 getInstance() {
         return null;
     }
 }

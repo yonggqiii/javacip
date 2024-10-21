@@ -1,21 +1,13 @@
 // added by JavaCIP
-public class TarArchiveOutputStream {
+public interface TarArchiveOutputStream {
 
-    public static boolean LONGFILE_GNU;
+    public static boolean LONGFILE_GNU = false;
 
-    public void setLongFileMode(boolean arg0) {
-    }
+    public abstract void setLongFileMode(boolean arg0);
 
-    public void putArchiveEntry(TarArchiveEntry arg0) {
-    }
+    public abstract void putArchiveEntry(TarArchiveEntry arg0);
 
-    public void closeArchiveEntry() {
-    }
+    public abstract void closeArchiveEntry();
 
-    public void close() {
-    }
-
-    TarArchiveOutputStream() {
-        super();
-    }
+    public abstract void close();
 }

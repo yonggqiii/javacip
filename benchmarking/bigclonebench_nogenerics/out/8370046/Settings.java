@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Settings {
+public interface Settings {
 
-    public static boolean SLASH;
+    public static boolean SLASH = false;
 
     public static boolean getFreeTsUserPath() {
         return false;
-    }
-
-    Settings() {
-        super();
     }
 }

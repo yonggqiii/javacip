@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class PMRNode {
+public interface PMRNode {
 
-    public static boolean PRETTY;
-
-    PMRNode() {
-        super();
-    }
+    public static boolean PRETTY = false;
 }

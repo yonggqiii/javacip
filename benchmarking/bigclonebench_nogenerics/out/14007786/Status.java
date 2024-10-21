@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Status {
+public interface Status {
 
-    public static IStatus CANCEL_STATUS;
+    public static IStatus CANCEL_STATUS = null;
 
-    public static IStatus OK_STATUS;
-
-    Status() {
-        super();
-    }
+    public static IStatus OK_STATUS = null;
 }

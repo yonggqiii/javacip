@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ActionErrors {
 
-    public static boolean GLOBAL_ERROR;
+    public static boolean GLOBAL_ERROR = false;
 
     public void add(boolean arg0, ActionError arg1) {
     }

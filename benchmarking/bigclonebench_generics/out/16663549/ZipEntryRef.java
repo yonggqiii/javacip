@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class ZipEntryRef {
 
-    public static boolean SINGLE_FILE;
+    public static boolean SINGLE_FILE = false;
 
-    public static boolean WITH_REL;
+    public static boolean WITH_REL = false;
 
     public boolean getUri() {
         return false;

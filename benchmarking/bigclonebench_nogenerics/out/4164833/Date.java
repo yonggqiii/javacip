@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class Date {
 
-    public byte getTime() {
+    public int getTime() {
         return 0;
     }
 

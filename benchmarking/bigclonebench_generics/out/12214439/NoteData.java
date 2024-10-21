@@ -7,7 +7,7 @@ public interface NoteData {
 
     public abstract LinkedList<FieldData> getFields();
 
-    public abstract UNKNOWN_194 getTemplate();
+    public abstract UNKNOWN_370 getTemplate();
 
     public abstract boolean getKeywords();
 

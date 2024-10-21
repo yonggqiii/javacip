@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class FrameManager {
+public interface FrameManager {
 
-    public static UNKNOWN_65 INSERT_TYPE;
+    public static UNKNOWN_95 INSERT_TYPE = null;
 
-    public static UNKNOWN_112 getInstance() {
+    public static UNKNOWN_142 getInstance() {
         return null;
-    }
-
-    FrameManager() {
-        super();
     }
 }

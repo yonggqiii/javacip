@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean TABLE_KEY;
+    public static boolean TABLE_KEY = false;
 
-    public static UNKNOWN_142 conn;
+    public static UNKNOWN_142 conn = null;
 
     public static long getConceptGID(ConceptRef arg0, int arg1) {
         return 0;

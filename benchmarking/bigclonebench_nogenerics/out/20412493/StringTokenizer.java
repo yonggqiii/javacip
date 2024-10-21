@@ -5,7 +5,7 @@ public class StringTokenizer {
         return null;
     }
 
-    public StringTokenizer(Boolean arg0) {
+    public StringTokenizer(Object arg0) {
         super();
     }
 

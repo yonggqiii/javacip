@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean destfile;
+    public static boolean destfile = false;
 
-    public static boolean RESOURCE_JAR_FILENAME;
+    public static boolean RESOURCE_JAR_FILENAME = false;
 
     public static void log(String arg0) {
     }

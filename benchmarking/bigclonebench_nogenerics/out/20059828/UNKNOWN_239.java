@@ -1,5 +1,5 @@
 // added by JavaCIP
-public interface UNKNOWN_239 {
+public interface UNKNOWN_239 extends Timestamp {
 
-    public abstract void error(RuntimeException arg0, RuntimeException arg1);
+    public abstract int intValue();
 }

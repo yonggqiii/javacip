@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static boolean UpdateCheckUrl;
+    public static boolean UpdateCheckUrl = false;
 
-    public static String version;
-
-    Constants() {
-        super();
-    }
+    public static String version = null;
 }

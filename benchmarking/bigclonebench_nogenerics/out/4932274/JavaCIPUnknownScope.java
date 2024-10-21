@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_47 con;
+    public static UNKNOWN_47 con = null;
 
     public static void assertNotNull(Statement arg0) {
     }

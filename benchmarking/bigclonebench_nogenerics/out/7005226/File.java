@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static Object separator;
+    public static Object separator = null;
 
     public byte lastModified() {
         return 0;

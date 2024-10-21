@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class HttpRuntimeException extends SAXRuntimeException {
+public class HttpRuntimeException extends URISyntaxRuntimeException {
 
     HttpRuntimeException() {
         super();

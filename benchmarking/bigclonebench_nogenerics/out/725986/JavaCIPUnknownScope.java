@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean title;
+    public static boolean title = false;
 
-    public static UNKNOWN_40 rings;
+    public static UNKNOWN_40 rings = null;
 
     public static boolean readNoteTitle(int arg0) {
         return false;

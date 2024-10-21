@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean schemaBasePath;
+    public static boolean schemaBasePath = false;
 
     JavaCIPUnknownScope() {
         super();

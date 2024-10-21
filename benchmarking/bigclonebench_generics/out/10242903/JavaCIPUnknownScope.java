@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean serverPrefix;
+    public static boolean serverPrefix = false;
 
     JavaCIPUnknownScope() {
         super();

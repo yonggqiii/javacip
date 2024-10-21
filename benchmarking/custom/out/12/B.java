@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class B {
 
-    public String a;
+    public boolean a;
 
     public B() {
         super();

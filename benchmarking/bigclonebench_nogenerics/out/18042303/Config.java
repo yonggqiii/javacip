@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Config {
+public interface Config {
 
-    public static boolean MULTIMEDIA_PATH;
+    public static boolean MULTIMEDIA_PATH = false;
 
-    public static byte FILE_SEPARATOR;
-
-    Config() {
-        super();
-    }
+    public static double FILE_SEPARATOR = 0;
 }

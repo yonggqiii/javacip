@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static CharSequence postURL;
+    public static Object postURL = null;
 
-    public static boolean uploadresponse;
+    public static boolean uploadresponse = false;
 
-    public static File file;
+    public static File file = null;
 
-    public static boolean login;
+    public static boolean login = false;
 
-    public static boolean dataid;
+    public static boolean dataid = false;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class HttpStatus {
+public interface HttpStatus {
 
-    public static int SC_MOVED_TEMPORARILY;
+    public static int SC_MOVED_TEMPORARILY = 0;
 
-    public static int SC_MOVED_PERMANENTLY;
-
-    HttpStatus() {
-        super();
-    }
+    public static int SC_MOVED_PERMANENTLY = 0;
 }

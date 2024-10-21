@@ -5,7 +5,7 @@ public class BufferedReader {
         return false;
     }
 
-    public Object readLine() {
+    public String readLine() {
         return null;
     }
 

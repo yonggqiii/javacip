@@ -1,17 +1,9 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static boolean HTTP_OK;
+    public static boolean HTTP_OK = false;
 
-    public InputStream getInputStream() {
-        return null;
-    }
+    public abstract InputStream getInputStream();
 
-    public boolean getResponseCode() {
-        return false;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract boolean getResponseCode();
 }

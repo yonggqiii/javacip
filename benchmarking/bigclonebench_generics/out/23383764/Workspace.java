@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Workspace {
+public interface Workspace {
 
-    public static UNKNOWN_47 INSTANCE;
-
-    Workspace() {
-        super();
-    }
+    public static UNKNOWN_47 INSTANCE = null;
 }

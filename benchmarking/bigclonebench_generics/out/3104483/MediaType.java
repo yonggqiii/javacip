@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class MediaType {
+public interface MediaType {
 
-    public static boolean APPLICATION_OCTET_STREAM_TYPE;
+    public static boolean APPLICATION_OCTET_STREAM_TYPE = false;
 
-    public boolean isCompatible(boolean arg0) {
-        return false;
-    }
-
-    MediaType() {
-        super();
-    }
+    public abstract boolean isCompatible(boolean arg0);
 }

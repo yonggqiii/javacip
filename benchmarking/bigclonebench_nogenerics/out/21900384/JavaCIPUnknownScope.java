@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_67 resourceManager;
+    public static UNKNOWN_67 resourceManager = null;
 
     public static void addGlobalError(HttpServletRequest arg0, String arg1) {
     }

@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class IORuntimeException extends RuntimeException {
+public class IORuntimeException extends AmazonClientRuntimeException {
 
     IORuntimeException() {
         super();

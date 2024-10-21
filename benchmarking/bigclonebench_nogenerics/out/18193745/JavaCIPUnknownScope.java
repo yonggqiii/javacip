@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean ipUpdated;
+    public static boolean ipUpdated = false;
 
     public static void updateChannelList(FTPClient arg0, String arg1) {
     }

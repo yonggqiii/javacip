@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_125 con;
+    public static UNKNOWN_125 con = null;
 
     public static void assertEquals(int arg0, int arg1) {
     }

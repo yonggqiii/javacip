@@ -5,13 +5,13 @@ public interface HttpURLConnection {
 
     public abstract void setRequestProperty(String arg0, String arg1);
 
-    public abstract Object getResponseCode();
+    public abstract double getResponseCode();
 
     public abstract void setDoOutput(boolean arg0);
 
     public abstract boolean getInputStream();
 
-    public abstract float getResponseMessage();
+    public abstract int getResponseMessage();
 
     public abstract void setDoInput(boolean arg0);
 

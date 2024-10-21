@@ -1,35 +1,19 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_OK;
+    public static int HTTP_OK = 0;
 
-    public void setRequestMethod(String arg0) {
-    }
+    public abstract void setRequestMethod(String arg0);
 
-    public boolean getContentLength() {
-        return false;
-    }
+    public abstract boolean getContentLength();
 
-    public void setFollowRedirects(boolean arg0) {
-    }
+    public abstract void setFollowRedirects(boolean arg0);
 
-    public boolean getLastModified() {
-        return false;
-    }
+    public abstract boolean getLastModified();
 
-    public boolean getResponseMessage() {
-        return false;
-    }
+    public abstract boolean getResponseMessage();
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public boolean getDate() {
-        return false;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract boolean getDate();
 }

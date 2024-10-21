@@ -200,7 +200,8 @@ private def getAttrTypeFromMissingScope(
   logWithScope.map((log, scope) =>
     config._6 += scope
     // add assertion to omega
-    config._3 += IsClassAssertion(scope)
+    if !scope.static then
+      config._3 += IsClassAssertion(scope)
     // get substitutions in scope
     val (_, context) = scope.expansion
     // get identifier of attribute
@@ -316,10 +317,22 @@ private def resolveAssignExpr(
       Option[Type]
     ]
 ): LogWithOption[Type] =
-  val t = expr.getTarget
-  val v = expr.getValue
-  resolveExpression(log, v, config, memo).flatMap((log, v) =>
-    resolveExpression(log, t, config, memo).rightmap(t =>
+  val tt = expr.getTarget
+  val vv = expr.getValue
+  // check if is StaticClass.x = 5, StaticClass must be class
+  if tt.isFieldAccessExpr then
+    val fae = tt.asFieldAccessExpr
+    val scope = fae.getScope
+    resolveExpression(log, scope, config, memo).rightmap(t =>
+      if t.static && !config._1.contains(t.identifier) then
+        config._3 += IsClassAssertion(t)
+        ()
+      else
+        ()
+    )
+  resolveExpression(log, vv, config, memo).flatMap((log, v) =>
+    resolveExpression(log, tt, config, memo).rightmap(t =>
+
       config._6 += v
       config._6 += t
       expr.getOperator match
@@ -377,7 +390,8 @@ private def resolveBinaryExpr(
             config._2._2(rt) = InferenceVariableMemberTable(rt)
             config._3 += (IsIntegralAssertion(left) &&
               IsIntegralAssertion(right) &&
-              IsIntegralAssertion(rt)) ||
+              IsIntegralAssertion(rt) &&
+              (left <<~= rt) && (right <<~= rt) && (PRIMITIVE_INT <<~= rt)) ||
               ((left ~=~ PRIMITIVE_BOOLEAN || left ~=~ BOXED_BOOLEAN) && (right ~=~ PRIMITIVE_BOOLEAN || right ~=~ BOXED_BOOLEAN) &&
                 (rt ~=~ PRIMITIVE_BOOLEAN))
             rt
@@ -1031,7 +1045,7 @@ private def createTypeArgumentFromContext(
   )
 
   val iv = InferenceVariableFactory
-    .createDisjunctiveType(source, Nil, boundedness, parameterChoices, boundedness)
+    .createDisjunctiveType(source, Nil, true, parameterChoices, boundedness)
   config._2._2(iv) = InferenceVariableMemberTable(iv)
   iv
 
@@ -1040,7 +1054,13 @@ def getParamChoicesFromExpression(expr: Expression) =
   val methodTypeParams = expr
     .findAncestor(classOf[MethodDeclaration])
     .toScala
-    .map(_.getTypeParameters.asScala.toVector.map(x => x.resolve))
+    .map(d => {
+      val decl = d.resolve
+      val t = decl.declaringType
+      decl.getTypeParameters.asScala.toVector.map(typeParam => {
+        TypeParameterName(t.getQualifiedName, typeParam.getContainerId, typeParam.getName)
+      })
+    })
     .getOrElse(Vector())
   val classTypeParams =
     val decl = expr.findAncestor(classOf[ClassOrInterfaceDeclaration]).toScala
@@ -1051,11 +1071,11 @@ def getParamChoicesFromExpression(expr: Expression) =
         (0 until declParams.length)
           .filter(i =>
             !methodTypeParams
-              .map(_.asTypeParameter.getName)
+              .map(_.qualifiedName)
               .contains(declParams(i).getNameAsString)
           )
           .map(i => TypeParameterIndex(x.getName.getIdentifier, i))
-  methodTypeParams.map(resolveSolvedTypeVariable(_)).toSet ++ classTypeParams
+  methodTypeParams.toSet ++ classTypeParams
 
 private def getAllBoundsOfResolvedTypeParameterDeclaration(
     tp: ResolvedTypeParameterDeclaration
@@ -1201,6 +1221,19 @@ private def getArity(identifier: String, config: MutableConfiguration): Int =
       .getUnderlyingDeclaration(ClassOrInterfaceType(identifier))
       .numParams
 
+// private def attemptFqn(identifier: String): String =
+
+//   // try to resolve the type name if it is imported and in JDK
+//   val imports = cu.getImports()
+//     .asScala
+//     .toVector
+//     .map(x => x.getName())
+//     .filter(x => x.getIdentifier == identifier)
+//   val fqn = if imports.size == 1 then imports(0).asString() else "java.lang." + identifier
+//   Configuration.createEmptyConfiguration().getFixedDeclaration(ClassOrInterfaceType(fqn, Vector())) match
+//     case Some(decl) => fqn
+//     case None => identifier
+
 private def resolveObjectCreationExpr(
     log: Log,
     expr: ObjectCreationExpr,
@@ -1209,7 +1242,9 @@ private def resolveObjectCreationExpr(
 ): LogWithOption[Type] =
   val res =
     if expr.getType().isUsingDiamondOperator() then
-      val name    = expr.getType().getNameAsString()
+      val name    = 
+        val n = expr.getType().getNameAsString()
+        if config._7.contains(n) then config._7(n) else n
       val numArgs = getArity(name, config)
       val x = ClassOrInterfaceType(
         name,

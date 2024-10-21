@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object lastName;
+    public static Object lastName = null;
 
-    public static Object firstName;
+    public static Object firstName = null;
 
-    public static UNKNOWN_101 password;
+    public static UNKNOWN_119 password = null;
 
-    public static Object email;
+    public static Object email = null;
 
     JavaCIPUnknownScope() {
         super();

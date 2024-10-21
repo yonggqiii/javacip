@@ -1,7 +1,7 @@
 // added by JavaCIP
-public class JavaCore {
+public interface JavaCore {
 
-    public static String NATURE_ID;
+    public static String NATURE_ID = null;
 
     public static IJavaProject create(IProject arg0) {
         return null;
@@ -17,9 +17,5 @@ public class JavaCore {
 
     public static boolean newSourceEntry(boolean arg0) {
         return false;
-    }
-
-    JavaCore() {
-        super();
     }
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class VirtualDeckConfig {
+public interface VirtualDeckConfig {
 
-    public static boolean SERVERS_URL;
-
-    VirtualDeckConfig() {
-        super();
-    }
+    public static boolean SERVERS_URL = false;
 }

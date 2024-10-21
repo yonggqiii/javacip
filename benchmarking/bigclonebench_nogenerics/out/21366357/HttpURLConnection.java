@@ -1,22 +1,14 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_MOVED_PERM;
+    public static int HTTP_MOVED_PERM = 0;
 
     public static void setFollowRedirects(boolean arg0) {
     }
 
-    public void setRequestMethod(String arg0) {
-    }
+    public abstract void setRequestMethod(String arg0);
 
-    public void setDoOutput(boolean arg0) {
-    }
+    public abstract void setDoOutput(boolean arg0);
 
-    public int getResponseCode() {
-        return 0;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract int getResponseCode();
 }

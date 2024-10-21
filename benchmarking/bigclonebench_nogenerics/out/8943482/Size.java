@@ -1,19 +1,15 @@
 // added by JavaCIP
-public class Size {
+public interface Size {
 
-    public static int SQUARE;
+    public static int SQUARE = 0;
 
-    public static int LARGE;
+    public static int LARGE = 0;
 
-    public static int ORIGINAL;
+    public static int ORIGINAL = 0;
 
-    public static int SMALL;
+    public static int SMALL = 0;
 
-    public static int THUMB;
+    public static int THUMB = 0;
 
-    public static int MEDIUM;
-
-    Size() {
-        super();
-    }
+    public static int MEDIUM = 0;
 }

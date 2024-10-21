@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean WS_URL;
+    public static boolean WS_URL = false;
 
     JavaCIPUnknownScope() {
         super();

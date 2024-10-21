@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Config {
+public interface Config {
 
-    public static boolean DEBUG;
-
-    Config() {
-        super();
-    }
+    public static boolean DEBUG = false;
 }

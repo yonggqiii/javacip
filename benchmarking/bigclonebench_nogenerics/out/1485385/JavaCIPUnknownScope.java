@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_118 requestFactory;
+    public static UNKNOWN_120 requestFactory = null;
 
-    public static boolean jsonHttpParser;
+    public static boolean jsonHttpParser = false;
 
-    public static boolean operationStatus;
+    public static boolean operationStatus = false;
 
-    public static boolean appsMarketplaceProject;
+    public static boolean appsMarketplaceProject = false;
 
-    public static boolean readTimeout;
+    public static boolean readTimeout = false;
 
-    public static boolean jsonFactory;
+    public static boolean jsonFactory = false;
 
     public static AppListing buildAppListing(boolean arg0) {
         return null;

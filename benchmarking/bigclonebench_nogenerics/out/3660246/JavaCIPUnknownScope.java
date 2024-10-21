@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean MQLREADURL;
+    public static boolean MQLREADURL = false;
 
-    public static boolean echoRequest;
+    public static boolean echoRequest = false;
 
-    public static boolean COOKIE;
+    public static boolean COOKIE = false;
 
     public static boolean isDebugging() {
         return false;

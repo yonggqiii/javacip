@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ErrorManager {
+public interface ErrorManager {
 
-    public static boolean GENERIC_FAILURE;
-
-    ErrorManager() {
-        super();
-    }
+    public static boolean GENERIC_FAILURE = false;
 }

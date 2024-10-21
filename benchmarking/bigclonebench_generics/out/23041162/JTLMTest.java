@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JTLMTest {
+public interface JTLMTest {
 
-    public static boolean[] publish911_centennials;
-
-    JTLMTest() {
-        super();
-    }
+    public static boolean[] publish911_centennials = null;
 }

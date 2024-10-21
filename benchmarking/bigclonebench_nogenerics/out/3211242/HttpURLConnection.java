@@ -1,23 +1,13 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_OK;
+    public static int HTTP_OK = 0;
 
-    public static int HTTP_BAD_REQUEST;
+    public static int HTTP_BAD_REQUEST = 0;
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public String getResponseMessage() {
-        return null;
-    }
+    public abstract String getResponseMessage();
 
-    public String getContentType() {
-        return null;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract String getContentType();
 }

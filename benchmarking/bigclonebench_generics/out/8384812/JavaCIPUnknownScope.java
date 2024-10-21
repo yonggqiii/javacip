@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_146 request;
+    public static UNKNOWN_146 request = null;
 
-    public static boolean RESPONSE_BODY;
+    public static boolean RESPONSE_BODY = false;
 
-    public static UNKNOWN_68 pipeline;
+    public static UNKNOWN_68 pipeline = null;
 
-    public static UNKNOWN_159 handler;
+    public static UNKNOWN_159 handler = null;
 
-    public static UNKNOWN_172 recorder;
+    public static UNKNOWN_172 recorder = null;
 
     public static Execution expect(Param arg0) {
         return null;

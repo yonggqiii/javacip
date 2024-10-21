@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ConvertionStepEnum {
+public interface ConvertionStepEnum {
 
-    public static boolean PROCESSING_ROWS;
-
-    ConvertionStepEnum() {
-        super();
-    }
+    public static boolean PROCESSING_ROWS = false;
 }

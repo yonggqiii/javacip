@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean _changed;
+    public static boolean _changed = false;
 
-    public static UNKNOWN_113 _log;
+    public static UNKNOWN_115 _log = null;
 
-    public static Object _data;
+    public static Object _data = null;
 
     public static boolean getTopLevelAncestor() {
         return false;

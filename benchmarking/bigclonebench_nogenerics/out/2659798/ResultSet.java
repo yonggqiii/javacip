@@ -1,23 +1,13 @@
 // added by JavaCIP
-public class ResultSet {
+public interface ResultSet {
 
-    public static boolean TYPE_FORWARD_ONLY;
+    public static boolean TYPE_FORWARD_ONLY = false;
 
-    public static boolean CONCUR_READ_ONLY;
+    public static boolean CONCUR_READ_ONLY = false;
 
-    public UNKNOWN_95 getMetaData() {
-        return null;
-    }
+    public abstract UNKNOWN_95 getMetaData();
 
-    public boolean next() {
-        return false;
-    }
+    public abstract boolean next();
 
-    public boolean getObject(int arg0) {
-        return false;
-    }
-
-    ResultSet() {
-        super();
-    }
+    public abstract boolean getObject(int arg0);
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
-public class ResourceLocator {
+public interface ResourceLocator {
 
-    public static boolean BINARY_MODEL_EXTENSION;
+    public static boolean BINARY_MODEL_EXTENSION = false;
 
     public static URL locateBinaryModel(String arg0) {
         return null;
@@ -13,9 +13,5 @@ public class ResourceLocator {
 
     public static File replaceExtension(URL arg0, boolean arg1) {
         return null;
-    }
-
-    ResourceLocator() {
-        super();
     }
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_33 database;
+    public static UNKNOWN_33 database = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class KMLConstants {
+public interface KMLConstants {
 
-    public static Object KMZ_MIME_TYPE;
-
-    KMLConstants() {
-        super();
-    }
+    public static Object KMZ_MIME_TYPE = null;
 }

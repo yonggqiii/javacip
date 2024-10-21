@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class Type {
+public interface Type {
 
-    public static boolean JAR;
+    public static boolean JAR = false;
 
-    public static boolean SRC;
+    public static boolean SRC = false;
 
-    public static boolean WAR;
+    public static boolean WAR = false;
 
-    public static boolean ZIP;
-
-    Type() {
-        super();
-    }
+    public static boolean ZIP = false;
 }

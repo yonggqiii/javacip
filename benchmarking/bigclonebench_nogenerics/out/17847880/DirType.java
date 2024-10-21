@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class DirType {
+public interface DirType {
 
-    public static Object assets;
+    public static Object assets = null;
 
-    public static Object file;
+    public static DirType file = null;
 
-    public static DirType sd;
+    public static DirType sd = null;
 
-    public static DirType extSd;
-
-    DirType() {
-        super();
-    }
+    public static DirType extSd = null;
 }

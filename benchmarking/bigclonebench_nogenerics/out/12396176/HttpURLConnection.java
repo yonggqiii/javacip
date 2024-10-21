@@ -7,7 +7,7 @@ public interface HttpURLConnection {
 
     public abstract void setRequestProperty(String arg0, String arg1);
 
-    public abstract int getResponseCode();
+    public abstract double getResponseCode();
 
     public abstract InputStream getInputStream();
 }

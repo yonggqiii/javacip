@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class IResource {
+public interface IResource {
 
-    public static boolean DEPTH_INFINITE;
-
-    IResource() {
-        super();
-    }
+    public static boolean DEPTH_INFINITE = false;
 }

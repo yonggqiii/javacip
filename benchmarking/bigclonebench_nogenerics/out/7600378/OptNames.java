@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class OptNames {
+public interface OptNames {
 
-    public static boolean fi_braille_table;
+    public static boolean fi_braille_table = false;
 
-    public static boolean fi_is_sys_braille_table;
-
-    OptNames() {
-        super();
-    }
+    public static boolean fi_is_sys_braille_table = false;
 }

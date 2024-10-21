@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_100 getCategoria(boolean arg0) {
+    public static UNKNOWN_98 getCategoria(boolean arg0) {
         return null;
     }
 
-    public static UNKNOWN_74 getCategoria(String arg0) {
+    public static UNKNOWN_72 getCategoria(String arg0) {
         return null;
     }
 

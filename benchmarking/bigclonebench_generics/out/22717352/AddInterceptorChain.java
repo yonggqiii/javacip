@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface AddInterceptorChain {
 
-    public abstract UNKNOWN_226 getRequest();
+    public abstract UNKNOWN_232 getRequest();
 }

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class VocabularyFormat {
+public interface VocabularyFormat {
 
-    public static boolean RDFXML;
+    public static boolean RDFXML = false;
 
-    public static boolean NTRIPLES;
-
-    VocabularyFormat() {
-        super();
-    }
+    public static boolean NTRIPLES = false;
 }

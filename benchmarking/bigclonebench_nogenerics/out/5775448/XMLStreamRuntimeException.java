@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class XMLStreamRuntimeException extends RuntimeException {
 
-    public XMLStreamRuntimeException(String arg0) {
+    public XMLStreamRuntimeException(String arg0, IORuntimeException arg1) {
         super();
     }
 
-    public XMLStreamRuntimeException(String arg0, IORuntimeException arg1) {
+    public XMLStreamRuntimeException(String arg0) {
         super();
     }
 

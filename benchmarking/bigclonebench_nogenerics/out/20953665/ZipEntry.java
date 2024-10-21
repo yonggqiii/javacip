@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ZipEntry {
 
-    public static boolean STORED;
+    public static boolean STORED = false;
 
     public void setMethod(boolean arg0) {
     }

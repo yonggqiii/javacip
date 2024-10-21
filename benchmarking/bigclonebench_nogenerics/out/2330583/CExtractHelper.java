@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class CExtractHelper {
 
-    public Document m_document;
+    public Object m_document;
 
     public boolean m_generalFailure;
 

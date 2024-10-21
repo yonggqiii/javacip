@@ -1,25 +1,25 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean custom;
+    public static boolean custom = false;
 
-    public static UNKNOWN_133 jButton4;
+    public static UNKNOWN_137 jButton4 = null;
 
-    public static boolean jPanel1;
+    public static boolean jPanel1 = false;
 
-    public static UNKNOWN_94 jLabel1;
+    public static UNKNOWN_98 jLabel1 = null;
 
-    public static UNKNOWN_159 jButton2;
+    public static UNKNOWN_163 jButton2 = null;
 
-    public static boolean googleImageLocation;
+    public static boolean googleImageLocation = false;
 
-    public static UNKNOWN_107 googleImages;
+    public static UNKNOWN_111 googleImages = null;
 
-    public static UNKNOWN_81 getContentPane() {
+    public static UNKNOWN_85 getContentPane() {
         return null;
     }
 
-    public static void add(UNKNOWN_94 arg0, boolean arg1) {
+    public static void add(UNKNOWN_98 arg0, boolean arg1) {
     }
 
     public static void add(boolean arg0, boolean arg1) {

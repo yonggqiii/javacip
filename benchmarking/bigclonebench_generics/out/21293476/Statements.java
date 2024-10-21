@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Statements {
+public interface Statements {
 
-    public static boolean SELECT_STADIUM;
+    public static boolean SELECT_STADIUM = false;
 
-    public static boolean INSERT_GAME;
+    public static boolean INSERT_GAME = false;
 
-    public static boolean INSERT_TICKET_PRICE;
-
-    Statements() {
-        super();
-    }
+    public static boolean INSERT_TICKET_PRICE = false;
 }

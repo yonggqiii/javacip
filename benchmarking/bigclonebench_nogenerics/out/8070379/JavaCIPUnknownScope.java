@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_48 inputResource;
+    public static UNKNOWN_46 inputResource = null;
 
-    public static boolean targetDirectory;
+    public static boolean targetDirectory = false;
 
-    public static boolean targetFile;
+    public static boolean targetFile = false;
 
     JavaCIPUnknownScope() {
         super();

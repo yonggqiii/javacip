@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class DictionaryForMIDs {
+public interface DictionaryForMIDs {
 
-    public static boolean LOG_TAG;
-
-    DictionaryForMIDs() {
-        super();
-    }
+    public static boolean LOG_TAG = false;
 }

@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class Lookup {
 
-    public CharSequence minorType;
+    public java.io.Serializable minorType;
 
-    public Map<String, String> features;
+    public Object features;
 
-    public Object languages;
+    public CharSequence languages;
 
-    public CharSequence majorType;
+    public String majorType;
 
     public Comparable<String> annotationType;
 

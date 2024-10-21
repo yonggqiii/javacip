@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ISpellCheckPreferenceKeys {
+public interface ISpellCheckPreferenceKeys {
 
-    public static boolean SPELLING_USER_DICTIONARY;
-
-    ISpellCheckPreferenceKeys() {
-        super();
-    }
+    public static boolean SPELLING_USER_DICTIONARY = false;
 }

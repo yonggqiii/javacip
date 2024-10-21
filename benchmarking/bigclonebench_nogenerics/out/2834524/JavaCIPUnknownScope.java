@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean outputStream;
+    public static boolean outputStream = false;
 
-    public static boolean manifest;
+    public static boolean manifest = false;
 
-    public static Object includeJars;
+    public static Object includeJars = null;
 
-    public static boolean ignoreDependencies;
+    public static boolean ignoreDependencies = false;
 
     public static void expandSet(HashSet arg0) {
     }

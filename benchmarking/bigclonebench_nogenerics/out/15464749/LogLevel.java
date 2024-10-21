@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class LogLevel {
+public interface LogLevel {
 
-    public static boolean DEBUG;
+    public static boolean DEBUG = false;
 
-    public static boolean WARN;
-
-    LogLevel() {
-        super();
-    }
+    public static boolean WARN = false;
 }

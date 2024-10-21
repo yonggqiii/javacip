@@ -5,7 +5,7 @@ public class Dictionary {
 
     public boolean archiveName;
 
-    public Object lastModified;
+    public Date lastModified;
 
     Dictionary() {
         super();

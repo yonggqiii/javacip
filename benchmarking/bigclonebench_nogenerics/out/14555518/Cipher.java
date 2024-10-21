@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Cipher {
+public interface Cipher {
 
-    public static boolean DECRYPT_MODE;
-
-    Cipher() {
-        super();
-    }
+    public static boolean DECRYPT_MODE = false;
 }

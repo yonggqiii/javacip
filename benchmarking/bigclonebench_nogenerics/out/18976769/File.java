@@ -5,7 +5,7 @@ public interface File {
         return null;
     }
 
-    public abstract OutputStream getAbsolutePath();
+    public abstract BufferedImage getAbsolutePath();
 
     public abstract void delete();
 }

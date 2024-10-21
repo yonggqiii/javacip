@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ConditionalOperatorTable {
+public interface ConditionalOperatorTable {
 
-    public static int CONTAINS_LINK;
+    public static int CONTAINS_LINK = 0;
 
-    public static int NOT_CONTAINS_LINK;
-
-    ConditionalOperatorTable() {
-        super();
-    }
+    public static int NOT_CONTAINS_LINK = 0;
 }

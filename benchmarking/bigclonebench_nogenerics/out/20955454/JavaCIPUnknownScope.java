@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_94 conexao;
+    public static UNKNOWN_94 conexao = null;
 
     JavaCIPUnknownScope() {
         super();

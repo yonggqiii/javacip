@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class URISyntaxRuntimeException extends SAXRuntimeException {
+public class URISyntaxRuntimeException extends RuntimeException {
 
     URISyntaxRuntimeException() {
         super();

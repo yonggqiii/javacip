@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface ResourceProxy {
 
-    public abstract UNKNOWN_529 getRelativePath();
+    public abstract UNKNOWN_115 getRelativePath();
 
-    public abstract UNKNOWN_503 getFileResource();
+    public abstract UNKNOWN_89 getFileResource();
 }

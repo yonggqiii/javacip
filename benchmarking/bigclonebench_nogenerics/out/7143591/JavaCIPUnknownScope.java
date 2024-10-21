@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean fPath;
+    public static boolean fPath = false;
 
-    public static UNKNOWN_68 deepUrls;
+    public static UNKNOWN_68 deepUrls = null;
 
-    public static byte webDepth;
+    public static byte webDepth = 0;
 
     public static void addReport(String arg0) {
     }

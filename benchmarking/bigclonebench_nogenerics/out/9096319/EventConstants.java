@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class EventConstants {
+public interface EventConstants {
 
-    public static boolean NODE_REGAINED_SERVICE_EVENT_UEI;
-
-    EventConstants() {
-        super();
-    }
+    public static boolean NODE_REGAINED_SERVICE_EVENT_UEI = false;
 }

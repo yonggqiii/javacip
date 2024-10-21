@@ -5,7 +5,7 @@ public interface ByteBuffer {
         return null;
     }
 
-    public abstract float getChar(int arg0);
+    public abstract String getChar(int arg0);
 
     public abstract void flip();
 

@@ -1,7 +1,7 @@
 // added by JavaCIP
-public class Util {
+public interface Util {
 
-    public static double DATA_FOLDER;
+    public static byte DATA_FOLDER = 0;
 
     public static boolean getMsg(String arg0) {
         return false;
@@ -11,9 +11,5 @@ public class Util {
     }
 
     public static void error(boolean arg0, boolean arg1) {
-    }
-
-    Util() {
-        super();
     }
 }

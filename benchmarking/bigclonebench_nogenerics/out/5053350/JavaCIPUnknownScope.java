@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_111 context;
+    public static UNKNOWN_111 context = null;
 
     public static boolean equalTo(String arg0) {
         return false;

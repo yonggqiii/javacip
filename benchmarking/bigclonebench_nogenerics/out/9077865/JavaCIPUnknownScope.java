@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_254 fileURI;
+    public static UNKNOWN_310 fileURI = null;
 
-    public static PermissionDeniedRuntimeException exception;
+    public static EXistRuntimeException exception = null;
 
-    public static boolean source;
+    public static boolean source = false;
 
-    public static boolean success;
+    public static boolean success = false;
 
-    public static UNKNOWN_137 getJoint() {
+    public static UNKNOWN_193 getJoint() {
         return null;
     }
 

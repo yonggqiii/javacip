@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ConstantParameters {
+public interface ConstantParameters {
 
-    public static boolean FILENAMEOFModelMetaData;
+    public static boolean FILENAMEOFModelMetaData = false;
 
-    public static String FILENAMEOFPerClassModel;
-
-    ConstantParameters() {
-        super();
-    }
+    public static String FILENAMEOFPerClassModel = null;
 }

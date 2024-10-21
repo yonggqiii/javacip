@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_131 locs;
+    public static UNKNOWN_131 locs = null;
 
     public static List<String> read(boolean arg0) {
         return null;

@@ -1,25 +1,25 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_174 logger;
+    public static UNKNOWN_174 logger = null;
 
-    public static boolean _mpsw;
+    public static boolean _mpsw = false;
 
-    public static boolean _spsw;
+    public static boolean _spsw = false;
 
-    public static UNKNOWN_96 availcmd;
+    public static UNKNOWN_96 availcmd = null;
 
-    public static ConnectionManager _cman;
+    public static ConnectionManager _cman = null;
 
-    public static Object _name;
+    public static Object _name = null;
 
-    public static UNKNOWN_226 commands;
+    public static UNKNOWN_226 commands = null;
 
-    public static Object _sinp;
+    public static BufferedReader _sinp = null;
 
-    public static Object _sout;
+    public static PrintWriter _sout = null;
 
-    public static Socket _sock;
+    public static Socket _sock = null;
 
     public static UNKNOWN_109 hash2hex(boolean arg0) {
         return null;

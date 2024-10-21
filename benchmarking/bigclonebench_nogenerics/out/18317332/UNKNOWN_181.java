@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface UNKNOWN_181 {
 
-    public abstract UNKNOWN_106 getPrimaryId();
+    public abstract void setVal(boolean arg0, int arg1);
 }

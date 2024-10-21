@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class DatabaseViewerManager {
+public interface DatabaseViewerManager {
 
-    public static boolean baseURL;
-
-    DatabaseViewerManager() {
-        super();
-    }
+    public static boolean baseURL = false;
 }

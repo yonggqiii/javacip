@@ -1,14 +1,14 @@
 // added by JavaCIP
 public class Person implements Adresse {
 
-    public UNKNOWN_85 getAdressen() {
+    public UNKNOWN_101 getAdressen() {
         return null;
     }
 
     public void setName(String arg0) {
     }
 
-    public UNKNOWN_72 getPrivatAdressen() {
+    public UNKNOWN_88 getPrivatAdressen() {
         return null;
     }
 

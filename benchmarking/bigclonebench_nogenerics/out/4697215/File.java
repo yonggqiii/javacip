@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static byte separator;
+    public static double separator = 0;
 
     public boolean exists() {
         return false;
@@ -18,11 +18,11 @@ public class File {
         super();
     }
 
-    public File(String arg0, String arg1) {
+    public File(String arg0) {
         super();
     }
 
-    public File(String arg0) {
+    public File(String arg0, String arg1) {
         super();
     }
 

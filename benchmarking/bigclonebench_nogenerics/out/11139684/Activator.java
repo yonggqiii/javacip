@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Activator {
+public interface Activator {
 
-    public static boolean PLUGIN_CONF;
+    public static boolean PLUGIN_CONF = false;
 
-    public static boolean PLUGIN_ID;
-
-    Activator() {
-        super();
-    }
+    public static boolean PLUGIN_ID = false;
 }

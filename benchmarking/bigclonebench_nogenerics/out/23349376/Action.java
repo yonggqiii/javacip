@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Action {
+public interface Action {
 
-    public static UNKNOWN_196 lineMode;
-
-    Action() {
-        super();
-    }
+    public static UNKNOWN_196 lineMode = null;
 }

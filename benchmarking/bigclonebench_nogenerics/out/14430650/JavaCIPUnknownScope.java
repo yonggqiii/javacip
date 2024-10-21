@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean hashAlgorithmName;
+    public static boolean hashAlgorithmName = false;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean codeBase;
+    public static boolean codeBase = false;
 
-    public static boolean directory;
+    public static boolean directory = false;
 
     public static UserFunction getCachedFunction(String arg0) {
         return null;

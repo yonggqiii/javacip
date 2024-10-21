@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ProxyBase {
+public interface ProxyBase {
 
-    public static boolean REFRESH_PARAM;
-
-    ProxyBase() {
-        super();
-    }
+    public static boolean REFRESH_PARAM = false;
 }

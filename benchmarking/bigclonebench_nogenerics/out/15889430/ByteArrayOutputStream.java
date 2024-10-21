@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ByteArrayOutputStream {
 
-    public char[] toByteArray() {
+    public StringBuilder toByteArray() {
         return null;
     }
 

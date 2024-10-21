@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ErrorCodes {
+public interface ErrorCodes {
 
-    public static boolean CODE_2100;
-
-    ErrorCodes() {
-        super();
-    }
+    public static boolean CODE_2100 = false;
 }

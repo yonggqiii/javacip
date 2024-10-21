@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class URL {
 
-    public UNKNOWN_77 openConnection() {
+    public UNKNOWN_85 openConnection() {
         return null;
     }
 

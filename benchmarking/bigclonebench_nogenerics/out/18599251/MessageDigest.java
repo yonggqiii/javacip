@@ -3,5 +3,5 @@ public interface MessageDigest {
 
     public abstract void update(byte[] arg0);
 
-    public abstract String digest();
+    public abstract StringBuilder digest();
 }

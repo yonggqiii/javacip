@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class C {
 
-    public List<java.io.Serializable> get() {
+    public List<Object> get() {
         return null;
     }
 

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class JsonToken {
+public interface JsonToken {
 
-    public static Object START_OBJECT;
+    public static Object START_OBJECT = null;
 
-    public static Object END_OBJECT;
-
-    JsonToken() {
-        super();
-    }
+    public static JsonToken END_OBJECT = null;
 }

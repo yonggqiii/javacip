@@ -5,7 +5,7 @@ public class StringTokenizer {
         return false;
     }
 
-    public StringTokenizer(java.io.Serializable arg0, String arg1) {
+    public StringTokenizer(Object arg0, String arg1) {
         super();
     }
 

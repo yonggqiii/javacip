@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_67 configuration;
+    public static UNKNOWN_67 configuration = null;
 
-    public static UNKNOWN_134 userService;
+    public static UNKNOWN_134 userService = null;
 
-    public static UNKNOWN_80 resourceService;
+    public static UNKNOWN_80 resourceService = null;
 
     public static boolean getTemplateContent(boolean arg0) {
         return false;

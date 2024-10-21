@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class RenRenConstant {
+public interface RenRenConstant {
 
-    public static boolean apiKey;
+    public static boolean apiKey = false;
 
-    public static boolean secret;
+    public static boolean secret = false;
 
-    public static boolean apiUrl;
-
-    RenRenConstant() {
-        super();
-    }
+    public static boolean apiUrl = false;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class StringUtils {
+public interface StringUtils {
 
-    public static String EMPTY;
-
-    StringUtils() {
-        super();
-    }
+    public static String EMPTY = null;
 }

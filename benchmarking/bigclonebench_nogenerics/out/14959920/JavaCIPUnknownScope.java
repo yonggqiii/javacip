@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean exists_;
+    public static boolean exists_ = false;
 
-    public static boolean[] done;
+    public static boolean[] done = null;
 
-    public static boolean type_;
+    public static boolean type_ = false;
 
-    public static boolean length_;
+    public static boolean length_ = false;
 
-    public static boolean list_;
+    public static boolean list_ = false;
 
-    public static boolean lastModified_;
+    public static boolean lastModified_ = false;
 
     public static URL getContentURL() {
         return null;

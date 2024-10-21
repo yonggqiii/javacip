@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Statements {
+public interface Statements {
 
-    public static boolean SELECT_STAD_TRIBUNE;
+    public static boolean SELECT_STAD_TRIBUNE = false;
 
-    public static boolean DELETE_STADIUM;
-
-    Statements() {
-        super();
-    }
+    public static boolean DELETE_STADIUM = false;
 }

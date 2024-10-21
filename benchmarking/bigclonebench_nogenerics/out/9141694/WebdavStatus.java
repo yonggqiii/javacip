@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class WebdavStatus {
+public interface WebdavStatus {
 
-    public static boolean SC_BAD_REQUEST;
-
-    WebdavStatus() {
-        super();
-    }
+    public static boolean SC_BAD_REQUEST = false;
 }

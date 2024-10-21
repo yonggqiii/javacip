@@ -37,7 +37,7 @@ public interface MailSetting extends AbstractBaseObject {
 
     public abstract void setCreatorName(boolean arg0);
 
-    public abstract UNKNOWN_265 getUpdateCount();
+    public abstract UNKNOWN_239 getUpdateCount();
 
     public abstract boolean getIncomingServerLoginPwd();
 

@@ -89,18 +89,20 @@ private def normalizedMethod(methodToFinalize: MethodWithContext): Option[Method
     .map(x => if x == Bottom then OBJECT else x)
   if newFP.exists(t => t == PRIMITIVE_VOID) then return None
   val newSignature = methodToFinalize.signature.copy(formalParameters = newFP)
+  if newSignature.formalParameters.exists(x => x.containsTypeParameter) || methodToFinalize.returnType.containsTypeParameter then None 
+  else
   // for now, just directly use the method
-  Some(
-    new Method(
-      newSignature,
-      methodToFinalize.returnType,
-      methodToFinalize.typeParameterBounds,
-      methodToFinalize.accessModifier,
-      methodToFinalize.isAbstract,
-      methodToFinalize.isStatic,
-      methodToFinalize.isFinal
+    Some(
+      new Method(
+        newSignature,
+        methodToFinalize.returnType,
+        methodToFinalize.typeParameterBounds,
+        methodToFinalize.accessModifier,
+        methodToFinalize.isAbstract,
+        methodToFinalize.isStatic,
+        methodToFinalize.isFinal
+      )
     )
-  )
 
 private def generateNewMethod(
     numTypeParams: Int,

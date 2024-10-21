@@ -1,21 +1,21 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int size;
+    public static int size = 0;
 
-    public static UNKNOWN_282 url;
+    public static UNKNOWN_70 url = null;
 
-    public static boolean saveas;
+    public static boolean saveas = false;
 
-    public static int MAX_BUFFER_SIZE;
+    public static int MAX_BUFFER_SIZE = 0;
 
-    public static boolean COMPLETE;
+    public static boolean COMPLETE = false;
 
-    public static boolean status;
+    public static boolean status = false;
 
-    public static boolean DOWNLOADING;
+    public static boolean DOWNLOADING = false;
 
-    public static byte downloaded;
+    public static byte downloaded = 0;
 
     public static void error() {
     }

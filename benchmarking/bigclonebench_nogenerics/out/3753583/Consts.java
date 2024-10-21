@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Consts {
+public interface Consts {
 
-    public static boolean FILE_EXTENSION_GROOVY;
-
-    Consts() {
-        super();
-    }
+    public static boolean FILE_EXTENSION_GROOVY = false;
 }

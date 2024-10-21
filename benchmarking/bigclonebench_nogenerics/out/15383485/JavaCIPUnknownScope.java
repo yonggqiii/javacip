@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean tsaURL;
+    public static boolean tsaURL = false;
 
-    public static Object tsaUsername;
+    public static Object tsaUsername = null;
 
-    public static boolean tsaPassword;
+    public static boolean tsaPassword = false;
 
     JavaCIPUnknownScope() {
         super();

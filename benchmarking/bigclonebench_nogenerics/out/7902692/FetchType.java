@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FetchType {
+public interface FetchType {
 
-    public static UNKNOWN_401 map;
-
-    FetchType() {
-        super();
-    }
+    public static UNKNOWN_229 map = null;
 }

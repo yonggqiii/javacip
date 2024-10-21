@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class LogHandler {
+public interface LogHandler {
 
-    public static String path;
+    public static String path = null;
 
-    public static UNKNOWN_16144 dateFormat;
-
-    LogHandler() {
-        super();
-    }
+    public static UNKNOWN_6305 dateFormat = null;
 }

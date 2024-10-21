@@ -5,11 +5,11 @@ public class File {
         return false;
     }
 
-    public byte length() {
+    public int length() {
         return 0;
     }
 
-    public double getAbsolutePath() {
+    public byte getAbsolutePath() {
         return 0;
     }
 

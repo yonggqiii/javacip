@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean CONN_STR;
+    public static boolean CONN_STR = false;
 
-    public static UNKNOWN_54 log;
+    public static UNKNOWN_54 log = null;
 
     public static MoteDeploymentConfiguration getMoteDeploymentConfiguration(ResultSet arg0) {
         return null;

@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class DocumentImpl implements BinaryDocument {
+public interface DocumentImpl extends BinaryDocument {
 
-    public static boolean BINARY_FILE;
+    public static boolean BINARY_FILE = false;
 
-    public boolean getResourceType() {
-        return false;
-    }
-
-    DocumentImpl() {
-        super();
-    }
+    public abstract boolean getResourceType();
 }

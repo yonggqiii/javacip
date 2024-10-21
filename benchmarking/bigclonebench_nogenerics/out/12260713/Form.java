@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Form {
+public interface Form {
 
-    public static boolean ACTIONEXECUTEDTOKEN;
-
-    Form() {
-        super();
-    }
+    public static boolean ACTIONEXECUTEDTOKEN = false;
 }

@@ -1,0 +1,17 @@
+class c3341258 {
+
+    private RssEvent getLastEvent() throws DocumentRuntimeException, IORuntimeException {
+        Document document = new SAXReader().read(JavaCIPUnknownScope.url.openStream());
+        Element item = document.getRootElement().element("channel").element("item");
+        Date date = new Date();
+        String dateStr = item.element("pubDate").getStringValue();
+        try {
+            date = JavaCIPUnknownScope.dateFormat.parse(dateStr);
+        } catch (ParseRuntimeException e) {
+            String message = MessageFormat.format("Unable to parse string \"{0}\" with pattern \"{1}\".", dateStr, JavaCIPUnknownScope.FORMAT);
+            JavaCIPUnknownScope.logger.warn(message, e);
+        }
+        RssEvent event = new RssEvent(this, item.element("title").getStringValue(), item.element("link").getStringValue(), item.element("description").getStringValue(), item.element("author").getStringValue(), date);
+        return event;
+    }
+}

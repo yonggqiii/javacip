@@ -5,7 +5,7 @@ public interface Resource {
 
     public abstract FileProvider as(Class<FileProvider> arg0);
 
-    public abstract Touchable as(java.lang.reflect.GenericDeclaration arg0);
+    public abstract Touchable as(Object arg0);
 
     public abstract boolean getLastModified();
 }

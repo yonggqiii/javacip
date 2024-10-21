@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte PERCENTAGE_BASE;
+    public static byte PERCENTAGE_BASE = 0;
 
-    public static boolean STATUS_DOWNLOADING;
+    public static boolean STATUS_DOWNLOADING = false;
 
     public static void createParentDirectories(File arg0) {
     }

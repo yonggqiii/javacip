@@ -1,12 +1,7 @@
 // added by JavaCIP
-public class IDecoration {
+public interface IDecoration {
 
-    public static boolean TOP_LEFT;
+    public static boolean TOP_LEFT = false;
 
-    public void addOverlay(ImageDescriptor arg0, boolean arg1) {
-    }
-
-    IDecoration() {
-        super();
-    }
+    public abstract void addOverlay(ImageDescriptor arg0, boolean arg1);
 }

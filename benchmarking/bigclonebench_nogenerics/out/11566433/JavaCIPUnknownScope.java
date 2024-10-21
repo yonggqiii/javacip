@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean size;
+    public static boolean size = false;
 
-    public static UNKNOWN_23 getGEDCOMFile() {
+    public static UNKNOWN_25 getGEDCOMFile() {
         return null;
     }
 

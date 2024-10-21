@@ -5,7 +5,7 @@ public class URL {
         return null;
     }
 
-    public UNKNOWN_60 getProtocol() {
+    public UNKNOWN_62 getProtocol() {
         return null;
     }
 

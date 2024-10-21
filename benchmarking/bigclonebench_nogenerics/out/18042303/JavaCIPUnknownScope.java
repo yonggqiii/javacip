@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_152 config;
+    public static UNKNOWN_156 config = null;
 
-    public static UNKNOWN_126 articleDao;
+    public static UNKNOWN_130 articleDao = null;
 
-    public static UNKNOWN_139 dayMonthYearEn;
+    public static UNKNOWN_143 dayMonthYearEn = null;
 
-    public static boolean HITS_PER_PAGE;
+    public static boolean HITS_PER_PAGE = false;
 
     public static String getArgument(boolean arg0) {
         return null;

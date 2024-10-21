@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class PatchManager {
+public interface PatchManager {
 
-    public static boolean mute;
-
-    PatchManager() {
-        super();
-    }
+    public static boolean mute = false;
 }

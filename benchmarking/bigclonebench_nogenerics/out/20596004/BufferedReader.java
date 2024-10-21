@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class BufferedReader {
 
-    public String readLine() {
+    public byte[] readLine() {
         return null;
     }
 

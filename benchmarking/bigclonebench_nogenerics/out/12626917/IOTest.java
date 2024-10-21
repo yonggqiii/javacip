@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class IOTest {
+public interface IOTest {
 
-    public static boolean URL;
-
-    IOTest() {
-        super();
-    }
+    public static boolean URL = false;
 }

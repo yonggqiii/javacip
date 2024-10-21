@@ -3,5 +3,5 @@ public interface FileStatus {
 
     public abstract boolean isFile();
 
-    public abstract char getPath();
+    public abstract String getPath();
 }

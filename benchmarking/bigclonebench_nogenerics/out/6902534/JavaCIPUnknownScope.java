@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_66 logger;
+    public static UNKNOWN_66 logger = null;
 
     public static String getVirtualWiki(HttpServletRequest arg0) {
         return null;

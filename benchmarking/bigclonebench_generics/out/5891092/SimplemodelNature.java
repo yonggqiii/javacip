@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SimplemodelNature {
+public interface SimplemodelNature {
 
-    public static String NATURE_ID;
-
-    SimplemodelNature() {
-        super();
-    }
+    public static String NATURE_ID = null;
 }

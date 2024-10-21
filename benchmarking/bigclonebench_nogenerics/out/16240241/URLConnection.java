@@ -1,18 +1,9 @@
 // added by JavaCIP
-public class URLConnection extends HttpURLConnection {
+public interface URLConnection extends HttpURLConnection {
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public int getContentLength() {
-        return 0;
-    }
+    public abstract int getContentLength();
 
-    public InputStream getInputStream() {
-        return null;
-    }
-
-    URLConnection() {
-        super();
-    }
+    public abstract InputStream getInputStream();
 }

@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_213 dbConn;
+    public static UNKNOWN_213 dbConn = null;
 
-    public static UNKNOWN_187 sessionContainer;
+    public static UNKNOWN_187 sessionContainer = null;
 
-    public static UNKNOWN_239 log;
+    public static UNKNOWN_239 log = null;
 
     public static Integer getNextPrimaryID() {
         return null;

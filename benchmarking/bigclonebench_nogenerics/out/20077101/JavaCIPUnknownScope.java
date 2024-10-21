@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_51 ihm;
+    public static UNKNOWN_51 ihm = null;
 
-    public static boolean maj_file_version;
+    public static boolean maj_file_version = false;
 
     public static int lecture_xml(String arg0, String arg1, String arg2) {
         return 0;

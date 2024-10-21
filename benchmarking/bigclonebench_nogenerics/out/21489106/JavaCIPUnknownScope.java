@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_38 LOG;
+    public static UNKNOWN_38 LOG = null;
 
     public static String byteArrayToHex(byte[] arg0) {
         return null;

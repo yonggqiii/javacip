@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ReasonType {
+public interface ReasonType {
 
-    public static boolean INVALID_REQUEST;
-
-    ReasonType() {
-        super();
-    }
+    public static boolean INVALID_REQUEST = false;
 }

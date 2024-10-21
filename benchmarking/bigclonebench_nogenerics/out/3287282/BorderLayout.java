@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class BorderLayout {
+public interface BorderLayout {
 
-    public static boolean CENTER;
+    public static boolean CENTER = false;
 
-    public static boolean PAGE_END;
-
-    BorderLayout() {
-        super();
-    }
+    public static boolean PAGE_END = false;
 }

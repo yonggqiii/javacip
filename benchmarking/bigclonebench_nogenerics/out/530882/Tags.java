@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Tags {
+public interface Tags {
 
-    public static boolean PixelData;
-
-    Tags() {
-        super();
-    }
+    public static boolean PixelData = false;
 }

@@ -3,5 +3,5 @@ public interface IProxyData {
 
     public abstract String getHost();
 
-    public abstract Object getPort();
+    public abstract char getPort();
 }

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class GeneralConstants {
+public interface GeneralConstants {
 
-    public static String LOAD_TYPE_FULL;
+    public static String LOAD_TYPE_FULL = null;
 
-    public static String EMPTY_TOKEN;
-
-    GeneralConstants() {
-        super();
-    }
+    public static String EMPTY_TOKEN = null;
 }

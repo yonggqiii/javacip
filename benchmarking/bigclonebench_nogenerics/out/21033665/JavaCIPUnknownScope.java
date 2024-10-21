@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_143 embeddedConnection;
+    public static UNKNOWN_141 embeddedConnection = null;
 
-    public static boolean BOOKMARK_INSERT;
+    public static boolean BOOKMARK_INSERT = false;
 
-    public static Object CONSTRAINT_VIOLATION;
+    public static Object CONSTRAINT_VIOLATION = null;
 
     public static long getInsertedPrimaryKey() {
         return 0;

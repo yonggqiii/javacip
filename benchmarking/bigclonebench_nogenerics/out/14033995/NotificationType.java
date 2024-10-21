@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class NotificationType {
+public interface NotificationType {
 
-    public static boolean INFO;
-
-    NotificationType() {
-        super();
-    }
+    public static boolean INFO = false;
 }

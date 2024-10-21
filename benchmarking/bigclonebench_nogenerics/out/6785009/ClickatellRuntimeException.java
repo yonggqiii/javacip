@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ClickatellRuntimeException extends RuntimeException {
 
-    public static boolean ERROR_UNKNOWN;
+    public static boolean ERROR_UNKNOWN = false;
 
     public ClickatellRuntimeException(String arg0, boolean arg1) {
         super();

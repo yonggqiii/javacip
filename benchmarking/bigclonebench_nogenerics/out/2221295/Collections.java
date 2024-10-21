@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Collections {
+public interface Collections {
 
-    public static boolean EMPTY_MAP;
-
-    Collections() {
-        super();
-    }
+    public static boolean EMPTY_MAP = false;
 }

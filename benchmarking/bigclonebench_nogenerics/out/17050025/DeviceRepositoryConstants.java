@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class DeviceRepositoryConstants {
+public interface DeviceRepositoryConstants {
 
-    public static boolean VERSION_FILENAME;
-
-    DeviceRepositoryConstants() {
-        super();
-    }
+    public static boolean VERSION_FILENAME = false;
 }

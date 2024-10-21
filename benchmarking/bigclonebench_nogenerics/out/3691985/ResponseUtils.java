@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ResponseUtils {
+public interface ResponseUtils {
 
-    public static boolean DOWNLOAD_CONTENT_TYPE;
-
-    ResponseUtils() {
-        super();
-    }
+    public static boolean DOWNLOAD_CONTENT_TYPE = false;
 }

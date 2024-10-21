@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int m_compositionId;
+    public static String m_compositionId = null;
 
-    public static UNKNOWN_29 s_compostionCache;
+    public static UNKNOWN_42 s_compostionCache = null;
 
-    public static String getDeleteSql(int arg0) {
+    public static String getDeleteSql(String arg0) {
         return null;
     }
 

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Type {
+public interface Type {
 
-    public static boolean HTTP;
-
-    Type() {
-        super();
-    }
+    public static boolean HTTP = false;
 }

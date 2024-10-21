@@ -5,7 +5,7 @@ public class JSONParser {
         return null;
     }
 
-    public JSONParser(InputStream arg0) {
+    public JSONParser(Object arg0) {
         super();
     }
 

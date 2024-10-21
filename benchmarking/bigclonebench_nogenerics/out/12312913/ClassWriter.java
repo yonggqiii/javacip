@@ -4,7 +4,7 @@ public class ClassWriter {
     public void readClass(FileInputStream arg0) {
     }
 
-    public UNKNOWN_74 getMethods() {
+    public UNKNOWN_87 getMethods() {
         return null;
     }
 

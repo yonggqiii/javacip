@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class MSequence {
+public interface MSequence {
 
-    public static UNKNOWN_155 Table_Name;
-
-    MSequence() {
-        super();
-    }
+    public static UNKNOWN_143 Table_Name = null;
 }

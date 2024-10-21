@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_56 logFile;
+    public static UNKNOWN_42 logFile = null;
 
-    public static byte reductionRatio;
+    public static byte reductionRatio = 0;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int COPY_BLOCKSIZE;
+    public static int COPY_BLOCKSIZE = 0;
 
     JavaCIPUnknownScope() {
         super();

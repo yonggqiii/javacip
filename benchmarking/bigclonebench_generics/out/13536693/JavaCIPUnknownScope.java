@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_95 PACK_FILE_SUFFIX;
+    public static UNKNOWN_95 PACK_FILE_SUFFIX = null;
 
     JavaCIPUnknownScope() {
         super();

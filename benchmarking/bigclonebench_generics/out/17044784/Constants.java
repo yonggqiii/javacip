@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static String SUFFIX_PAGE_FILE;
+    public static String SUFFIX_PAGE_FILE = null;
 
-    public static String SUFFIX_DATA_FILE;
-
-    Constants() {
-        super();
-    }
+    public static String SUFFIX_DATA_FILE = null;
 }

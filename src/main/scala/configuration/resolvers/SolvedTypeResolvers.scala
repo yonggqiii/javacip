@@ -76,4 +76,5 @@ def resolveSolvedTypeVariable(t: ResolvedTypeVariable): TTypeParameter =
     val m = typeParam.getContainer.asInstanceOf[ResolvedMethodDeclaration]
     val t = m.declaringType
     TypeParameterName(t.getQualifiedName, typeParam.getContainerId, typeParam.getName)
-  else ??? // TODO
+  else 
+    ??? // TODO

@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class Collections {
+public interface Collections {
 
-    public static boolean COLLECTIONS_ICON_DIRECTORY;
+    public static boolean COLLECTIONS_ICON_DIRECTORY = false;
 
-    public boolean createTopLevelXml() {
-        return false;
-    }
-
-    Collections() {
-        super();
-    }
+    public abstract boolean createTopLevelXml();
 }

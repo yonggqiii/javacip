@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_129 jiraFilterURL;
+    public static UNKNOWN_129 jiraFilterURL = null;
 
-    public static boolean jiraUser;
+    public static boolean jiraUser = false;
 
-    public static boolean jiraPassword;
+    public static boolean jiraPassword = false;
 
     public static URL getSourceURL() {
         return null;

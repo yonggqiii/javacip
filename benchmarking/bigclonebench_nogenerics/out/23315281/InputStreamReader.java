@@ -1,11 +1,11 @@
 // added by JavaCIP
-public class InputStreamReader {
+public class InputStreamReader extends FileReader {
 
     public InputStreamReader(boolean arg0) {
-        super();
+        super((java.lang.String) null);
     }
 
     InputStreamReader() {
-        super();
+        super((java.lang.String) null);
     }
 }

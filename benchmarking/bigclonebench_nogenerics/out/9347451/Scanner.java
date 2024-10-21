@@ -5,8 +5,8 @@ public class Scanner {
         return false;
     }
 
-    public char[] nextLine() {
-        return null;
+    public double nextLine() {
+        return 0;
     }
 
     public Scanner(boolean arg0) {

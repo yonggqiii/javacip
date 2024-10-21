@@ -1,17 +1,13 @@
 // added by JavaCIP
-public class HttpConfig {
+public interface HttpConfig {
 
-    public static double BBS_MAIL_DEL;
+    public static double BBS_MAIL_DEL = 0;
 
     public static HttpClient newInstance() {
         return null;
     }
 
-    public static byte bbsURL() {
+    public static double bbsURL() {
         return 0;
-    }
-
-    HttpConfig() {
-        super();
     }
 }

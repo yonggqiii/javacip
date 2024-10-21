@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Principal {
+public interface Principal {
 
-    public static byte version;
-
-    Principal() {
-        super();
-    }
+    public static byte version = 0;
 }

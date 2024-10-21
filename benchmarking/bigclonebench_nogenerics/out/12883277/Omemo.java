@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Omemo {
+public interface Omemo {
 
-    public static boolean checksWikiPageName;
-
-    Omemo() {
-        super();
-    }
+    public static boolean checksWikiPageName = false;
 }

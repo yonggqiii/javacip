@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object connectionDigestHandler;
+    public static Object connectionDigestHandler = null;
 
-    public static boolean uc;
+    public static boolean uc = false;
 
     JavaCIPUnknownScope() {
         super();

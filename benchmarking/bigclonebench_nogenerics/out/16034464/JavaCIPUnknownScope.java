@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean messages;
+    public static boolean messages = false;
 
     public static void processTemplate(String arg0, File arg1, VelocityContext arg2) {
     }

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class CachedQuery {
 
-    public long loadTimeStamp;
+    public double loadTimeStamp;
 
-    public Object queryObject;
+    public XQueryModule queryObject;
 
     public StaticContext staticEnv;
 

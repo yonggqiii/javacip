@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TipoLog {
+public interface TipoLog {
 
-    public static boolean ERRO;
-
-    TipoLog() {
-        super();
-    }
+    public static boolean ERRO = false;
 }

@@ -5,9 +5,9 @@ public interface Site {
 
     public abstract void wirteFile();
 
-    public abstract byte getSiteID();
+    public abstract int getSiteID();
 
-    public abstract boolean getAppserverID();
+    public abstract Object getAppserverID();
 
     public abstract String getExtendParent();
 
@@ -17,9 +17,9 @@ public interface Site {
 
     public abstract String getName();
 
-    public abstract float getUseStatus();
+    public abstract int getUseStatus();
 
     public abstract boolean getRemarkNumber();
 
-    public abstract UNKNOWN_137 getIncrementIndex();
+    public abstract UNKNOWN_139 getIncrementIndex();
 }

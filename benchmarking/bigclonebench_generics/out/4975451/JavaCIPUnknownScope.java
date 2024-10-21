@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_151 service;
+    public static UNKNOWN_151 service = null;
 
     public static Stream openStream(URL arg0, ProgressListener arg1, int arg2, int arg3) {
         return null;

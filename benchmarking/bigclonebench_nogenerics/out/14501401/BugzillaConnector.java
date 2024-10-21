@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class BugzillaConnector {
+public interface BugzillaConnector {
 
-    public static boolean SERVER_URL;
-
-    BugzillaConnector() {
-        super();
-    }
+    public static boolean SERVER_URL = false;
 }

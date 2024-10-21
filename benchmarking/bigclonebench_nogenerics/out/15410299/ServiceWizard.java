@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class ServiceWizard {
+public interface ServiceWizard {
 
-    public static boolean ATTRIBUTE_FUNCTION;
+    public static boolean ATTRIBUTE_FUNCTION = false;
 
-    public static boolean ATTRIBUTE_SERVICE_REFERENCE;
+    public static boolean ATTRIBUTE_SERVICE_REFERENCE = false;
 
-    public static boolean ATTRIBUTE_SERVICE;
+    public static boolean ATTRIBUTE_SERVICE = false;
 
-    public static Object FUNCTION_DELETE;
-
-    ServiceWizard() {
-        super();
-    }
+    public static Object FUNCTION_DELETE = null;
 }

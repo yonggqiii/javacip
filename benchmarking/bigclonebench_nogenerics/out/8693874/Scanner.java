@@ -5,8 +5,8 @@ public class Scanner {
         return false;
     }
 
-    public char nextLine() {
-        return 'a';
+    public int nextLine() {
+        return 0;
     }
 
     public Scanner(InputStream arg0) {

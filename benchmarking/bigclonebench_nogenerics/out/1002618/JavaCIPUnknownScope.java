@@ -1,29 +1,29 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean pservname;
+    public static boolean pservname = false;
 
-    public static ServerSocket ss;
+    public static ServerSocket ss = null;
 
-    public static UNKNOWN_81 xsl;
+    public static UNKNOWN_83 xsl = null;
 
-    public static boolean withlinlyn;
+    public static boolean withlinlyn = false;
 
-    public static UNKNOWN_120 xlin;
+    public static UNKNOWN_122 xlin = null;
 
-    public static long startserv;
+    public static long startserv = 0;
 
-    public static boolean file;
+    public static boolean file = false;
 
-    public static boolean http;
+    public static boolean http = false;
 
-    public static long finserv;
+    public static long finserv = 0;
 
-    public static boolean control_listening;
+    public static boolean control_listening = false;
 
-    public static boolean as_php;
+    public static boolean as_php = false;
 
-    public static boolean listening;
+    public static boolean listening = false;
 
     JavaCIPUnknownScope() {
         super();

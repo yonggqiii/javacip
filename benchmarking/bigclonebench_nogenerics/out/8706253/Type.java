@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Type {
+public interface Type {
 
-    public static Object XOM;
+    public static Object XOM = null;
 
-    public static Object CML;
-
-    Type() {
-        super();
-    }
+    public static Object CML = null;
 }

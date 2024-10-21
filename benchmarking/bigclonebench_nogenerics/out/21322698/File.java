@@ -30,11 +30,11 @@ public class File {
     public void delete() {
     }
 
-    public File(File arg0, boolean arg1) {
+    public File(String arg0) {
         super();
     }
 
-    public File(String arg0) {
+    public File(File arg0, boolean arg1) {
         super();
     }
 

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ContentRangeHeaderValue {
 
-    public byte getInstanceLength() {
+    public short getInstanceLength() {
         return 0;
     }
 
@@ -9,7 +9,7 @@ public class ContentRangeHeaderValue {
         return 0;
     }
 
-    public ContentRangeHeaderValue(double arg0, double arg1, byte arg2) {
+    public ContentRangeHeaderValue(double arg0, double arg1, short arg2) {
         super();
     }
 

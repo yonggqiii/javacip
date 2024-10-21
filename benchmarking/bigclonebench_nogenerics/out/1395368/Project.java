@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Project {
+public interface Project {
 
-    public static boolean MSG_INFO;
+    public static boolean MSG_INFO = false;
 
-    public static boolean MSG_ERR;
-
-    Project() {
-        super();
-    }
+    public static boolean MSG_ERR = false;
 }

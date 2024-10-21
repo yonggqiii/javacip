@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_863 P;
+    public static UNKNOWN_83 P = null;
 
-    public static boolean fileName;
+    public static boolean fileName = false;
 
     public static void update(String arg0, int arg1) {
     }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static String LINE_ENDING;
+    public static double LINE_ENDING = 0;
 
     public static void assertNotNull(String arg0, Map arg1) {
     }

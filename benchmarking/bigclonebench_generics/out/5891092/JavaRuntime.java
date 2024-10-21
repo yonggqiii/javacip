@@ -1,7 +1,7 @@
 // added by JavaCIP
-public class JavaRuntime {
+public interface JavaRuntime {
 
-    public static boolean JRE_CONTAINER;
+    public static boolean JRE_CONTAINER = false;
 
     public static IVMInstall getDefaultVMInstall() {
         return null;
@@ -9,9 +9,5 @@ public class JavaRuntime {
 
     public static LibraryLocation[] getLibraryLocations(IVMInstall arg0) {
         return null;
-    }
-
-    JavaRuntime() {
-        super();
     }
 }

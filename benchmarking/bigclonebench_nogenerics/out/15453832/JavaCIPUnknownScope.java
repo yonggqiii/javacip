@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean[] HEX_DIGITS;
+    public static byte[] HEX_DIGITS = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_112 server;
+    public static UNKNOWN_112 server = null;
 
     public static void assertEquals(char arg0, boolean arg1) {
     }

@@ -5,7 +5,7 @@ public class URL {
         return null;
     }
 
-    public URL(UNKNOWN_343 arg0, String arg1) {
+    public URL(UNKNOWN_330 arg0, String arg1) {
         super();
     }
 

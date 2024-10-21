@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class AuthScope {
+public interface AuthScope {
 
-    public static boolean ANY;
-
-    AuthScope() {
-        super();
-    }
+    public static boolean ANY = false;
 }

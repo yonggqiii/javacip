@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_52 random;
+    public static UNKNOWN_54 random = null;
 
-    public static String guid;
+    public static CharSequence guid = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ErrorConstant {
+public interface ErrorConstant {
 
-    public static boolean DB_INSERT_ERROR;
-
-    ErrorConstant() {
-        super();
-    }
+    public static boolean DB_INSERT_ERROR = false;
 }

@@ -28,3 +28,6 @@ private def resolveIsInterfaceAssertion(
         addToConstraintStore(x, a, log, config)
       case x: PrimitiveType =>
         (log.addWarn(s"$x cannot be an interface"), Nil)
+      case x: TemporaryType =>
+        val newPhi = config.phi1 + (x.identifier -> config.phi1(x.identifier).asInterface)
+        (log, config.copy(phi1 = newPhi) :: Nil)

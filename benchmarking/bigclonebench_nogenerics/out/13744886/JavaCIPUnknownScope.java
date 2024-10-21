@@ -1,21 +1,21 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int noofparts;
+    public static byte noofparts = 0;
 
-    public static boolean deleteOnFinish;
+    public static boolean deleteOnFinish = false;
 
-    public static UNKNOWN_78 outputfile;
+    public static UNKNOWN_76 outputfile = null;
 
-    public static UNKNOWN_52 status;
+    public static UNKNOWN_50 status = null;
 
-    public static boolean inputfile;
+    public static boolean inputfile = false;
 
-    public static byte splitsize;
+    public static byte splitsize = 0;
 
-    public static UNKNOWN_104 pb;
+    public static UNKNOWN_102 pb = null;
 
-    public static byte remainingsize;
+    public static byte remainingsize = 0;
 
     JavaCIPUnknownScope() {
         super();

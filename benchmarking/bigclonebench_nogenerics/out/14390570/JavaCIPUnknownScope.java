@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_82 chooser;
+    public static UNKNOWN_82 chooser = null;
 
-    public static boolean jd;
+    public static boolean jd = false;
 
-    public static UNKNOWN_121 imageURL;
+    public static UNKNOWN_121 imageURL = null;
 
     public static boolean getMessage(String arg0) {
         return false;

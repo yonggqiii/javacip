@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte[] values;
+    public static double[] values = null;
 
-    public static int[] rankOrder;
+    public static int[] rankOrder = null;
 
     JavaCIPUnknownScope() {
         super();

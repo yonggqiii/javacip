@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_36 org;
+    public static UNKNOWN_36 org = null;
 
     public static void load(InputStream arg0) {
     }

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean MD5_DIGEST;
+    public static boolean MD5_DIGEST = false;
 
-    public static UNKNOWN_21 callback;
+    public static UNKNOWN_21 callback = null;
 
     public static boolean digestToHexString(boolean arg0) {
         return false;

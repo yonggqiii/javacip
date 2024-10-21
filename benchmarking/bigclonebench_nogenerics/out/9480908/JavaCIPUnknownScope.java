@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean URL_YAHOO_QUOTE;
+    public static boolean URL_YAHOO_QUOTE = false;
 
-    public static boolean FORMAT;
+    public static boolean FORMAT = false;
 
     public static String BuildYahooQueryString() {
         return null;

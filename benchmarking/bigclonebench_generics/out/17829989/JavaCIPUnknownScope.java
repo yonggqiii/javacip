@@ -1,35 +1,35 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean probeTime;
+    public static boolean probeTime = false;
 
-    public static boolean isLocked;
+    public static boolean isLocked = false;
 
-    public static int recordedExecutionThreads;
+    public static int recordedExecutionThreads = 0;
 
-    public static boolean loggingDir;
+    public static boolean loggingDir = false;
 
-    public static DebugThread debugThread;
+    public static DebugThread debugThread = null;
 
-    public static int averageExecutionTime;
+    public static int averageExecutionTime = 0;
 
-    public static int averageWaitTime;
+    public static int averageWaitTime = 0;
 
-    public static boolean currentWeight;
+    public static boolean currentWeight = false;
 
-    public static int recordedWaitingThreads;
+    public static int recordedWaitingThreads = 0;
 
-    public static boolean currentPending;
+    public static boolean currentPending = false;
 
-    public static boolean executionRuntimeExceptions;
+    public static boolean executionRuntimeExceptions = false;
 
-    public static UNKNOWN_106 logger;
+    public static UNKNOWN_106 logger = null;
 
-    public static byte numProbes;
+    public static byte numProbes = 0;
 
-    public static boolean droppedTasks;
+    public static boolean droppedTasks = false;
 
-    public static boolean currentThreads;
+    public static boolean currentThreads = false;
 
     public static boolean isInterrupted() {
         return false;

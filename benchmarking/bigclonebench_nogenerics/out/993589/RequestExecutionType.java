@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class RequestExecutionType {
+public interface RequestExecutionType {
 
-    public static boolean SYNCHRONOUS;
-
-    RequestExecutionType() {
-        super();
-    }
+    public static boolean SYNCHRONOUS = false;
 }

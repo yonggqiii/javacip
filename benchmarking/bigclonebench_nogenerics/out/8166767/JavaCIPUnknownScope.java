@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean urlFromDiscovery;
+    public static boolean urlFromDiscovery = false;
 
-    public static UNKNOWN_192 log;
+    public static UNKNOWN_192 log = null;
 
     public static Object getServiceUrl() {
         return null;

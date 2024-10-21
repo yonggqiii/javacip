@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_142 defaultParams;
+    public static UNKNOWN_142 defaultParams = null;
 
     public static void fail(String arg0) {
     }

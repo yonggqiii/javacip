@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ErrorCorrectLevel {
+public interface ErrorCorrectLevel {
 
-    public static boolean M;
-
-    ErrorCorrectLevel() {
-        super();
-    }
+    public static boolean M = false;
 }

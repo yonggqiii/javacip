@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_36 passwordIn;
+    public static UNKNOWN_36 passwordIn = null;
 
-    public static boolean passwordHash;
+    public static boolean passwordHash = false;
 
     JavaCIPUnknownScope() {
         super();

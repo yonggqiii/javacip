@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean SHARE_TABLE;
+    public static boolean SHARE_TABLE = false;
 
-    public static UNKNOWN_69 logger;
+    public static UNKNOWN_69 logger = null;
 
     public static DBOperation createDBOperation() {
         return null;

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ColorSchemes {
+public interface ColorSchemes {
 
-    public static boolean BLUES;
-
-    ColorSchemes() {
-        super();
-    }
+    public static boolean BLUES = false;
 }

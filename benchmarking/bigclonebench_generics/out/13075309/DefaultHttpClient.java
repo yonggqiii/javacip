@@ -5,7 +5,7 @@ public class DefaultHttpClient {
         return null;
     }
 
-    public UNKNOWN_95 getCookieStore() {
+    public UNKNOWN_307 getCookieStore() {
         return null;
     }
 

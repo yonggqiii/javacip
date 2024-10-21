@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class CheckNewVersionAction {
+public interface CheckNewVersionAction {
 
-    public static boolean VERSION_FILE;
-
-    CheckNewVersionAction() {
-        super();
-    }
+    public static boolean VERSION_FILE = false;
 }

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_42 logger;
+    public static UNKNOWN_42 logger = null;
 
-    public static boolean userDir;
+    public static boolean userDir = false;
 
     public static boolean trimPath(boolean arg0, File arg1) {
         return false;

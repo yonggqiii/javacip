@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean GUUI;
+    public static boolean GUUI = false;
 
     JavaCIPUnknownScope() {
         super();

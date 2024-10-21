@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ShareConstants {
+public interface ShareConstants {
 
-    public static boolean connectTimeout;
-
-    ShareConstants() {
-        super();
-    }
+    public static boolean connectTimeout = false;
 }

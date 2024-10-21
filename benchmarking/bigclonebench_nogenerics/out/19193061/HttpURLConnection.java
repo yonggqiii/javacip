@@ -1,30 +1,20 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_OK;
+    public static int HTTP_OK = 0;
 
-    public static int HTTP_MOVED_TEMP;
+    public static int HTTP_MOVED_TEMP = 0;
 
-    public static int HTTP_MOVED_PERM;
+    public static int HTTP_MOVED_PERM = 0;
 
-    public void disconnect() {
-    }
+    public abstract void disconnect();
 
     public static void setFollowRedirects(boolean arg0) {
     }
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public boolean getHeaderField(String arg0) {
-        return false;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract boolean getHeaderField(String arg0);
 }

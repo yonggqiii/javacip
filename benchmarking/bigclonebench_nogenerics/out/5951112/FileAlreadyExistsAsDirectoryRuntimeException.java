@@ -1,11 +1,11 @@
 // added by JavaCIP
-public class FileAlreadyExistsAsDirectoryRuntimeException extends FileNotFoundRuntimeException {
+public class FileAlreadyExistsAsDirectoryRuntimeException extends RuntimeException {
 
     public FileAlreadyExistsAsDirectoryRuntimeException(File arg0) {
-        super((java.lang.String) null);
+        super();
     }
 
     FileAlreadyExistsAsDirectoryRuntimeException() {
-        super((java.lang.String) null);
+        super();
     }
 }

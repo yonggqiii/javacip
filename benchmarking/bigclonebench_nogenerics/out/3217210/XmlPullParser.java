@@ -1,34 +1,19 @@
 // added by JavaCIP
-public class XmlPullParser {
+public interface XmlPullParser {
 
-    public static boolean END_DOCUMENT;
+    public static boolean END_DOCUMENT = false;
 
-    public static boolean START_TAG;
+    public static boolean START_TAG = false;
 
-    public String getAttributeValue(Object arg0, String arg1) {
-        return null;
-    }
+    public abstract String getAttributeValue(Object arg0, String arg1);
 
-    public String getName() {
-        return null;
-    }
+    public abstract String getName();
 
-    public boolean nextText() {
-        return false;
-    }
+    public abstract boolean nextText();
 
-    public boolean next() {
-        return false;
-    }
+    public abstract boolean next();
 
-    public void setInput(InputStream arg0, Object arg1) {
-    }
+    public abstract void setInput(InputStream arg0, Object arg1);
 
-    public boolean getEventType() {
-        return false;
-    }
-
-    XmlPullParser() {
-        super();
-    }
+    public abstract boolean getEventType();
 }

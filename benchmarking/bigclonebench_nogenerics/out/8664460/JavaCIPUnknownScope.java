@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double BASE_URL;
+    public static double BASE_URL = 0;
 
     JavaCIPUnknownScope() {
         super();

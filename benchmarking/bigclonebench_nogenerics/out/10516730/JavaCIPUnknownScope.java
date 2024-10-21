@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_38 connectionInfo;
+    public static UNKNOWN_38 connectionInfo = null;
 
     public static String asHexString(boolean arg0) {
         return null;

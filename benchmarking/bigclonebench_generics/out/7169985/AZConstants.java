@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class AZConstants {
+public interface AZConstants {
 
-    public static boolean validateURL;
+    public static boolean validateURL = false;
 
-    public static boolean ACTION_TYPE;
+    public static boolean ACTION_TYPE = false;
 
-    public static boolean PARAM;
-
-    AZConstants() {
-        super();
-    }
+    public static boolean PARAM = false;
 }

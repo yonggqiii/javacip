@@ -17,5 +17,5 @@ public interface Bookmark {
 
     public abstract Date getLastAccess();
 
-    public abstract String getUseCount();
+    public abstract long getUseCount();
 }

@@ -8,11 +8,11 @@ public class ArrayList<A> implements List<A> {
     public void add(BasicNameValuePair arg0) {
     }
 
-    public ArrayList() {
+    public ArrayList(boolean arg0) {
         super();
     }
 
-    public ArrayList(boolean arg0) {
+    public ArrayList() {
         super();
     }
 }

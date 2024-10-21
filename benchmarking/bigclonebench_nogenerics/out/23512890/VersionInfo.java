@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class VersionInfo {
+public interface VersionInfo {
 
-    public static boolean ver;
-
-    VersionInfo() {
-        super();
-    }
+    public static boolean ver = false;
 }

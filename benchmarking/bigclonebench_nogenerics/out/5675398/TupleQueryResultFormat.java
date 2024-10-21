@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TupleQueryResultFormat {
+public interface TupleQueryResultFormat {
 
-    public static UNKNOWN_50 SPARQL;
-
-    TupleQueryResultFormat() {
-        super();
-    }
+    public static UNKNOWN_50 SPARQL = null;
 }

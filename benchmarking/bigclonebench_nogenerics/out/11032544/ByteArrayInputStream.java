@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ByteArrayInputStream implements InputStream {
 
-    public ByteArrayInputStream(UNKNOWN_41 arg0) {
+    public ByteArrayInputStream(UNKNOWN_55 arg0) {
         super();
     }
 

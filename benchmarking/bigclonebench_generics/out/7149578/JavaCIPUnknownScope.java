@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_569 urlItemFieldEnum;
+    public static UNKNOWN_8503 urlItemFieldEnum = null;
 
-    public static String OPENSEARCHSERVER_FIELD;
+    public static String OPENSEARCHSERVER_FIELD = null;
 
-    public static int OPENSEARCHSERVER_FIELD_LENGTH;
+    public static int OPENSEARCHSERVER_FIELD_LENGTH = 0;
 
     public static HtmlDocumentProvider findBestProvider(String arg0, StreamLimiter arg1) {
         return null;
@@ -19,7 +19,7 @@ public class JavaCIPUnknownScope {
         return null;
     }
 
-    public static UNKNOWN_530 getProperty(boolean arg0) {
+    public static UNKNOWN_8404 getProperty(boolean arg0) {
         return null;
     }
 

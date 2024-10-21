@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean opened;
+    public static boolean opened = false;
 
-    public static String FAILED_OPEN;
+    public static String FAILED_OPEN = null;
 
-    public static UNKNOWN_169 HELPER_FILE_UTIL;
+    public static UNKNOWN_26827 HELPER_FILE_UTIL = null;
 
-    public static boolean file;
+    public static boolean file = false;
 
-    public static long currentPositionInFile;
+    public static long currentPositionInFile = 0;
 
     public static void closeImpl() {
     }

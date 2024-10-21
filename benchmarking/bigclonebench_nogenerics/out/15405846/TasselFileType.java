@@ -1,23 +1,19 @@
 // added by JavaCIP
-public class TasselFileType {
+public interface TasselFileType {
 
-    public static TasselFileType Annotated;
+    public static TasselFileType Annotated = null;
 
-    public static TasselFileType SqrMatrix;
+    public static TasselFileType SqrMatrix = null;
 
-    public static TasselFileType Sequence;
+    public static TasselFileType Sequence = null;
 
-    public static TasselFileType Polymorphism;
+    public static TasselFileType Polymorphism = null;
 
-    public static TasselFileType Numerical;
+    public static TasselFileType Numerical = null;
 
-    public static TasselFileType Fasta;
+    public static TasselFileType Fasta = null;
 
-    public static TasselFileType GeneticMap;
+    public static TasselFileType GeneticMap = null;
 
-    public static TasselFileType Phenotype;
-
-    TasselFileType() {
-        super();
-    }
+    public static TasselFileType Phenotype = null;
 }

@@ -1,21 +1,15 @@
 // added by JavaCIP
-public class Calendar {
+public interface Calendar {
 
-    public static boolean YEAR;
+    public static boolean YEAR = false;
 
-    public static boolean MONTH;
+    public static boolean MONTH = false;
 
-    public static boolean DAY_OF_MONTH;
+    public static boolean DAY_OF_MONTH = false;
 
     public static Calendar getInstance() {
         return null;
     }
 
-    public int get(boolean arg0) {
-        return 0;
-    }
-
-    Calendar() {
-        super();
-    }
+    public abstract int get(boolean arg0);
 }

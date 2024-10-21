@@ -1,29 +1,17 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_OK;
+    public static int HTTP_OK = 0;
 
-    public void setRequestMethod(String arg0) {
-    }
+    public abstract void setRequestMethod(String arg0);
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public void setRequestProperty(String arg0, String arg1) {
-    }
+    public abstract void setRequestProperty(String arg0, String arg1);
 
-    public void setConnectTimeout(int arg0) {
-    }
+    public abstract void setConnectTimeout(int arg0);
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public boolean getInputStream() {
-        return false;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract boolean getInputStream();
 }

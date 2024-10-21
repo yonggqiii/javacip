@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class THLEvent {
+public interface THLEvent {
 
-    public static boolean FAILED;
-
-    THLEvent() {
-        super();
-    }
+    public static boolean FAILED = false;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean chartURL;
+    public static boolean chartURL = false;
 
     public static void assertNotNull(HttpEntity arg0) {
     }

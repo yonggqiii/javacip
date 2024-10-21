@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class File {
+public interface File {
 
-    public static double separatorChar;
+    public static double separatorChar = 0;
 
-    public byte getAbsolutePath() {
-        return 0;
-    }
-
-    File() {
-        super();
-    }
+    public abstract double getAbsolutePath();
 }

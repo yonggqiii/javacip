@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Window {
+public interface Window {
 
-    public static boolean OK;
-
-    Window() {
-        super();
-    }
+    public static boolean OK = false;
 }

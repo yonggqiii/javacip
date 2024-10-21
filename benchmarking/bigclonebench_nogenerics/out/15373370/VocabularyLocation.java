@@ -5,7 +5,7 @@ public class VocabularyLocation {
         super();
     }
 
-    public VocabularyLocation(UNKNOWN_235 arg0, java.io.Serializable arg1, boolean arg2, boolean arg3) {
+    public VocabularyLocation(UNKNOWN_625 arg0, java.io.Serializable arg1, boolean arg2, boolean arg3) {
         super();
     }
 

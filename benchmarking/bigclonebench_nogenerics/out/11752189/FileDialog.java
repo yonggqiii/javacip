@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class FileDialog {
 
-    public static boolean LOAD;
+    public static boolean LOAD = false;
 
     public void show() {
     }

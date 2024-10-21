@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_101 c;
+    public static UNKNOWN_101 c = null;
 
-    public static UNKNOWN_88 url;
+    public static UNKNOWN_88 url = null;
 
     public static String getHexString(byte[] arg0) {
         return null;

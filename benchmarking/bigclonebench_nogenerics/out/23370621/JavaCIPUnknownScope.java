@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean cipher;
+    public static boolean cipher = false;
 
     public static InputStream downloadData(String arg0) {
         return null;

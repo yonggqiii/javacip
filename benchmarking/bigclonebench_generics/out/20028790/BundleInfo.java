@@ -3,7 +3,7 @@ public class BundleInfo {
 
     public Object bundleSymbolicName;
 
-    public String bundleName;
+    public java.io.Serializable bundleName;
 
     BundleInfo() {
         super();

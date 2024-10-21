@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean gatewayURL;
+    public static boolean gatewayURL = false;
 
-    public static boolean request;
+    public static boolean request = false;
 
-    public static boolean styleSheetLocation;
+    public static boolean styleSheetLocation = false;
 
-    public static Object type;
+    public static Object type = null;
 
     JavaCIPUnknownScope() {
         super();

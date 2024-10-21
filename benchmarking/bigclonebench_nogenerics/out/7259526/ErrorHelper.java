@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ErrorHelper {
+public interface ErrorHelper {
 
-    public static boolean ACCESS_NOPRIVILEGE;
-
-    ErrorHelper() {
-        super();
-    }
+    public static boolean ACCESS_NOPRIVILEGE = false;
 }

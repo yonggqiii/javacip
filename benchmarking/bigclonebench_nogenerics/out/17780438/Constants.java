@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static boolean TAG;
-
-    Constants() {
-        super();
-    }
+    public static boolean TAG = false;
 }

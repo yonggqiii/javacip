@@ -19,7 +19,7 @@ public interface ByteBuffer {
 
     public abstract int capacity();
 
-    public abstract void putFloat(double arg0);
+    public abstract void putFloat(float arg0);
 
     public abstract boolean hasRemaining();
 }

@@ -1,17 +1,9 @@
 // added by JavaCIP
-public class ZipEntry {
+public interface ZipEntry {
 
-    public static boolean DEFLATED;
+    public static boolean DEFLATED = false;
 
-    public boolean getMethod() {
-        return false;
-    }
+    public abstract boolean getMethod();
 
-    public boolean getName() {
-        return false;
-    }
-
-    ZipEntry() {
-        super();
-    }
+    public abstract boolean getName();
 }

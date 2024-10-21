@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Logger {
+public interface Logger {
 
-    public static boolean SEVERE;
-
-    Logger() {
-        super();
-    }
+    public static boolean SEVERE = false;
 }

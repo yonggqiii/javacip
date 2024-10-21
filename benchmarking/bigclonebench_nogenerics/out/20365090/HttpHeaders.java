@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class HttpHeaders {
+public interface HttpHeaders {
 
-    public static UNKNOWN_70 Names;
-
-    HttpHeaders() {
-        super();
-    }
+    public static UNKNOWN_1436 Names = null;
 }

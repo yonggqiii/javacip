@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_66 file;
+    public static UNKNOWN_66 file = null;
 
-    public static boolean updaterFile;
+    public static boolean updaterFile = false;
 
-    public static UNKNOWN_40 updater;
+    public static UNKNOWN_40 updater = null;
 
     public static void startUpdater() {
     }

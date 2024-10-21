@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_18 LOG;
+    public static UNKNOWN_18 LOG = null;
 
     public static void readModels(InputSource arg0) {
     }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static double separator;
+    public static double separator = 0;
 
     public void setWritable(boolean arg0) {
     }

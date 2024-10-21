@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class FlashExObj {
 
-    public ArrayList list;
+    public Object list;
 
     public FlashExObj() {
         super();

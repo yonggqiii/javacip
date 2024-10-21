@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class Acr2D {
 
-    public String studyUID;
+    public CharSequence studyUID;
 
-    public CharSequence seriesUID;
+    public java.io.Serializable seriesUID;
 
     public String instUID;
 
-    public java.io.Serializable classUID;
+    public CharSequence classUID;
 
     Acr2D() {
         super();

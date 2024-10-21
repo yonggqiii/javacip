@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_98 logger;
+    public static UNKNOWN_209 logger = null;
 
-    public static int ARXIVID_ENTRY;
+    public static int ARXIVID_ENTRY = 0;
 
-    public static byte ARXIVID_ENTRY_LENGTH;
+    public static int ARXIVID_ENTRY_LENGTH = 0;
 
     public static String format(String arg0) {
         return null;

@@ -1,23 +1,23 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean mspokcookie;
+    public static boolean mspokcookie = false;
 
-    public static boolean location;
+    public static boolean location = false;
 
-    public static boolean tmp;
+    public static String tmp = null;
 
-    public static HttpURLConnection uc;
+    public static HttpURLConnection uc = null;
 
-    public static boolean msprcookie;
+    public static boolean msprcookie = false;
 
-    public static boolean loginurl;
+    public static boolean loginurl = false;
 
-    public static URL u;
+    public static URL u = null;
 
-    public static PrintWriter pw;
+    public static PrintWriter pw = null;
 
-    public static boolean ppft;
+    public static boolean ppft = false;
 
     JavaCIPUnknownScope() {
         super();

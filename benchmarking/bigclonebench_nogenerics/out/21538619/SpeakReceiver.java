@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SpeakReceiver {
+public interface SpeakReceiver {
 
-    public static UNKNOWN_29 _context;
-
-    SpeakReceiver() {
-        super();
-    }
+    public static UNKNOWN_29 _context = null;
 }

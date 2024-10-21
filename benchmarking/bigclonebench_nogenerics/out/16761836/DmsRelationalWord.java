@@ -27,7 +27,7 @@ public interface DmsRelationalWord extends AbstractBaseObject {
 
     public abstract void setUpdateDate(Timestamp arg0);
 
-    public abstract UNKNOWN_735 getWord();
+    public abstract UNKNOWN_1585 getWord();
 
     public abstract boolean getParentID();
 }

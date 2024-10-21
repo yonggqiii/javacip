@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_43 conexao;
+    public static UNKNOWN_43 conexao = null;
 
     public static void excluirTopico(int arg0) {
     }

@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Linear {
+public interface Linear {
 
-    public static boolean FILE_CHARSET;
+    public static boolean FILE_CHARSET = false;
 
     public static Model loadModel(File arg0) {
         return null;
-    }
-
-    Linear() {
-        super();
     }
 }

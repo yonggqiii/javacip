@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean loadingMore;
+    public static boolean loadingMore = false;
 
-    public static UNKNOWN_123 alOnlyIds;
+    public static UNKNOWN_301 alOnlyIds = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class States {
+public interface States {
 
-    public static boolean Idle;
+    public static boolean Idle = false;
 
-    public static boolean Synchronizing;
-
-    States() {
-        super();
-    }
+    public static boolean Synchronizing = false;
 }

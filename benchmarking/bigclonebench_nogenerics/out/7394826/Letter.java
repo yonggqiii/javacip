@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Letter {
+public interface Letter {
 
-    public static boolean PORTRAIT;
-
-    Letter() {
-        super();
-    }
+    public static boolean PORTRAIT = false;
 }

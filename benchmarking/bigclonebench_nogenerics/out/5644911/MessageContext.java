@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class MessageContext {
+public interface MessageContext {
 
-    public static boolean HTTP_REQUEST_HEADERS;
-
-    MessageContext() {
-        super();
-    }
+    public static boolean HTTP_REQUEST_HEADERS = false;
 }

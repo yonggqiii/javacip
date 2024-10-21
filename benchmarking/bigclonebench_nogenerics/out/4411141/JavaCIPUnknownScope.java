@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_132 selectedCourse;
+    public static UNKNOWN_132 selectedCourse = null;
 
-    public static UNKNOWN_93 homePage;
+    public static UNKNOWN_93 homePage = null;
 
-    public static boolean sqlError;
+    public static boolean sqlError = false;
 
     public static UNKNOWN_80 findTypeOfDoc(String arg0) {
         return null;

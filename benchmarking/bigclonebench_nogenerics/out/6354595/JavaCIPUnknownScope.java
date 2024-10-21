@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean DEBUG;
+    public static boolean DEBUG = false;
 
-    public static boolean LOG;
+    public static boolean LOG = false;
 
-    public static boolean WARN;
+    public static boolean WARN = false;
 
     public static void begin(boolean arg0, String arg1, String arg2) {
     }

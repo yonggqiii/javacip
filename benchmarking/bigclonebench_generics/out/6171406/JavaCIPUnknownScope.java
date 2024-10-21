@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_86 log;
+    public static UNKNOWN_84 log = null;
 
-    public static int BUFFER_SIZE;
+    public static int BUFFER_SIZE = 0;
 
     public static List<File> collectFiles(File arg0) {
         return null;

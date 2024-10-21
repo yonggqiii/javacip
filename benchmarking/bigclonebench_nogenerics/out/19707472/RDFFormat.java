@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class RDFFormat {
+public interface RDFFormat {
 
-    public static boolean RDFXML;
-
-    RDFFormat() {
-        super();
-    }
+    public static boolean RDFXML = false;
 }

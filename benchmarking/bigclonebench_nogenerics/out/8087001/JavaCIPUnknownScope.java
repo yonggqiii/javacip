@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_75 java;
+    public static UNKNOWN_83 java = null;
 
-    public static UNKNOWN_62 keys;
+    public static UNKNOWN_70 keys = null;
 
-    public static UNKNOWN_98 getStackTrace(RuntimeException arg0) {
+    public static UNKNOWN_106 getStackTrace(RuntimeException arg0) {
         return null;
     }
 

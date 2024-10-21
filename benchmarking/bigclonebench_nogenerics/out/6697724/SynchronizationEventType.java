@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class SynchronizationEventType {
+public interface SynchronizationEventType {
 
-    public static boolean FileCopy;
+    public static boolean FileCopy = false;
 
-    public static boolean FileCopyDone;
-
-    SynchronizationEventType() {
-        super();
-    }
+    public static boolean FileCopyDone = false;
 }

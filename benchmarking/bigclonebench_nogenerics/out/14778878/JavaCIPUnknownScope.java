@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static java.io.Serializable message;
+    public static Object message = null;
 
     JavaCIPUnknownScope() {
         super();

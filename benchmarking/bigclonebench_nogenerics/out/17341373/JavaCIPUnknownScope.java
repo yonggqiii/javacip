@@ -1,23 +1,23 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_110 _logger;
+    public static UNKNOWN_110 _logger = null;
 
-    public static UNKNOWN_123 _serverKey;
+    public static UNKNOWN_123 _serverKey = null;
 
-    public static UNKNOWN_149 _udpSocket;
+    public static UNKNOWN_149 _udpSocket = null;
 
-    public static UNKNOWN_194 _password;
+    public static UNKNOWN_194 _password = null;
 
-    public static UNKNOWN_162 _tcpSocket;
+    public static UNKNOWN_162 _tcpSocket = null;
 
-    public static boolean _introKey;
+    public static boolean _introKey = false;
 
-    public static boolean _clientKey;
+    public static boolean _clientKey = false;
 
-    public static boolean _authKey;
+    public static boolean _authKey = false;
 
-    public static boolean _user;
+    public static boolean _user = false;
 
     public static boolean makeClientKey(boolean arg0, boolean arg1) {
         return false;

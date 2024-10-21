@@ -7,7 +7,7 @@ public interface IProject {
 
     public abstract void open(Object arg0);
 
-    public abstract UNKNOWN_268 getFullPath();
+    public abstract UNKNOWN_11102 getFullPath();
 
     public abstract boolean exists();
 

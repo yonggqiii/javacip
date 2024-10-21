@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static boolean PROTOCOL_VERSION;
-
-    Constants() {
-        super();
-    }
+    public static boolean PROTOCOL_VERSION = false;
 }

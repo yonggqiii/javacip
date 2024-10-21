@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_81 FTP;
+    public static UNKNOWN_81 FTP = null;
 
     public static boolean chgDir(FTPClient arg0, boolean arg1) {
         return false;

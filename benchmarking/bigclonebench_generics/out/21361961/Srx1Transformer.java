@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Srx1Transformer {
+public interface Srx1Transformer {
 
-    public static boolean MAP_RULE_NAME;
-
-    Srx1Transformer() {
-        super();
-    }
+    public static boolean MAP_RULE_NAME = false;
 }

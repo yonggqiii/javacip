@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TheMovieDBXmlPullFeedParser {
+public interface TheMovieDBXmlPullFeedParser {
 
-    public static double SEARCH_FEED_URL;
-
-    TheMovieDBXmlPullFeedParser() {
-        super();
-    }
+    public static byte SEARCH_FEED_URL = 0;
 }

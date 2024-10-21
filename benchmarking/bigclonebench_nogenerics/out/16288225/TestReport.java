@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TestReport {
+public interface TestReport {
 
-    public static boolean ERROR_TEST_FAILED;
-
-    TestReport() {
-        super();
-    }
+    public static boolean ERROR_TEST_FAILED = false;
 }

@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface Context {
 
-    public abstract UNKNOWN_2884 getContentResolver();
+    public abstract UNKNOWN_138 getContentResolver();
 }

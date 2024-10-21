@@ -3,7 +3,7 @@ public interface HttpResponse {
 
     public abstract HttpEntity getEntity();
 
-    public abstract int getStatusLine();
+    public abstract boolean getStatusLine();
 
     public abstract Header[] getAllHeaders();
 }

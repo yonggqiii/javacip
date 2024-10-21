@@ -5,5 +5,5 @@ public interface KeyStore {
         return null;
     }
 
-    public abstract void load(InputStream arg0, Object arg1);
+    public abstract void load(InputStream arg0, char[] arg1);
 }

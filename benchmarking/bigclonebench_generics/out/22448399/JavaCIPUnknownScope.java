@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static StringBuffer getBaseServletURL() {
+    public static CharSequence getBaseServletURL() {
         return null;
     }
 

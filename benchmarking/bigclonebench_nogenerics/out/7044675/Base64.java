@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class Base64 {
 
-    public StringBuffer encode(boolean arg0) {
+    public StringBuilder encode(boolean arg0) {
         return null;
     }
 

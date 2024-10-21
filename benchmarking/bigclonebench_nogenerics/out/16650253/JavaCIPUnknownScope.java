@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_36 mySQLLogger;
+    public static UNKNOWN_34 mySQLLogger = null;
 
-    public static UNKNOWN_23 getConnection() {
+    public static UNKNOWN_21 getConnection() {
         return null;
     }
 

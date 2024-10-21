@@ -20,7 +20,7 @@ public class Dict {
     public void setAudio(boolean arg0) {
     }
 
-    public UNKNOWN_354 getCent() {
+    public UNKNOWN_282 getCent() {
         return null;
     }
 

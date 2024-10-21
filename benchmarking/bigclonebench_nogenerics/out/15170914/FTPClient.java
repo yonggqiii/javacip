@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class FTPClient {
 
-    public static boolean BINARY_FILE_TYPE;
+    public static boolean BINARY_FILE_TYPE = false;
 
     public FTPFile[] listFiles(boolean arg0) {
         return null;

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean isRunning;
+    public static boolean isRunning = false;
 
-    public static boolean displayIfOK;
+    public static boolean displayIfOK = false;
 
     JavaCIPUnknownScope() {
         super();

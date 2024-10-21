@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_383 requestFactory;
+    public static UNKNOWN_55 requestFactory = null;
 
-    public static boolean jsonHttpParser;
+    public static boolean jsonHttpParser = false;
 
-    public static boolean readTimeout;
+    public static boolean readTimeout = false;
 
-    public static boolean operationStatus;
+    public static boolean operationStatus = false;
 
     JavaCIPUnknownScope() {
         super();

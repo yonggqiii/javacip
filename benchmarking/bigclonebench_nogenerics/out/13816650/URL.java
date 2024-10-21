@@ -5,5 +5,5 @@ public interface URL {
 
     public abstract int getPort();
 
-    public abstract UNKNOWN_140 getPath();
+    public abstract UNKNOWN_142 getPath();
 }

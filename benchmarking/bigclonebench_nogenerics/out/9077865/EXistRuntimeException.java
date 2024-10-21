@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class EXistRuntimeException extends PermissionDeniedRuntimeException {
+public class EXistRuntimeException extends RuntimeException {
 
     EXistRuntimeException() {
         super();

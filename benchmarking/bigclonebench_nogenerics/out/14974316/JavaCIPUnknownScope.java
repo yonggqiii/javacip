@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_69 httpClient;
+    public static UNKNOWN_69 httpClient = null;
 
-    public static boolean httpGet;
+    public static boolean httpGet = false;
 
-    public static Object inputStream;
+    public static Object inputStream = null;
 
     JavaCIPUnknownScope() {
         super();

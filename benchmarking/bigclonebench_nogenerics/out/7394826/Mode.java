@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Mode {
+public interface Mode {
 
-    public static boolean MODE_8BIT_BYTE;
-
-    Mode() {
-        super();
-    }
+    public static boolean MODE_8BIT_BYTE = false;
 }

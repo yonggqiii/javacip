@@ -4,7 +4,7 @@ public interface DataStorage {
     public static void clearListedAppListing() {
     }
 
-    public static UNKNOWN_71 getVendorProfile() {
+    public static UNKNOWN_73 getVendorProfile() {
         return null;
     }
 

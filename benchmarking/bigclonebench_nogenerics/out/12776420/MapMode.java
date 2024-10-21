@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class MapMode {
+public interface MapMode {
 
-    public static boolean READ_ONLY;
-
-    MapMode() {
-        super();
-    }
+    public static boolean READ_ONLY = false;
 }

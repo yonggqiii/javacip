@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TranslatorApplication {
+public interface TranslatorApplication {
 
-    public static boolean tag;
-
-    TranslatorApplication() {
-        super();
-    }
+    public static boolean tag = false;
 }

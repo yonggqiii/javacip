@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class RuntimeExceptionHandlingService {
+public interface RuntimeExceptionHandlingService {
 
-    public static UNKNOWN_27 INSTANCE;
-
-    RuntimeExceptionHandlingService() {
-        super();
-    }
+    public static UNKNOWN_27 INSTANCE = null;
 }

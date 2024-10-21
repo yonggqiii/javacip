@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object oggBitStream_;
+    public static BufferedInputStream oggBitStream_ = null;
 
     public static void load() {
     }

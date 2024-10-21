@@ -5,7 +5,7 @@ public class File {
         return false;
     }
 
-    public UNKNOWN_92 listFiles() {
+    public UNKNOWN_90 listFiles() {
         return null;
     }
 

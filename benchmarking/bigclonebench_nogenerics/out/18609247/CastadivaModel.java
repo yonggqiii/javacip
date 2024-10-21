@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class CastadivaModel {
+public interface CastadivaModel {
 
-    public static boolean PLUGIN_WORKFOLDER;
+    public static boolean PLUGIN_WORKFOLDER = false;
 
-    public static boolean PLUGIN_JAR_FOLDER;
-
-    CastadivaModel() {
-        super();
-    }
+    public static boolean PLUGIN_JAR_FOLDER = false;
 }

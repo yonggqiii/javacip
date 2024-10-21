@@ -5,7 +5,7 @@ public class FTPClient {
         return false;
     }
 
-    public void changeWorkingDirectory(UNKNOWN_140 arg0) {
+    public void changeWorkingDirectory(UNKNOWN_142 arg0) {
     }
 
     public void login(boolean arg0, String arg1) {

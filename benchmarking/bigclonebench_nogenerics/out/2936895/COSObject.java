@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface COSObject {
 
-    public abstract UNKNOWN_204 stringValue();
+    public abstract UNKNOWN_190 stringValue();
 }

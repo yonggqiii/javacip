@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_75 logger;
+    public static UNKNOWN_75 logger = null;
 
-    public static CharSequence NEWLINE;
+    public static int NEWLINE = 0;
 
-    public static UNKNOWN_62 documentParser;
+    public static UNKNOWN_62 documentParser = null;
 
     public static boolean isADbPediaURI(String arg0) {
         return false;

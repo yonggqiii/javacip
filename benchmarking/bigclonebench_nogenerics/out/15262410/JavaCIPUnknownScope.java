@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_61 cb;
+    public static UNKNOWN_61 cb = null;
 
-    public static Object current_source;
+    public static CharSequence current_source = null;
 
-    public static Object udp_baddress;
+    public static CharSequence udp_baddress = null;
 
-    public static int udp_port;
+    public static int udp_port = 0;
 
-    public static boolean running_as_applet;
+    public static boolean running_as_applet = false;
 
     public static String fetch_pls(String arg0) {
         return null;

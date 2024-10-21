@@ -7,7 +7,7 @@ public interface HttpURLConnection {
 
     public abstract void setDoOutput(boolean arg0);
 
-    public abstract String getResponseMessage();
+    public abstract Object getResponseMessage();
 
-    public abstract UNKNOWN_56 getOutputStream();
+    public abstract UNKNOWN_68 getOutputStream();
 }

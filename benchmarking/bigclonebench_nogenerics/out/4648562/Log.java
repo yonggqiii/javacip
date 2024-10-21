@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Log {
+public interface Log {
 
-    public static UNKNOWN_30 serverlogger;
-
-    Log() {
-        super();
-    }
+    public static UNKNOWN_30 serverlogger = null;
 }

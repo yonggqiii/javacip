@@ -1,7 +1,7 @@
 // added by JavaCIP
-public class HttpHelper {
+public interface HttpHelper {
 
-    public static boolean EXC;
+    public static boolean EXC = false;
 
     public static boolean isOtherFile(String arg0) {
         return false;
@@ -24,9 +24,5 @@ public class HttpHelper {
 
     public static boolean httpWrapPic(String arg0, long arg1) {
         return false;
-    }
-
-    HttpHelper() {
-        super();
     }
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean voiceaddress;
+    public static boolean voiceaddress = false;
 
     JavaCIPUnknownScope() {
         super();

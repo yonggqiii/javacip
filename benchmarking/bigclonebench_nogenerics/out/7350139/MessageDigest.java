@@ -7,7 +7,7 @@ public interface MessageDigest {
 
     public abstract void update(byte[] arg0);
 
-    public abstract String digest();
+    public abstract StringBuffer digest();
 
-    public abstract byte[] digest(byte[] arg0);
+    public abstract StringBuffer digest(byte[] arg0);
 }

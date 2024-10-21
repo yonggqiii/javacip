@@ -1,5 +1,5 @@
 // added by JavaCIP
-public interface Connection extends HashMap<String, String> {
+public interface Connection {
 
     public abstract void setAutoCommit(boolean arg0);
 

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class OpenSONAR {
+public interface OpenSONAR {
 
-    public static double VERSION;
-
-    OpenSONAR() {
-        super();
-    }
+    public static double VERSION = 0;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class LoggerChannel {
+public interface LoggerChannel {
 
-    public static boolean LT_ERROR;
-
-    LoggerChannel() {
-        super();
-    }
+    public static boolean LT_ERROR = false;
 }

@@ -4,11 +4,11 @@ public class Vector {
     public void add(File arg0) {
     }
 
-    public int size() {
+    public byte size() {
         return 0;
     }
 
-    public File[] toArray(File[] arg0) {
+    public Object toArray(File[] arg0) {
         return null;
     }
 

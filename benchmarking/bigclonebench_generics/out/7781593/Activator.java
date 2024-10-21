@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Activator {
+public interface Activator {
 
-    public static boolean FILENAME;
+    public static boolean FILENAME = false;
 
     public static UNKNOWN_173 getDefault() {
         return null;
-    }
-
-    Activator() {
-        super();
     }
 }

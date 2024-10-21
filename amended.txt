@@ -1,0 +1,100 @@
+RegistrationBean--deal with "enum"
+SslBuilderCustomizer -- commented out lambda expression
+TomcatEmbeddedWebappClassLoader -- class needs to extend ClassLoader.
+NettyReactiveWebServerFactory.java -- remove super(...), removed ::, removed ->, changed Arrays.toList(...) to for loop, changed Shutdown to Shutdown1, removed from dataset
+RootUriTemplateHandler -- remove @Deprecate(...), NO OVERLOADING
+UndertowWebServerFactoryDelegate -- remove -> and :: and remove Shutdown.GRACEFUL, change ... to array loop, change Shutdown to Shutdown1
+ErrorPageFilter -- Removed throwing all exceptions, all try-catch blocks, removed super(...) Let it timeout, removed from dataset
+MustacheView -- changed Compiler to Compiler1.
+MimeMappings -- removed from dataset
+RootUriBuilderFactory -- removed @suppressWarnings
+WebServerFactoryCustomizerBeanPostProcessor -- removed @SuppressWarnings, removed instanceof nonsense, removed ->
+ClientHttpRequestFactoriesRuntimeHints -- removed @, removed ->
+RestTemplateBuilder -- T..., @, Just let it crash
+DisableReferenceClearingContextCustomizer - remove instanceof stuff, remove try-catch
+WebServerSslBundle.java -- removed static class, removed lambda, just let it timeout
+GracefulShutdownResult.java -- remove from dataset (enum)
+WebClientCustomizer.java -- remove static class
+JettyHandlerWrappers.java -- remove from dataset
+WebServerManager.java -- remove static class
+ServerPortInfoApplicationContextInitializer.java -- removed @, need to deal with hashmap imports
+ServletRegistrationBean.java -- removed nested class, removed from dataset
+SpringBootServletInitializer.java -- removed -> removed inner class, instanceof shenangigans, this.getclass, removed from dataset due to exceptions
+ServletWebServerInitializedEvent.java -- removed @
+NettyWebServer.java -- removed from dataset due to exceptions, @ etc
+WebServerException.java -- removed @
+PortInUseException.java -- removed from dataset due to exceptions
+ClientHttpRequestFactories.java -- removed from dataset due to nested classes
+OrderedFormContentFilter.java -- add FormContentFilter.
+ErrorPageFilterConfiguration.java -- removed @
+DeploymentManagerHttpHandlerFactory.java -- removed static class
+RestClientCustomizer.java -- removed static class
+WebServerGracefulShutdownLifecycle.java -- removed ->
+UndertowWebServer.java -- removed from dataset due to nested class
+TomcatWebServer.java -- removed from dataset due to nested classes and exceptions
+SslConnectorCustomizer.java -- changed Exception to RuntimeException
+ServletComponentScan.java -- removed from dataset due to java version
+SslBuilderCustomizer.java -- removed static class reference
+ServletContextInitializerBeans.java -- removed from dataset due to static classes, lambda expressions etc.
+NestedJarResourceSet.java -- removed due to java.util.jar.Attribute.Name
+ReactiveWebServerApplicationContext.java -- removed from dataset due to exceptsion
+AbstractServletWebServerFactory.java -- removed from dataset due to nested classes and lambda expressions
+WebServerPortFileWriter.java -- removed from dataset due to exceptions and jdk features
+DefaultErrorAttributes.java -- removed from dataset due to :: and java features
+OrderedHiddenHttpMethodFilter.java -- make attribute static lol
+Session.java -- removed nested classes, annotations
+JettyWebServer.java -- removed from dataset due to a bunch of stuff
+SslServerCustomizer.java -- removed lambda expressions etc
+ServletComponentScanRegistrar.java -- removed from dataset due to lambda expressions and inner classes
+ConfigurableWebServerFactory.java -- change Shutdown to Shutdown1
+WebServer.java -- removed exceptsion
+WebApplicationContextServletContextAwareProcessor.java -- made methods public lol
+AccessLogHttpHandlerFactory.java -- removed static class, exceptsion
+DynamicRegistrationBean.java -- removed exceptions, let it timeout
+JettyEmbeddedWebAppContext.java -- changed Exception to RuntimeException
+AnnotationConfigReactiveWebServerApplicationContext.java -- removed super, removed ..., lolol, access privilege etc, shitshow
+ForwardHeadersCustomizer.java -- removed instanceof nonsense
+JarResourceManager.java -- removed from dataset due to exceptions
+CompositeResourceManager.java -- removed from dataset due to exceptions
+AnnotationConfigServletWebServerApplicationContext.java -- another shitshow
+GracefulShutdown.java -- removed due to exceptions
+RestTemplateBuilderClientHttpRequestInitializer.java -- removed lambda expressions
+MissingWebServerFactoryBeanFailureAnalyzer.java -- removed annotation
+AbstractConfigurableWebServerFactory.java -- remove exceptions, array stuff, change shutdown
+CookieSameSiteSupplier.java -- removed due to exceptions
+TomcatReactiveWebServerFactory.java -- lambda, instanceof, shitshow, remove from dataset
+Ssl.java -- record enum
+UndertowReactiveWebServerFactory.java -- lambda, super
+UndertowServletWebServerFactory.java -- remove from dataset due to lambda method ref and staclass
+FileSessionPersistence.java -- remove from dataset due to exceptions
+StaticResourceJars.java -- remove from dataset due to exceptions
+CompressionCustomizer.java -- remove from dataset due to lambda expression
+DocumentRoot.java -- remove from dataset due to exceptions and jdk features
+WebListenerHandler.java -- remove inner class
+JettyServletWebServerFactory.java -- removed from dataset due to lambda expressions, :: and exceptions
+Shutdown.java -- removed from dataset due to enum
+Cookie.java -- removed enum
+LoaderHidingResource.java -- removed from dataset due to jdk11
+TomcatServletWebServerFactory.java -- removed from dataset due to a lot of things
+ErrorPageRegistrarBeanPostProcessor.java -- removed instanceof
+ClientHttpRequestFactorySettings.java -- removed from dataset due to record
+DispatcherType.java -- removed from dataset due to enum
+TomcatEmbeddedContext.java -- removed from dataset due to lambda expressions, method references etc.
+AnnotationConfigServletWebApplicationContext.java -- shitshow
+FilteredReactiveWebContextResource.java -- removed from dataset due to exceptions
+TomcatStarter.java -- removed exception, 
+ServletContextInitializerConfiguration.java -- removed exceptions
+CompressionConnectorCustomizer.java -- removed instanceof
+Encoding.java -- removed enum
+ServletWebServerApplicationContext.java -- removed from dataset due to exceptions
+WebServerApplicationContext.java -- removed instanceof
+UndertowServletWebServer.java -- access privileges
+ServletComponentRegisteringPostProcessor.java -- removed from dataset due to anonymous class and instanceof
+ErrorPage.java -- remove instanceof
+WebFilterHandler.java -- removed super, ... in EnumSet#of screwed it up, removed from dataset
+ErrorAttributeOptions.java -- removed Arrays.toList shit, removed enum, might timeout
+JettyReactiveWebServerFactory.java -- removed super, changed Shutdown1, let timeout
+SessionStoreDirectory.java -- removed lambda expressions
+MustacheViewResolver.java -- removed Exception, let timeout due to superclass buildView
+JasperInitializer.java -- removed from dataset due to exceptions
+AbstractFilterRegistrationBean.java -- removed nested class, let timeout

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class URL {
 
-    public UNKNOWN_338 getHost() {
+    public UNKNOWN_8186 getHost() {
         return null;
     }
 

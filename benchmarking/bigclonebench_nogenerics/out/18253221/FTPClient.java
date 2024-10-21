@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FTPClient {
+public interface FTPClient {
 
-    public static boolean ASCII_FILE_TYPE;
-
-    FTPClient() {
-        super();
-    }
+    public static boolean ASCII_FILE_TYPE = false;
 }

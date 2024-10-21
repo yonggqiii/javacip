@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ModelRuntimeException {
+public interface ModelRuntimeException {
 
-    public static UNKNOWN_24 Aide;
-
-    ModelRuntimeException() {
-        super();
-    }
+    public static UNKNOWN_24 Aide = null;
 }

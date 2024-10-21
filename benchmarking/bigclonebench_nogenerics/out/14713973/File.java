@@ -11,10 +11,6 @@ public class File {
     public void createNewFile() {
     }
 
-    public File(byte arg0) {
-        super();
-    }
-
     public File(double arg0) {
         super();
     }

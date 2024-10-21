@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static FTPClient ftp;
+    public static FTPClient ftp = null;
 
-    public static boolean ftpServer;
+    public static boolean ftpServer = false;
 
-    public static boolean ftpUsername;
+    public static boolean ftpUsername = false;
 
-    public static boolean ftpPassword;
+    public static boolean ftpPassword = false;
 
     JavaCIPUnknownScope() {
         super();

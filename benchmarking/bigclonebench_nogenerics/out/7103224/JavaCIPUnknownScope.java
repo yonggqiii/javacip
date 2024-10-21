@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean baseUri;
+    public static boolean baseUri = false;
 
-    public static UNKNOWN_21 client;
+    public static UNKNOWN_21 client = null;
 
     public static void assertEquals(int arg0, boolean arg1) {
     }

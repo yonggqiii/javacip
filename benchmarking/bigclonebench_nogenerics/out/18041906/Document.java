@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface Document {
 
-    public abstract String asXML();
+    public abstract char asXML();
 }

@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface File {
 
-    public abstract UNKNOWN_53 toURI();
+    public abstract UNKNOWN_43 toURI();
 }

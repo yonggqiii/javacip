@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class LayerManager {
+public interface LayerManager {
 
-    public static boolean ID;
+    public static boolean ID = false;
 
-    public IFigure getLayer(boolean arg0) {
-        return null;
-    }
-
-    LayerManager() {
-        super();
-    }
+    public abstract IFigure getLayer(boolean arg0);
 }

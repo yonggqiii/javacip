@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean deviceName;
+    public static boolean deviceName = false;
 
-    public static UNKNOWN_71 queue;
+    public static UNKNOWN_71 queue = null;
 
-    public static RuntimeException result;
+    public static java.io.Serializable result = null;
 
-    public static boolean deviceFile;
+    public static boolean deviceFile = false;
 
-    public static UNKNOWN_45 httpClient;
+    public static UNKNOWN_45 httpClient = null;
 
     JavaCIPUnknownScope() {
         super();

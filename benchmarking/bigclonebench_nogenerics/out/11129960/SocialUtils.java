@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SocialUtils {
+public interface SocialUtils {
 
-    public static UNKNOWN_66 log;
-
-    SocialUtils() {
-        super();
-    }
+    public static UNKNOWN_66 log = null;
 }

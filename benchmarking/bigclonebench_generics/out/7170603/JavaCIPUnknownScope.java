@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_73 _logger;
+    public static UNKNOWN_73 _logger = null;
 
     public static void printXmlError(XMLParseRuntimeException arg0, String arg1) {
     }

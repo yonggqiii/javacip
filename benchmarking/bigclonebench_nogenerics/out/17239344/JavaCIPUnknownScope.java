@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_109 fileStatusProvider;
+    public static UNKNOWN_109 fileStatusProvider = null;
 
     public static int showConfirmation(String arg0, boolean arg1) {
         return 0;

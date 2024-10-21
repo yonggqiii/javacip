@@ -29,13 +29,19 @@ def getLoC(ls):
 
 def get_stats(ls):
     if not ls:
-        return 0, 0, 0
+        return 0, 0, 0, 0, 0, 0, 0
     avg_time = 'TIMEOUT' if ls[0][2] == 'TIMEOUT' else sum(row[2] for row in ls) / len(ls)
-    avg_loc = sum(row[4] for row in ls) / len(ls)
-    return len(ls), avg_time, avg_loc
+    max_time = 'TIMEOUT' if ls[0][2] == 'TIMEOUT' else max(row[2] for row in ls)
+    min_time = 'TIMEOUT' if ls[0][2] == 'TIMEOUT' else min(row[2] for row in ls)
 
-def print_stats(name, a, b, c):
-    print(f'{name}:\n\tOccurrences: {a} ({round(a / total_size * 100, 1)}%)\n\tAverage Time: {b}s\n\tAverage LoC: {c}')
+
+    avg_loc = sum(row[4] for row in ls) / len(ls)
+    min_loc = min(row[4] for row in ls)
+    max_loc = max(row[4] for row in ls)
+    return len(ls), avg_time, avg_loc, min_time, max_time, min_loc, max_loc
+
+def print_stats(name, a, b, c, min_t, max_t, min_l, max_l):
+    print(f'{name}:\n\tOccurrences: {a} ({round(a / total_size * 100, 1)}%)\n\n\tMin Time: {min_t}s\n\tAverage Time: {b}s\n\tMax Time: {max_t}s\n\tMin LoC: {min_l}\n\tAverage LoC: {c}\n\tMax LoC: {max_l}')
 
 directory = sys.argv[1]
 stats_file = sys.argv[2]
@@ -45,7 +51,7 @@ os.chdir(directory)
 with open(stats_file) as f:
     stats = list(csv.reader(f))
 
-stats = getLoC([[row[0], to_bool(row[1]), row[2], to_bool(row[3])] for row in stats[1:]])
+stats = [[row[0], to_bool(row[1]), row[2], to_bool(row[3]), int(row[4])] for row in stats[1:]]
 
 total_size = len(stats)
 

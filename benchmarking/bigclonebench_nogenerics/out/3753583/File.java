@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static char separatorChar;
+    public static char separatorChar = 0;
 
     public String getName() {
         return null;

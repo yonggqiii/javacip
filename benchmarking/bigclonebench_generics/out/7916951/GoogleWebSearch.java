@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class GoogleWebSearch {
+public interface GoogleWebSearch {
 
-    public static double GOOGLE_URL;
+    public static byte GOOGLE_URL = 0;
 
-    public static boolean CHARSET;
-
-    GoogleWebSearch() {
-        super();
-    }
+    public static boolean CHARSET = false;
 }

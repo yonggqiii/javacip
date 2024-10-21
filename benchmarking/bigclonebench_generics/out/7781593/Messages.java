@@ -1,17 +1,13 @@
 // added by JavaCIP
-public class Messages {
+public interface Messages {
 
-    public static boolean SaveFileOnDiskHandler_ErrorSaving;
+    public static boolean SaveFileOnDiskHandler_ErrorSaving = false;
 
-    public static boolean SaveFileOnDiskHandler_SavingFiles;
+    public static boolean SaveFileOnDiskHandler_SavingFiles = false;
 
-    public static boolean SaveFileOnDiskHandler_ErrorSaving3;
+    public static boolean SaveFileOnDiskHandler_ErrorSaving3 = false;
 
-    public static boolean SaveFileOnDiskHandler_Saving;
+    public static boolean SaveFileOnDiskHandler_Saving = false;
 
-    public static boolean SaveFileOnDiskHandler_ErrorSaving2;
-
-    Messages() {
-        super();
-    }
+    public static boolean SaveFileOnDiskHandler_ErrorSaving2 = false;
 }

@@ -5,11 +5,11 @@ public class DefaultHttpClient implements HttpClient {
         return null;
     }
 
-    public UNKNOWN_128 getParams() {
+    public UNKNOWN_134 getParams() {
         return null;
     }
 
-    public UNKNOWN_115 getConnectionManager() {
+    public UNKNOWN_121 getConnectionManager() {
         return null;
     }
 

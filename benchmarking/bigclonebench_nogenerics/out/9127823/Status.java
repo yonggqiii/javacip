@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class Status {
+public interface Status {
 
-    public static Status FAILURE;
+    public static Status FAILURE = null;
 
-    public static Status NOT_CURRENT;
+    public static Status NOT_CURRENT = null;
 
-    public static Status CURRENT;
+    public static Status CURRENT = null;
 
-    public static Status URL_NOT_FOUND;
-
-    Status() {
-        super();
-    }
+    public static Status URL_NOT_FOUND = null;
 }

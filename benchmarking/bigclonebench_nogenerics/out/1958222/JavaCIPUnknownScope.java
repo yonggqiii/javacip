@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object proxyAddress;
+    public static Object proxyAddress = null;
 
-    public static boolean url_spec;
+    public static boolean url_spec = false;
 
-    public static boolean proxyPort;
+    public static boolean proxyPort = false;
 
-    public static UNKNOWN_89 LOG;
+    public static UNKNOWN_91 LOG = null;
 
     JavaCIPUnknownScope() {
         super();

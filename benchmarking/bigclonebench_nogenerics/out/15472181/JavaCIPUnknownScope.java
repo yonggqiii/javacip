@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object current_source;
+    public static String current_source = null;
 
-    public static int udp_port;
+    public static int udp_port = 0;
 
-    public static String udp_baddress;
+    public static CharSequence udp_baddress = null;
 
     JavaCIPUnknownScope() {
         super();

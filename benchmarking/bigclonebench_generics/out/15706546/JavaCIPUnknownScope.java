@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object fileData;
+    public static Object fileData = null;
 
-    public static boolean siteName;
+    public static boolean siteName = false;
 
-    public static UNKNOWN_104 sqlConnector;
+    public static UNKNOWN_220 sqlConnector = null;
 
     public static boolean getTableName(String arg0) {
         return false;

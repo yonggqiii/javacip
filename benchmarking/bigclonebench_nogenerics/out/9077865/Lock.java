@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Lock {
+public interface Lock {
 
-    public static boolean READ_LOCK;
-
-    Lock() {
-        super();
-    }
+    public static boolean READ_LOCK = false;
 }

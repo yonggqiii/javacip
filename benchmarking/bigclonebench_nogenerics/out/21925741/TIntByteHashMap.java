@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class TIntByteHashMap extends TIntArrayList {
+public class TIntByteHashMap {
 
     public void put(int arg0, byte arg1) {
     }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class XMLReaderObjectFactory {
+public interface XMLReaderObjectFactory {
 
-    public static boolean GRAMMER_POOL;
-
-    XMLReaderObjectFactory() {
-        super();
-    }
+    public static boolean GRAMMER_POOL = false;
 }

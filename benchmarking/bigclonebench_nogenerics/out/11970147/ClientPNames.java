@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ClientPNames {
+public interface ClientPNames {
 
-    public static boolean COOKIE_POLICY;
-
-    ClientPNames() {
-        super();
-    }
+    public static boolean COOKIE_POLICY = false;
 }

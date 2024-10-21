@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Publisher {
+public interface Publisher {
 
-    public static boolean resourceVector;
-
-    Publisher() {
-        super();
-    }
+    public static boolean resourceVector = false;
 }

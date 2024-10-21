@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static double separator;
+    public static double separator = 0;
 
     public void mkdir() {
     }
@@ -10,11 +10,11 @@ public class File {
         return false;
     }
 
-    public double getName() {
+    public byte getName() {
         return 0;
     }
 
-    public double getAbsolutePath() {
+    public byte getAbsolutePath() {
         return 0;
     }
 

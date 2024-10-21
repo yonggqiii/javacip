@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double extDir;
+    public static double extDir = 0;
 
     public static long readTimeStamp(File arg0) {
         return 0;

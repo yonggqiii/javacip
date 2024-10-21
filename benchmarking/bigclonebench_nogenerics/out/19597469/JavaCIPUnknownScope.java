@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_42 genHash;
+    public static UNKNOWN_42 genHash = null;
 
-    public static boolean genFileName;
+    public static boolean genFileName = false;
 
     public static String downloadInternal(URLConnection arg0) {
         return null;

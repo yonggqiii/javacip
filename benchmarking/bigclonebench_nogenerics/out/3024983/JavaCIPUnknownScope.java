@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_28 inData;
+    public static UNKNOWN_28 inData = null;
 
     public static void assertTrue(String arg0, boolean arg1) {
     }

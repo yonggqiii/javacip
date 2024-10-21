@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class AudioSystem {
+public interface AudioSystem {
 
-    public static boolean NOT_SPECIFIED;
-
-    AudioSystem() {
-        super();
-    }
+    public static boolean NOT_SPECIFIED = false;
 }

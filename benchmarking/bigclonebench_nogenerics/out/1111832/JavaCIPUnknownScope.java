@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean TRANSACTIONS_ENABLED;
+    public static boolean TRANSACTIONS_ENABLED = false;
 
-    public static UNKNOWN_210 sqlConstants;
+    public static UNKNOWN_210 sqlConstants = null;
 
     public static UNKNOWN_301 getDatabase() {
         return null;

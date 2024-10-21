@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class EntailmentType {
+public interface EntailmentType {
 
-    public static EntailmentType unkown;
+    public static EntailmentType unkown = null;
 
-    public static EntailmentType entailed;
+    public static EntailmentType entailed = null;
 
-    public static EntailmentType notEntailed;
-
-    EntailmentType() {
-        super();
-    }
+    public static EntailmentType notEntailed = null;
 }

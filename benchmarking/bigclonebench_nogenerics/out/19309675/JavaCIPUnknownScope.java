@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_31 fChecker;
+    public static UNKNOWN_29 fChecker = null;
 
-    public static PersistentSpellDictionary fUserDictionary;
+    public static Object fUserDictionary = null;
 
     JavaCIPUnknownScope() {
         super();

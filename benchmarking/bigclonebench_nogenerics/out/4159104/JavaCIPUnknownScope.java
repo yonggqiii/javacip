@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean HTMLuserpage;
+    public static boolean HTMLuserpage = false;
 
-    public static boolean userAgent;
+    public static boolean userAgent = false;
 
     public static void setStatus(String arg0) {
     }

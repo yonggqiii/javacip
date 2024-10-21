@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static boolean PHOTO_DIR;
-
-    Constants() {
-        super();
-    }
+    public static boolean PHOTO_DIR = false;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Feesh {
+public interface Feesh {
 
-    public static boolean device_URL;
-
-    Feesh() {
-        super();
-    }
+    public static boolean device_URL = false;
 }

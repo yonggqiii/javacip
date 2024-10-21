@@ -3,5 +3,5 @@ public interface DirProperties {
 
     public abstract boolean isReadable();
 
-    public abstract byte getLocation();
+    public abstract double getLocation();
 }

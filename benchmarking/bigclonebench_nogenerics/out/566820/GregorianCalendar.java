@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class GregorianCalendar {
 
-    public static boolean DAY_OF_YEAR;
+    public static boolean DAY_OF_YEAR = false;
 
     public void setTime(Date arg0) {
     }

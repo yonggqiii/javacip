@@ -1,14 +1,7 @@
 // added by JavaCIP
-public class URLConnection extends HttpURLConnection {
+public interface URLConnection extends HttpURLConnection {
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public boolean getInputStream() {
-        return false;
-    }
-
-    URLConnection() {
-        super();
-    }
+    public abstract boolean getInputStream();
 }

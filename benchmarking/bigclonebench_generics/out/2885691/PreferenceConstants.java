@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class PreferenceConstants {
+public interface PreferenceConstants {
 
-    public static boolean P_UDC;
+    public static boolean P_UDC = false;
 
-    public static boolean P_SERVER;
-
-    PreferenceConstants() {
-        super();
-    }
+    public static boolean P_SERVER = false;
 }

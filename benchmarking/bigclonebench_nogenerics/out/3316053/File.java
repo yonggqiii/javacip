@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static boolean separator;
+    public static boolean separator = false;
 
     public boolean getName() {
         return false;

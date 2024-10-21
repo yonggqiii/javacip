@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class MimeTypes {
+public interface MimeTypes {
 
-    public static boolean FORM_ENCODED;
-
-    MimeTypes() {
-        super();
-    }
+    public static boolean FORM_ENCODED = false;
 }

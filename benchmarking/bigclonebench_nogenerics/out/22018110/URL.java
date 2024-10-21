@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface URL {
 
-    public abstract UNKNOWN_278 openConnection();
+    public abstract UNKNOWN_276 openConnection();
 
     public abstract InputStream openStream();
 

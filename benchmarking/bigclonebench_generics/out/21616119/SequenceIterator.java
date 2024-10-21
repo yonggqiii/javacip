@@ -3,5 +3,5 @@ public interface SequenceIterator {
 
     public abstract boolean hasNext();
 
-    public abstract UNKNOWN_2985 nextItem();
+    public abstract UNKNOWN_130 nextItem();
 }

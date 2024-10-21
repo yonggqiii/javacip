@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class UploadStatus {
+public interface UploadStatus {
 
-    public static boolean UPLOADING;
+    public static boolean UPLOADING = false;
 
-    public static boolean GETTINGLINK;
-
-    UploadStatus() {
-        super();
-    }
+    public static boolean GETTINGLINK = false;
 }

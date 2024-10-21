@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static byte BYTE_ENCODING;
-
-    Constants() {
-        super();
-    }
+    public static byte BYTE_ENCODING = 0;
 }

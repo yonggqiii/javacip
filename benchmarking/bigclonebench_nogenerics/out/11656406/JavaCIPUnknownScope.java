@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_85 client;
+    public static UNKNOWN_85 client = null;
 
     public static boolean getUploadUrl(String arg0) {
         return false;

@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_130 metaserverModel;
+    public static UNKNOWN_128 metaserverModel = null;
 
-    public static UNKNOWN_104 serverCache;
+    public static UNKNOWN_102 serverCache = null;
 
-    public static int EXPIRE_INTERVAL;
+    public static byte EXPIRE_INTERVAL = 0;
 
-    public static boolean METASERVER_URL;
+    public static boolean METASERVER_URL = false;
 
     JavaCIPUnknownScope() {
         super();

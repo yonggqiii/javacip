@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean _id;
+    public static boolean _id = false;
 
-    public static int _linesRead;
+    public static int _linesRead = 0;
 
-    public static DataInputStream _in;
+    public static DataInputStream _in = null;
 
-    public static boolean _keepGoing;
+    public static boolean _keepGoing = false;
 
-    public static UNKNOWN_79 _listener;
+    public static UNKNOWN_79 _listener = null;
 
-    public static UNKNOWN_53 _readURL;
+    public static UNKNOWN_53 _readURL = null;
 
     public static void shutdown(boolean arg0) {
     }

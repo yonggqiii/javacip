@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_116 LOG;
+    public static UNKNOWN_124 LOG = null;
 
-    public static UNKNOWN_51 cache;
+    public static UNKNOWN_59 cache = null;
 
-    public static boolean urlBase;
+    public static boolean urlBase = false;
 
     public static Class<Object> defineClass(String arg0, byte[] arg1, int arg2, int arg3, CodeSource arg4) {
         return null;

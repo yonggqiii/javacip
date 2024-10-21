@@ -5,7 +5,7 @@ public class URL {
         return null;
     }
 
-    public URL(String arg0) {
+    public URL(java.io.Serializable arg0) {
         super();
     }
 

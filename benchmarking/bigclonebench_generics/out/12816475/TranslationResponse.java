@@ -1,28 +1,17 @@
 // added by JavaCIP
-public class TranslationResponse {
+public interface TranslationResponse {
 
-    public static Object ETAG;
+    public static Object ETAG = null;
 
-    public void setTranslationCount(boolean arg0) {
-    }
+    public abstract void setTranslationCount(boolean arg0);
 
-    public void setEndState(boolean arg0) {
-    }
+    public abstract void setEndState(boolean arg0);
 
-    public void setLastModified(boolean arg0) {
-    }
+    public abstract void setLastModified(boolean arg0);
 
-    public void setFailCount(boolean arg0) {
-    }
+    public abstract void setFailCount(boolean arg0);
 
-    public void addHeaders(Set<ResponseHeader> arg0) {
-    }
+    public abstract void addHeaders(Set<ResponseHeader> arg0);
 
-    public OutputStream getOutputStream() {
-        return null;
-    }
-
-    TranslationResponse() {
-        super();
-    }
+    public abstract OutputStream getOutputStream();
 }

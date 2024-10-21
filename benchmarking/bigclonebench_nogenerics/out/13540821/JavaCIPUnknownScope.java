@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static java.nio.charset.Charset httpAuthCharEncoding;
+    public static java.nio.charset.Charset httpAuthCharEncoding = null;
 
     public static boolean base64encode(byte[] arg0) {
         return false;

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean DIR_INFO_FIENAME;
+    public static boolean DIR_INFO_FIENAME = false;
 
     public static void readDataFrom(PushbackInputStream arg0) {
     }

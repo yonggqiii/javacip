@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean forUser;
+    public static boolean forUser = false;
 
-    public static UNKNOWN_172 logger;
+    public static UNKNOWN_172 logger = null;
 
-    public static boolean trip;
+    public static boolean trip = false;
 
-    public static FileInputStream fis;
+    public static FileInputStream fis = null;
 
-    public static UNKNOWN_146 doc;
+    public static UNKNOWN_146 doc = null;
 
     public static void doHeader() {
     }

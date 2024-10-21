@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_34 nonce;
+    public static UNKNOWN_34 nonce = null;
 
     public static String toHexString(boolean arg0) {
         return null;

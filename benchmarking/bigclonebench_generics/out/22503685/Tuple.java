@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class Tuple<A, B> {
 
-    public UNKNOWN_226 getV2() {
+    public UNKNOWN_228 getV2() {
         return null;
     }
 

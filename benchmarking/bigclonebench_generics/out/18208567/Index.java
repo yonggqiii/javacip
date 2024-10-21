@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Index {
+public interface Index {
 
-    public static UNKNOWN_172 INFO;
-
-    Index() {
-        super();
-    }
+    public static UNKNOWN_172 INFO = null;
 }

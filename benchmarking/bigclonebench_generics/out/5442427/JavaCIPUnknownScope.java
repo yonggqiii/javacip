@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte serialNumber;
+    public static byte serialNumber = 0;
 
     public static Element getHeaderTag() {
         return null;

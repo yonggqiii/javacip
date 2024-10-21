@@ -17,7 +17,7 @@ public interface ByteBuffer {
 
     public abstract byte get();
 
-    public abstract int capacity();
+    public abstract byte capacity();
 
     public abstract void putFloat(float arg0);
 

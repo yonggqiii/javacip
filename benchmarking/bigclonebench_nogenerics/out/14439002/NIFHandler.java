@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class NIFHandler {
+public interface NIFHandler {
 
-    public static boolean URL_BASE;
-
-    NIFHandler() {
-        super();
-    }
+    public static boolean URL_BASE = false;
 }

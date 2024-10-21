@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean KEY_VIDEO;
+    public static boolean KEY_VIDEO = false;
 
     public static boolean asHex(boolean arg0) {
         return false;

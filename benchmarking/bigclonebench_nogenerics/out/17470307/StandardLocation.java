@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class StandardLocation {
+public interface StandardLocation {
 
-    public static boolean CLASS_OUTPUT;
-
-    StandardLocation() {
-        super();
-    }
+    public static boolean CLASS_OUTPUT = false;
 }

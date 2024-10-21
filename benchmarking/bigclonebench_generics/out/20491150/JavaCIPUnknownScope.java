@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double pckgname;
+    public static byte pckgname = 0;
 
-    public static UNKNOWN_70 LOG;
+    public static UNKNOWN_70 LOG = null;
 
     public static void addInstanceIfCommand(String arg0, Map<String, T> arg1) {
     }

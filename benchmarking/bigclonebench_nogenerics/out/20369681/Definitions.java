@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Definitions {
+public interface Definitions {
 
-    public static boolean PROJECT_NAME;
+    public static boolean PROJECT_NAME = false;
 
-    public static boolean TMP_EXTENSION;
-
-    Definitions() {
-        super();
-    }
+    public static boolean TMP_EXTENSION = false;
 }

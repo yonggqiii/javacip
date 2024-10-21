@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class AttachmentColumns {
+public interface AttachmentColumns {
 
-    public static boolean SIZE;
+    public static boolean SIZE = false;
 
-    public static boolean CONTENT_URI;
-
-    AttachmentColumns() {
-        super();
-    }
+    public static boolean CONTENT_URI = false;
 }

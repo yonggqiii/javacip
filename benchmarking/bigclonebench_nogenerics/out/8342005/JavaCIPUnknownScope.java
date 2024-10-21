@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean username;
+    public static boolean username = false;
 
-    public static ContentResolver cr;
+    public static ContentResolver cr = null;
 
-    public static boolean to;
+    public static boolean to = false;
 
-    public static boolean logsent;
+    public static boolean logsent = false;
 
-    public static boolean msg;
+    public static boolean msg = false;
 
-    public static CharSequence output;
+    public static String output = null;
 
-    public static boolean password;
+    public static boolean password = false;
 
     JavaCIPUnknownScope() {
         super();

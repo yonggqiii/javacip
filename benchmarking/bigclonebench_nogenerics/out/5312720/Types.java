@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Types {
+public interface Types {
 
-    public static boolean BIGINT;
-
-    Types() {
-        super();
-    }
+    public static boolean BIGINT = false;
 }

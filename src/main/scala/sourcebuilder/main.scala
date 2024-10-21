@@ -11,7 +11,8 @@ import com.github.javaparser.ast.body.{
   FieldDeclaration,
   MethodDeclaration,
   Parameter,
-  ConstructorDeclaration
+  ConstructorDeclaration,
+  VariableDeclarator
 }
 import com.github.javaparser.ast.`type`.{
   Type as ASTType,
@@ -142,13 +143,29 @@ def buildType(
   //   )
   // add fields
   decl.attributes.foreach((identifier, attr) =>
-    classOrInterfaceDeclaration.addMember(
-      FieldDeclaration(
-        attr.getNodeListModifiers,
-        typeToASTType(attr.`type`, prohibitedNames),
-        identifier
-      )
-    )
+      if !attr.isStatic then
+        classOrInterfaceDeclaration.addMember(
+          FieldDeclaration(
+            attr.getNodeListModifiers,
+            typeToASTType(attr.`type`, prohibitedNames),
+            identifier
+          )
+        )
+      else
+        var fd = VariableDeclarator(typeToASTType(attr.`type`, prohibitedNames), identifier)
+        if attr.`type` == PRIMITIVE_BOOLEAN then
+          fd = fd.setInitializer("false")
+        else if attr.`type`.isInstanceOf[PrimitiveType] then
+          fd = fd.setInitializer("0")
+        else 
+          fd = fd.setInitializer("null")
+        classOrInterfaceDeclaration.addMember(
+          FieldDeclaration(
+            attr.getNodeListModifiers,
+            fd
+          )
+        )
+
   )
   decl.methods.foreach((identifier, v) =>
     v.foreach(m =>
@@ -335,7 +352,7 @@ def typeToASTType(t: Type, prohibitedNames: Set[String]): ASTType = t match
   case TypeParameterIndex(_, i) => ASTClassOrInterfaceType(null, numToLetter(i, prohibitedNames))
   case ClassOrInterfaceType(x, args, _) =>
     val res =
-      if x.slice(0, 10) == "java.lang." && !x.contains("reflect") then ASTClassOrInterfaceType(null, x.substring(10))
+      if x.slice(0, 10) == "java.lang." && x.split('.').length == 3 && !x.contains("reflect") then ASTClassOrInterfaceType(null, x.substring(10))
       else ASTClassOrInterfaceType(null, x)
     if args.size == 0 then res
     else

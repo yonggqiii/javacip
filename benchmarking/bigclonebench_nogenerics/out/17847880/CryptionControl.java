@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface CryptionControl {
 
-    public static UNKNOWN_2067 getInstance() {
+    public static UNKNOWN_20011 getInstance() {
         return null;
     }
 }

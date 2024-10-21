@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static char[] dumpBytes(byte[] arg0) {
+    public static byte[] dumpBytes(byte[] arg0) {
         return null;
     }
 

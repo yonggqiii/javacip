@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class BBSBodyParseHelper {
+public interface BBSBodyParseHelper {
 
-    public static boolean BBS_CHARSET;
+    public static boolean BBS_CHARSET = false;
 
     public static String parseFailMsg(HttpEntity arg0) {
         return null;
-    }
-
-    BBSBodyParseHelper() {
-        super();
     }
 }

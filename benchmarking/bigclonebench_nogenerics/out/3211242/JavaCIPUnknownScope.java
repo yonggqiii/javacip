@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_65 WWIO;
+    public static UNKNOWN_65 WWIO = null;
 
-    public static UNKNOWN_91 java;
+    public static UNKNOWN_91 java = null;
 
     public static String getCharsetName(String arg0) {
         return null;

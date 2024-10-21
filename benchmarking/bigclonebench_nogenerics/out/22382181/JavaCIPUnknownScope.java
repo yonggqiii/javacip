@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_52 log;
+    public static UNKNOWN_52 log = null;
 
     public static void delete(File arg0) {
     }

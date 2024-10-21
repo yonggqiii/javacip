@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_164 plugin;
+    public static UNKNOWN_178 plugin = null;
 
-    public static UNKNOWN_203 picm;
+    public static UNKNOWN_217 picm = null;
 
-    public static UNKNOWN_190 signature;
+    public static UNKNOWN_204 signature = null;
 
-    public static UNKNOWN_177 sink;
+    public static UNKNOWN_191 sink = null;
 
-    public static boolean pluginName;
+    public static boolean pluginName = false;
 
-    public static UNKNOWN_151 threadStack;
+    public static UNKNOWN_165 threadStack = null;
 
-    public static boolean timeout;
+    public static boolean timeout = false;
 
     JavaCIPUnknownScope() {
         super();

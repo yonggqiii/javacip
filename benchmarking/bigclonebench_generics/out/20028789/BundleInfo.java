@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class BundleInfo {
 
-    public String bundleSymbolicName;
+    public java.io.Serializable bundleSymbolicName;
 
-    public CharSequence location;
+    public java.io.Serializable location;
 
     public BundleInfo() {
         super();

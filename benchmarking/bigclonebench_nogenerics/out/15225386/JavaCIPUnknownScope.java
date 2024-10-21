@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_191 mLogger;
+    public static UNKNOWN_30289 mLogger = null;
 
     public static void saveMessages(HttpServletRequest arg0, ActionMessages arg1) {
     }

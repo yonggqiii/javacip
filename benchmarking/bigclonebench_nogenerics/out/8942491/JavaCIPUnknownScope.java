@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object proxyHost;
+    public static Object proxyHost = null;
 
-    public static Object proxyPort;
+    public static Object proxyPort = null;
 
-    public static Object proxyUsername;
+    public static Object proxyUsername = null;
 
-    public static boolean proxyEncodedPassword;
+    public static boolean proxyEncodedPassword = false;
 
     JavaCIPUnknownScope() {
         super();

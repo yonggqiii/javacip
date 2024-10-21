@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Digest {
+public interface Digest {
 
-    public static UNKNOWN_40 SHA1;
-
-    Digest() {
-        super();
-    }
+    public static UNKNOWN_40 SHA1 = null;
 }

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static String COPY_FILE_FAILED;
+    public static String COPY_FILE_FAILED = null;
 
-    public static UNKNOWN_89 LOGGER;
+    public static UNKNOWN_85 LOGGER = null;
 
     public static RuntimeException fileIORuntimeException(String arg0, File arg1, FileNotFoundRuntimeException arg2) {
         return null;

@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int mCount;
+    public static byte mCount = 0;
 
-    public static boolean mFile;
+    public static boolean mFile = false;
 
-    public static byte[] mRecodeOffset;
+    public static byte[] mRecodeOffset = null;
 
-    public static byte mPage;
+    public static byte mPage = 0;
 
     JavaCIPUnknownScope() {
         super();

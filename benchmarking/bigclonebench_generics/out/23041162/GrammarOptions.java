@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class GrammarOptions {
+public interface GrammarOptions {
 
-    public static boolean STRICT_OPTIONS;
-
-    GrammarOptions() {
-        super();
-    }
+    public static boolean STRICT_OPTIONS = false;
 }

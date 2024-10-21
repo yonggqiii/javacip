@@ -3,5 +3,5 @@ public interface MethodInfo {
 
     public abstract CodeAttribute getCodeAttribute();
 
-    public abstract int getName();
+    public abstract Object getName();
 }

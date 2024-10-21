@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Mode {
+public interface Mode {
 
-    public static boolean CLOUD;
-
-    Mode() {
-        super();
-    }
+    public static boolean CLOUD = false;
 }

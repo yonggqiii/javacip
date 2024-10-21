@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class MyFonts {
+public interface MyFonts {
 
-    public static boolean TITLE;
+    public static boolean TITLE = false;
 
-    public static boolean DATE;
-
-    MyFonts() {
-        super();
-    }
+    public static boolean DATE = false;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SBCMain {
+public interface SBCMain {
 
-    public static boolean DEBUG_MODE;
-
-    SBCMain() {
-        super();
-    }
+    public static boolean DEBUG_MODE = false;
 }

@@ -1,18 +1,13 @@
 // added by JavaCIP
-public class Metadata {
+public interface Metadata {
 
-    public static boolean RESOURCE_NAME_KEY;
+    public static boolean RESOURCE_NAME_KEY = false;
 
-    public static boolean CONTENT_TYPE;
+    public static boolean CONTENT_TYPE = false;
 
-    public static boolean CONTENT_ENCODING;
+    public static boolean CONTENT_ENCODING = false;
 
-    public static boolean CONTENT_LENGTH;
+    public static boolean CONTENT_LENGTH = false;
 
-    public void set(boolean arg0, String arg1) {
-    }
-
-    Metadata() {
-        super();
-    }
+    public abstract void set(boolean arg0, String arg1);
 }

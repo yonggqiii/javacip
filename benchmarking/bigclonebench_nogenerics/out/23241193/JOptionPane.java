@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JOptionPane {
+public interface JOptionPane {
 
-    public static boolean ERROR_MESSAGE;
-
-    JOptionPane() {
-        super();
-    }
+    public static boolean ERROR_MESSAGE = false;
 }

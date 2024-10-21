@@ -1,5 +1,5 @@
 // added by JavaCIP
-public interface BufferedImage {
+public interface BufferedImage extends OutputStream {
 
     public abstract boolean getWidth();
 

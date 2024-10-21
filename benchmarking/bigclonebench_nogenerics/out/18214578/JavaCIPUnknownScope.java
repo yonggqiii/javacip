@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_21 jad;
+    public static UNKNOWN_21 jad = null;
 
     public static void setStatusBar(String arg0) {
     }

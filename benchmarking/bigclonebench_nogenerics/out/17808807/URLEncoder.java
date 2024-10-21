@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface URLEncoder {
 
-    public static boolean encode(String arg0) {
-        return false;
+    public static float encode(String arg0) {
+        return 0;
     }
 }

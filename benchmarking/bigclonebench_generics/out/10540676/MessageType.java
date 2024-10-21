@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class MessageType {
+public interface MessageType {
 
-    public static boolean ERROR;
+    public static boolean ERROR = false;
 
-    public static boolean INFO;
-
-    MessageType() {
-        super();
-    }
+    public static boolean INFO = false;
 }

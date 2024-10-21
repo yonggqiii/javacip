@@ -1,11 +1,11 @@
 // added by JavaCIP
-public class ByteArrayInputStream extends GZIPInputStream {
+public class ByteArrayInputStream extends CipherInputStream {
 
     public ByteArrayInputStream(byte[] arg0) {
-        super((CipherInputStream) null);
+        super((InputStream) null, (Cipher) null);
     }
 
     ByteArrayInputStream() {
-        super((CipherInputStream) null);
+        super((InputStream) null, (Cipher) null);
     }
 }

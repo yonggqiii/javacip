@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Fenetre {
+public interface Fenetre {
 
-    public static boolean ERREUR_FATALE_UPDATE;
-
-    Fenetre() {
-        super();
-    }
+    public static boolean ERREUR_FATALE_UPDATE = false;
 }

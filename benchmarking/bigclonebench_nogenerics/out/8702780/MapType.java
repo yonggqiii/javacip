@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface MapType {
 
-    public static UNKNOWN_333 values() {
+    public static UNKNOWN_243 values() {
         return null;
     }
 

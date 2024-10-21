@@ -1,22 +1,13 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_ACCEPTED;
+    public static int HTTP_ACCEPTED = 0;
 
-    public static int HTTP_OK;
+    public static int HTTP_OK = 0;
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public InputStream getInputStream() {
-        return null;
-    }
+    public abstract InputStream getInputStream();
 
-    public void disconnect() {
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract void disconnect();
 }

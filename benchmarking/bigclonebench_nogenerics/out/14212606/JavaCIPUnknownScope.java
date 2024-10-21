@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean deepScan;
+    public static boolean deepScan = false;
 
     public static Alignment parseAlignment(String arg0) {
         return null;

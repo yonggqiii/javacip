@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class Messages {
+public interface Messages {
 
-    public static byte prefPage_srtm_checkHTTPConnectionOK_message;
+    public static byte prefPage_srtm_checkHTTPConnectionOK_message = 0;
 
-    public static boolean prefPage_srtm_checkHTTPConnectionFAILED_message;
+    public static boolean prefPage_srtm_checkHTTPConnectionFAILED_message = false;
 
-    public static boolean prefPage_srtm_checkHTTPConnection_title;
+    public static boolean prefPage_srtm_checkHTTPConnection_title = false;
 
-    public static boolean prefPage_srtm_checkHTTPConnection_message;
-
-    Messages() {
-        super();
-    }
+    public static boolean prefPage_srtm_checkHTTPConnection_message = false;
 }

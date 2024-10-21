@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ArrayList<A> {
 
-    public int size() {
+    public byte size() {
         return 0;
     }
 
@@ -11,10 +11,7 @@ public class ArrayList<A> {
     public void remove(int arg0) {
     }
 
-    public void remove(double arg0) {
-    }
-
-    public Object get(int arg0) {
+    public Object get(double arg0) {
         return null;
     }
 

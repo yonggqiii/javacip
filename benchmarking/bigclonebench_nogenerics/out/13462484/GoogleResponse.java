@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class GoogleResponse {
 
-    public Number lat;
+    public Object lat;
 
-    public java.io.Serializable lon;
+    public Double lon;
 
-    public String status;
+    public CharSequence status;
 
-    public Number elevation;
+    public Object elevation;
 
     public GoogleResponse() {
         super();

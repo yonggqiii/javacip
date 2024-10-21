@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class EType {
+public interface EType {
 
-    public static boolean TEXT;
-
-    EType() {
-        super();
-    }
+    public static boolean TEXT = false;
 }

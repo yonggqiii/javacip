@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class DcmEncodeParam {
+public interface DcmEncodeParam {
 
-    public static DcmEncodeParam IVR_LE;
-
-    DcmEncodeParam() {
-        super();
-    }
+    public static DcmEncodeParam IVR_LE = null;
 }

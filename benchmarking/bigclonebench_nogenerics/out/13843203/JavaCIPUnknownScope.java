@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int IO_BUFFER_SIZE;
+    public static int IO_BUFFER_SIZE = 0;
 
     JavaCIPUnknownScope() {
         super();

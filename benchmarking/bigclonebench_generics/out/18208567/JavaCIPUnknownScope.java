@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean even;
+    public static boolean even = false;
 
-    public static UNKNOWN_159 index;
+    public static UNKNOWN_159 index = null;
 
     public static void createSections(String arg0) {
     }

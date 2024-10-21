@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean filePath;
+    public static boolean filePath = false;
 
     JavaCIPUnknownScope() {
         super();

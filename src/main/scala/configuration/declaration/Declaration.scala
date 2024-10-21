@@ -217,7 +217,10 @@ trait Declaration:
         if methods(id).forall(myMethod => !myMethod.overrides(method, config)) then
           if !res.contains(id) then res(id) = ArrayBuffer()
           res(id) += method
-    res.map((k, v) => (k -> v.toVector.filter(m => !(m.accessModifier < accessLevel)))).toMap
+    if this.isInterface then
+      res.map((k, v) => (k -> v.toVector)).toMap
+    else
+      res.map((k, v) => (k -> v.toVector.filter(m => !(m.accessModifier < accessLevel)))).toMap
 
   /** Get the erasure of a method
     * @param m

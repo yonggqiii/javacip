@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface COSInfoDict {
 
-    public abstract UNKNOWN_100 cosGetDict();
+    public abstract UNKNOWN_86 cosGetDict();
 }

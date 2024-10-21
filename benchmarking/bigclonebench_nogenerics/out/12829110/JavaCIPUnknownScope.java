@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_48 java;
+    public static UNKNOWN_48 java = null;
 
     public static String encryptActiveDirectory(String arg0) {
         return null;

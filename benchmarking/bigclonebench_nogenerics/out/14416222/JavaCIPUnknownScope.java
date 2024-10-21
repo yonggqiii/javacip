@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_78 logger;
+    public static UNKNOWN_76 logger = null;
 
     public static String getHash(File arg0) {
         return null;

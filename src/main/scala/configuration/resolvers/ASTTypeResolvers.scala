@@ -20,7 +20,7 @@ import scala.jdk.OptionConverters.*
 import scala.collection.mutable.Map as MutableMap
 
 // Package imports
-import configuration.{MutableConfiguration}
+import configuration.{Configuration, MutableConfiguration}
 import configuration.declaration.MissingTypeDeclaration
 import configuration.types.*
 import utils.{Log, mapWithLog}
@@ -83,6 +83,7 @@ private def resolveArrayType(
   val (newLog, t) = resolveASTType(cu, config, typeToConvert.getComponentType, log)
   (newLog, ArrayType(t))
 
+
 private def resolveClassOrInterfaceType(
     cu: CompilationUnit,
     config: MutableConfiguration,
@@ -125,34 +126,47 @@ private def resolveClassOrInterfaceType(
           )
         )
 
-  try (log, resolveSolvedType(typeToConvert.resolve()))
-  catch
-    case e: UnsolvedSymbolException =>
-      // here it must mean that type to convert itself (not its arguments)
-      // does not exist
+  // try to resolve the type name if it is imported and in JDK
+  val imports = cu.getImports()
+    .asScala
+    .toVector
+    .map(x => x.getName())
+    .filter(x => x.getIdentifier == identifier)
+  val fqn = if imports.size == 1 then imports(0).asString() else "java.lang." + identifier
+  // println(fqn)
+  Configuration.createEmptyConfiguration().getFixedDeclaration(ClassOrInterfaceType(fqn, Vector())) match
+    case Some(decl) => 
+      config._7 += (identifier -> fqn)
+      (newLog, ClassOrInterfaceType(fqn, arguments))
+    case None =>
+      try (log, resolveSolvedType(typeToConvert.resolve()))
+      catch
+        case e: UnsolvedSymbolException =>
+          // here it must mean that type to convert itself (not its arguments)
+          // does not exist
 
-      // Add typeToConvert as an interface
-      val newInterface = cu.addInterface(identifier)
-      val newInterfaceTypeParameters = NodeList(
-        (0 until arguments.size)
-          .map(i => TypeParameter((84 + i).toChar.toString))
-          .asJavaCollection
-      )
-      newInterface.setTypeParameters(newInterfaceTypeParameters)
+          // Add typeToConvert as an interface
+          val newInterface = cu.addInterface(identifier)
+          val newInterfaceTypeParameters = NodeList(
+            (0 until arguments.size)
+              .map(i => TypeParameter((84 + i).toChar.toString))
+              .asJavaCollection
+          )
+          newInterface.setTypeParameters(newInterfaceTypeParameters)
 
-      // Add to Phi
-      config._2._1(identifier) = MissingTypeDeclaration(identifier).ofParameters(arguments.size)
+          // Add to Phi
+          config._2._1(identifier) = MissingTypeDeclaration(identifier).ofParameters(arguments.size)
 
-      // Add to logs and return type
-      (
-        newLog.addInfo(
-          s"type $identifier not found in source code; adding to Phi"
-        ),
-        ClassOrInterfaceType(
-          identifier,
-          arguments
-        )
-      )
+          // Add to logs and return type
+          (
+            newLog.addInfo(
+              s"type $identifier not found in source code; adding to Phi"
+            ),
+            ClassOrInterfaceType(
+              identifier,
+              arguments
+            )
+          )
 
 private def resolveIntersectionType(
     cu: CompilationUnit,

@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_41 docIndex;
+    public static UNKNOWN_41 docIndex = null;
 
-    public static boolean fileFileName;
+    public static boolean fileFileName = false;
 
-    public static UNKNOWN_67 org;
+    public static UNKNOWN_67 org = null;
 
-    public static boolean file;
+    public static boolean file = false;
 
     public static File tmpFile(String arg0) {
         return null;

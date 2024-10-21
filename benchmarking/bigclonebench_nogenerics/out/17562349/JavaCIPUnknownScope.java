@@ -1,25 +1,25 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_97 method;
+    public static UNKNOWN_111 method = null;
 
-    public static UNKNOWN_214 nonce;
+    public static UNKNOWN_228 nonce = null;
 
-    public static UNKNOWN_175 username;
+    public static UNKNOWN_189 username = null;
 
-    public static UNKNOWN_149 uri;
+    public static UNKNOWN_163 uri = null;
 
-    public static UNKNOWN_227 algorithm;
+    public static UNKNOWN_241 algorithm = null;
 
-    public static UNKNOWN_136 nonceCount;
+    public static UNKNOWN_150 nonceCount = null;
 
-    public static UNKNOWN_110 realm;
+    public static UNKNOWN_124 realm = null;
 
-    public static UNKNOWN_201 password;
+    public static UNKNOWN_215 password = null;
 
-    public static UNKNOWN_123 cnonce;
+    public static UNKNOWN_137 cnonce = null;
 
-    public static UNKNOWN_188 qop;
+    public static UNKNOWN_202 qop = null;
 
     public static byte[] bytesToHex(byte[] arg0) {
         return null;

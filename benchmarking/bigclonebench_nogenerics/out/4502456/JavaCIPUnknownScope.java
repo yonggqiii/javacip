@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static FTPClient cl;
+    public static FTPClient cl = null;
 
-    public static boolean user;
+    public static boolean user = false;
 
-    public static boolean pass;
+    public static boolean pass = false;
 
     public static boolean getURL() {
         return false;

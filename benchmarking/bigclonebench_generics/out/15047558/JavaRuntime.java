@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JavaRuntime {
+public interface JavaRuntime {
 
-    public static String JRE_CONTAINER;
-
-    JavaRuntime() {
-        super();
-    }
+    public static String JRE_CONTAINER = null;
 }

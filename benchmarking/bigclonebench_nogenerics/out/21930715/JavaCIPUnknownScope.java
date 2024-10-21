@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_74 request;
+    public static UNKNOWN_74 request = null;
 
-    public static boolean file;
+    public static boolean file = false;
 
-    public static UNKNOWN_48 httpClient;
+    public static UNKNOWN_48 httpClient = null;
 
     public static void assertTrue(boolean arg0) {
     }

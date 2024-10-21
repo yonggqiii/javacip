@@ -3,5 +3,5 @@ public interface URLConnection {
 
     public abstract InputStream getInputStream();
 
-    public abstract float getContentLength();
+    public abstract boolean getContentLength();
 }

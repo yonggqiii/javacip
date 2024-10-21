@@ -9,11 +9,11 @@ public class File {
         return false;
     }
 
-    public File(String arg0, boolean arg1) {
+    public File(String arg0) {
         super();
     }
 
-    public File(String arg0) {
+    public File(String arg0, boolean arg1) {
         super();
     }
 

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface EntityUtils {
 
-    public static double toString(HttpEntity arg0) {
+    public static int toString(HttpEntity arg0) {
         return 0;
     }
 

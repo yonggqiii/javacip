@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static java.util.Locale QUERYURL;
+    public static String QUERYURL = null;
 
-    public static boolean SORT_SEEDS;
+    public static boolean SORT_SEEDS = false;
 
-    public static boolean SORT_COMPOSITE;
+    public static boolean SORT_COMPOSITE = false;
 
-    public static boolean CONNECTION_TIMEOUT;
+    public static boolean CONNECTION_TIMEOUT = false;
 
     public static List<SearchResult> parseHtml(String arg0) {
         return null;

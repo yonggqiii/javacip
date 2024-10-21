@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class HttpStatus {
+public interface HttpStatus {
 
-    public static int SC_OK;
+    public static int SC_OK = 0;
 
-    public static int SC_PARTIAL_CONTENT;
-
-    HttpStatus() {
-        super();
-    }
+    public static int SC_PARTIAL_CONTENT = 0;
 }

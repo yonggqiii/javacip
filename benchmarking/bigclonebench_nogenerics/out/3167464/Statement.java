@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Statement {
+public interface Statement {
 
-    public static boolean RETURN_GENERATED_KEYS;
-
-    Statement() {
-        super();
-    }
+    public static boolean RETURN_GENERATED_KEYS = false;
 }

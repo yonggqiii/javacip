@@ -1,37 +1,23 @@
 // added by JavaCIP
-public class PdfWriter {
+public interface PdfWriter {
 
-    public static boolean PageLayoutTwoColumnRight;
+    public static boolean PageLayoutTwoColumnRight = false;
 
-    public void setViewerPreferences(boolean arg0) {
-    }
+    public abstract void setViewerPreferences(boolean arg0);
 
-    public void setCropBoxSize(boolean arg0) {
-    }
+    public abstract void setCropBoxSize(boolean arg0);
 
-    public PdfContentByte getDirectContent() {
-        return null;
-    }
+    public abstract PdfContentByte getDirectContent();
 
-    public void setBoxSize(String arg0, boolean arg1) {
-    }
+    public abstract void setBoxSize(String arg0, boolean arg1);
 
-    public void setPageEvent(EventBackgroundAndPageNumbers arg0) {
-    }
+    public abstract void setPageEvent(EventBackgroundAndPageNumbers arg0);
 
-    public boolean getImportedPage(PdfReader arg0, int arg1) {
-        return false;
-    }
+    public abstract boolean getImportedPage(PdfReader arg0, int arg1);
 
     public static PdfWriter getInstance(Document arg0, FileOutputStream arg1) {
         return null;
     }
 
-    public int getPageNumber() {
-        return 0;
-    }
-
-    PdfWriter() {
-        super();
-    }
+    public abstract int getPageNumber();
 }

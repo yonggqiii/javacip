@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Constantes {
+public interface Constantes {
 
-    public static boolean URL;
+    public static boolean URL = false;
 
-    public static boolean URI_CONFIRMAR;
+    public static boolean URI_CONFIRMAR = false;
 
-    public static boolean ASSUNTO_CADASTRO;
-
-    Constantes() {
-        super();
-    }
+    public static boolean ASSUNTO_CADASTRO = false;
 }

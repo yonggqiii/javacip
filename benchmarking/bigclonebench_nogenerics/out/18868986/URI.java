@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface URI {
 
-    public abstract UNKNOWN_31 toURL();
+    public abstract UNKNOWN_75 toURL();
 }

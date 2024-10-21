@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Color {
+public interface Color {
 
-    public static boolean WHITE;
-
-    Color() {
-        super();
-    }
+    public static boolean WHITE = false;
 }

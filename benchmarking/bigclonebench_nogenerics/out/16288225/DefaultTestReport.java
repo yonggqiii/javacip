@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class DefaultTestReport extends TestReport {
+public class DefaultTestReport implements TestReport {
 
     public void setErrorCode(boolean arg0) {
     }

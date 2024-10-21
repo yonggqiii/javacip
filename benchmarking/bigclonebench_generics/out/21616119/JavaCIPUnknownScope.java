@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_3011 config;
+    public static UNKNOWN_156 config = null;
 
-    public static UNKNOWN_3037 LOG;
+    public static UNKNOWN_195 LOG = null;
 
-    public static UNKNOWN_3102 context;
+    public static UNKNOWN_260 context = null;
 
-    public static boolean TYPE_XSD;
+    public static boolean TYPE_XSD = false;
 
     public static boolean isCalledAs(String arg0) {
         return false;

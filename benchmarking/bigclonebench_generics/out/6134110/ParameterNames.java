@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ParameterNames {
+public interface ParameterNames {
 
-    public static boolean MAX_FILE_SIZE;
-
-    ParameterNames() {
-        super();
-    }
+    public static boolean MAX_FILE_SIZE = false;
 }

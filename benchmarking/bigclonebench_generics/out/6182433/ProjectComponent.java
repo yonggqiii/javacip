@@ -1,17 +1,13 @@
 // added by JavaCIP
-public class ProjectComponent {
+public interface ProjectComponent {
 
-    public static ProjectComponent classes;
+    public static ProjectComponent classes = null;
 
-    public static ProjectComponent suts;
+    public static ProjectComponent suts = null;
 
-    public static boolean currentScenario;
+    public static boolean currentScenario = false;
 
-    public static ProjectComponent libs;
+    public static ProjectComponent libs = null;
 
-    public static ProjectComponent resources;
-
-    ProjectComponent() {
-        super();
-    }
+    public static ProjectComponent resources = null;
 }

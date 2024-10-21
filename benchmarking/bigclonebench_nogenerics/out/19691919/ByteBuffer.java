@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface ByteBuffer {
 
-    public abstract char[] getChar();
+    public abstract String getChar();
 
     public static ByteBuffer allocate(int arg0) {
         return null;

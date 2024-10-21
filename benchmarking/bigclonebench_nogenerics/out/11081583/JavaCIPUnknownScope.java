@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean STATEMENT_RENAME;
+    public static boolean STATEMENT_RENAME = false;
 
     public static void doUnlockTopic(Connection arg0, String arg1, String arg2) {
     }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Random myRand;
+    public static Random myRand = null;
 
     JavaCIPUnknownScope() {
         super();

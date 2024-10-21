@@ -1,15 +1,9 @@
 // added by JavaCIP
-public class FileResourceManager {
+public interface FileResourceManager {
 
-    public static boolean SHUTDOWN_MODE_NORMAL;
+    public static boolean SHUTDOWN_MODE_NORMAL = false;
 
-    public void start() {
-    }
+    public abstract void start();
 
-    public void stop(boolean arg0) {
-    }
-
-    FileResourceManager() {
-        super();
-    }
+    public abstract void stop(boolean arg0);
 }

@@ -7,5 +7,5 @@ public interface MessageDigest {
 
     public abstract void update(byte[] arg0);
 
-    public abstract UNKNOWN_35 digest();
+    public abstract UNKNOWN_429 digest();
 }

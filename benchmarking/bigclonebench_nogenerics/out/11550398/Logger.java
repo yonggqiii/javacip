@@ -1,12 +1,7 @@
 // added by JavaCIP
-public class Logger {
+public interface Logger {
 
-    public static UNKNOWN_51 ILogTypes;
+    public static UNKNOWN_49 ILogTypes = null;
 
-    public void showMessage(boolean arg0, Object arg1) {
-    }
-
-    Logger() {
-        super();
-    }
+    public abstract void showMessage(boolean arg0, Object arg1);
 }

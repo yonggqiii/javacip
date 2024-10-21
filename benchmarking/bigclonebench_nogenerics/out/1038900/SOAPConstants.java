@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SOAPConstants {
+public interface SOAPConstants {
 
-    public static boolean SOAP_1_2_PROTOCOL;
-
-    SOAPConstants() {
-        super();
-    }
+    public static boolean SOAP_1_2_PROTOCOL = false;
 }

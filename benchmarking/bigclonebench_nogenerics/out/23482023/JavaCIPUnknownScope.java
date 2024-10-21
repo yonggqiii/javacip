@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_52 FTP;
+    public static UNKNOWN_52 FTP = null;
 
     public static void disconnectFtp(FTPClient arg0) {
     }

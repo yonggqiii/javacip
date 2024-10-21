@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_22 dirTableModel;
+    public static UNKNOWN_22 dirTableModel = null;
 
     JavaCIPUnknownScope() {
         super();

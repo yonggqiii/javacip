@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class BlueXStatics {
+public interface BlueXStatics {
 
-    public static Object proxy;
-
-    BlueXStatics() {
-        super();
-    }
+    public static Object proxy = null;
 }

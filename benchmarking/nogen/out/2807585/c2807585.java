@@ -1,0 +1,16 @@
+class c2807585 {
+
+    private static String encodeMd5(String key) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.reset();
+            md.update(key.getBytes());
+            byte[] bytes = md.digest();
+            String result = JavaCIPUnknownScope.toHexString(bytes);
+            return result;
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}

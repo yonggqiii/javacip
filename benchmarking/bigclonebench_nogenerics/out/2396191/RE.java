@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class RE {
 
-    public static boolean REG_ICASE;
+    public static boolean REG_ICASE = false;
 
     public REMatch getMatch(String arg0) {
         return null;

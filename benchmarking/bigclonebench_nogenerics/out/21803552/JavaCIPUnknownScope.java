@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static String fileName;
+    public static String fileName = null;
 
-    public static UNKNOWN_49 logger;
+    public static UNKNOWN_47 logger = null;
 
-    public static boolean isNotFound;
+    public static boolean isNotFound = false;
 
-    public static UNKNOWN_62 servletResponse;
+    public static UNKNOWN_60 servletResponse = null;
 
     JavaCIPUnknownScope() {
         super();

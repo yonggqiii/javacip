@@ -5,7 +5,7 @@ public class DefaultHttpClient implements HttpClient {
         return null;
     }
 
-    public UNKNOWN_77 getParams() {
+    public UNKNOWN_65 getParams() {
         return null;
     }
 

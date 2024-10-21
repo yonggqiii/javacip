@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_339 con;
+    public static UNKNOWN_339 con = null;
 
-    public static UNKNOWN_235 tab;
+    public static UNKNOWN_235 tab = null;
 
-    public static UNKNOWN_261 gerarFaturamento;
+    public static UNKNOWN_261 gerarFaturamento = null;
 
-    public static UNKNOWN_300 gerarComissao;
+    public static UNKNOWN_300 gerarComissao = null;
 
-    public static UNKNOWN_148 txtCodPed;
+    public static UNKNOWN_148 txtCodPed = null;
 
     JavaCIPUnknownScope() {
         super();

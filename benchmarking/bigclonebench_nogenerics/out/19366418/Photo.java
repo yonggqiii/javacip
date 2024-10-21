@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class Photo {
 
-    public Object basePathImage;
+    public java.io.Serializable basePathImage;
 
     public void setTitle(String arg0) {
     }

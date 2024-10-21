@@ -1,18 +1,11 @@
 // added by JavaCIP
-public class AbstractReader<A, B> {
+public interface AbstractReader<A, B> {
 
-    public static boolean FORMAT_DEP;
+    public static boolean FORMAT_DEP = false;
 
-    public static boolean FORMAT_CONLLX;
+    public static boolean FORMAT_CONLLX = false;
 
-    public void setLanguage(boolean arg0) {
-    }
+    public abstract void setLanguage(boolean arg0);
 
-    public DepTree nextTree() {
-        return null;
-    }
-
-    AbstractReader() {
-        super();
-    }
+    public abstract DepTree nextTree();
 }

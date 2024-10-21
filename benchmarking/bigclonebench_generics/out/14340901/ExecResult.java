@@ -3,7 +3,7 @@ public interface ExecResult {
 
     public abstract int getExitValue();
 
-    public abstract char[] getCommand();
+    public abstract boolean getCommand();
 
     public abstract Object getStderr();
 

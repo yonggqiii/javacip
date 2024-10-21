@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ApplicationConstants {
+public interface ApplicationConstants {
 
-    public static byte CONNECT_TIMEOUT;
+    public static byte CONNECT_TIMEOUT = 0;
 
-    public static byte READ_TIMEOUT;
-
-    ApplicationConstants() {
-        super();
-    }
+    public static byte READ_TIMEOUT = 0;
 }

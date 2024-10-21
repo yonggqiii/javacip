@@ -1,41 +1,23 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_UNAVAILABLE;
+    public static int HTTP_UNAVAILABLE = 0;
 
-    public void setFollowRedirects(boolean arg0) {
-    }
+    public abstract void setFollowRedirects(boolean arg0);
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public String getContentEncoding() {
-        return null;
-    }
+    public abstract String getContentEncoding();
 
-    public void setRequestProperty(String arg0, String arg1) {
-    }
+    public abstract void setRequestProperty(String arg0, String arg1);
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public InputStream getInputStream() {
-        return null;
-    }
+    public abstract InputStream getInputStream();
 
-    public String getContentType() {
-        return null;
-    }
+    public abstract String getContentType();
 
-    public int getHeaderFieldInt(String arg0, int arg1) {
-        return 0;
-    }
+    public abstract int getHeaderFieldInt(String arg0, int arg1);
 
-    public void setUseCaches(boolean arg0) {
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract void setUseCaches(boolean arg0);
 }

@@ -5,7 +5,7 @@ public class FileInputStream {
         return null;
     }
 
-    public FileInputStream(UNKNOWN_79 arg0) {
+    public FileInputStream(UNKNOWN_83 arg0) {
         super();
     }
 

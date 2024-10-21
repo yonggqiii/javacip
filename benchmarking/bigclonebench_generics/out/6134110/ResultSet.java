@@ -5,5 +5,5 @@ public interface ResultSet {
 
     public abstract int getInt(String arg0);
 
-    public abstract UNKNOWN_329 getStatement();
+    public abstract UNKNOWN_977 getStatement();
 }

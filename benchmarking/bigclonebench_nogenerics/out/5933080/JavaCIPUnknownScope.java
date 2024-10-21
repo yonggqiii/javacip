@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_31 file;
+    public static UNKNOWN_31 file = null;
 
     public static void open(String arg0) {
     }

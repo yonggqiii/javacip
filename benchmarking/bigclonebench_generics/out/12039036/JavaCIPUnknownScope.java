@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int NL;
+    public static long NL = 0;
 
     JavaCIPUnknownScope() {
         super();

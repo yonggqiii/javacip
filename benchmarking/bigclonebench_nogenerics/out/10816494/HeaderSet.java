@@ -1,23 +1,15 @@
 // added by JavaCIP
-public class HeaderSet {
+public interface HeaderSet {
 
-    public static boolean NAME;
+    public static boolean NAME = false;
 
-    public static boolean TYPE;
+    public static boolean TYPE = false;
 
-    public static boolean LENGTH;
+    public static boolean LENGTH = false;
 
-    public boolean getResponseCode() {
-        return false;
-    }
+    public abstract boolean getResponseCode();
 
-    public void setHeader(boolean arg0, String arg1) {
-    }
+    public abstract void setHeader(boolean arg0, String arg1);
 
-    public void setHeader(boolean arg0, Long arg1) {
-    }
-
-    HeaderSet() {
-        super();
-    }
+    public abstract void setHeader(boolean arg0, Long arg1);
 }

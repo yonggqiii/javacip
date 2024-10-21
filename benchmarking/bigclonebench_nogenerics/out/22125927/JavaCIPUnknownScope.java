@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_77 username;
+    public static UNKNOWN_77 username = null;
 
-    public static boolean hostname;
+    public static boolean hostname = false;
 
-    public static Object token;
+    public static Object token = null;
 
     public static void println(String arg0) {
     }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object validovane;
+    public static Object validovane = null;
 
     JavaCIPUnknownScope() {
         super();

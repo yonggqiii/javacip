@@ -1,15 +1,9 @@
 // added by JavaCIP
-public class BufferedImage {
+public interface BufferedImage {
 
-    public static boolean TYPE_INT_RGB;
+    public static boolean TYPE_INT_RGB = false;
 
-    public static boolean TYPE_INT_ARGB;
+    public static boolean TYPE_INT_ARGB = false;
 
-    public boolean getType() {
-        return false;
-    }
-
-    BufferedImage() {
-        super();
-    }
+    public abstract boolean getType();
 }

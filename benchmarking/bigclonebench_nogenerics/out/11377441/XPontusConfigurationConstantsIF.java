@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class XPontusConfigurationConstantsIF {
+public interface XPontusConfigurationConstantsIF {
 
-    public static File XPONTUS_CACHE_DIR;
-
-    XPontusConfigurationConstantsIF() {
-        super();
-    }
+    public static File XPONTUS_CACHE_DIR = null;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean _backEndURIStr;
+    public static boolean _backEndURIStr = false;
 
     public static String stripOuterElement(String arg0) {
         return null;

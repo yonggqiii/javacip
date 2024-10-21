@@ -7,5 +7,5 @@ public interface MessageDigest {
 
     public abstract void reset();
 
-    public abstract String digest(byte[] arg0);
+    public abstract StringBuilder digest(byte[] arg0);
 }

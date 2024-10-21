@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SysConstant {
+public interface SysConstant {
 
-    public static java.nio.charset.Charset charset;
-
-    SysConstant() {
-        super();
-    }
+    public static java.nio.charset.Charset charset = null;
 }

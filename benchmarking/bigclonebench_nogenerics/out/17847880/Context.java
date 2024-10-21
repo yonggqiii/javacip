@@ -1,24 +1,13 @@
 // added by JavaCIP
-public class Context {
+public interface Context {
 
-    public static boolean MODE_WORLD_READABLE;
+    public static boolean MODE_WORLD_READABLE = false;
 
-    public UNKNOWN_2093 getFilesDir() {
-        return null;
-    }
+    public abstract UNKNOWN_20037 getFilesDir();
 
-    public void deleteFile(String arg0) {
-    }
+    public abstract void deleteFile(String arg0);
 
-    public FileOutputStream openFileOutput(String arg0, boolean arg1) {
-        return null;
-    }
+    public abstract FileOutputStream openFileOutput(String arg0, boolean arg1);
 
-    public AssetManager getAssets() {
-        return null;
-    }
-
-    Context() {
-        super();
-    }
+    public abstract AssetManager getAssets();
 }

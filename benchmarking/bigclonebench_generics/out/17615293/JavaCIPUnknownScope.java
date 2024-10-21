@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean isWindows;
+    public static boolean isWindows = false;
 
     public static BufferedImage processUsingTemp(InputStream arg0, DjatokaDecodeParam arg1) {
         return null;

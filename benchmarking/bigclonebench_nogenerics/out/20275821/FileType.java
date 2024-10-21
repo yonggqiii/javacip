@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class FileType {
+public interface FileType {
 
-    public static boolean NOT_EXISTS;
+    public static boolean NOT_EXISTS = false;
 
-    public static boolean DIRECTORY;
+    public static boolean DIRECTORY = false;
 
-    public static boolean FILE;
-
-    FileType() {
-        super();
-    }
+    public static boolean FILE = false;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class HttpMethods {
+public interface HttpMethods {
 
-    public static boolean METHOD_GET;
-
-    HttpMethods() {
-        super();
-    }
+    public static boolean METHOD_GET = false;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_14 url;
+    public static UNKNOWN_14 url = null;
 
     JavaCIPUnknownScope() {
         super();

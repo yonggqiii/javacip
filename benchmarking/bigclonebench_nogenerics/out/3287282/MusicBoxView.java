@@ -1,12 +1,8 @@
 // added by JavaCIP
-public class MusicBoxView {
+public interface MusicBoxView {
 
-    public static boolean noImage;
+    public static boolean noImage = false;
 
     public static void showErrorDialog(RuntimeException arg0) {
-    }
-
-    MusicBoxView() {
-        super();
     }
 }

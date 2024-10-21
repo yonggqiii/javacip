@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Statements {
+public interface Statements {
 
-    public static boolean DELETE_GAME;
-
-    Statements() {
-        super();
-    }
+    public static boolean DELETE_GAME = false;
 }

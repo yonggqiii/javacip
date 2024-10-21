@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean comicSite;
+    public static boolean comicSite = false;
 
-    public static boolean[] activated;
+    public static boolean[] activated = null;
 
-    public static java.io.Serializable[] titles;
+    public static java.io.Serializable[] titles = null;
 
-    public static UNKNOWN_74 comicsmanager;
+    public static UNKNOWN_84 comicsmanager = null;
 
     JavaCIPUnknownScope() {
         super();

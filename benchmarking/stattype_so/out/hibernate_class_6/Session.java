@@ -1,0 +1,11 @@
+// added by JavaCIP
+public interface Session {
+
+    public abstract Transaction beginTransaction();
+
+    public abstract Session getSession(boolean arg0);
+
+    public abstract void flush();
+
+    public abstract void close();
+}

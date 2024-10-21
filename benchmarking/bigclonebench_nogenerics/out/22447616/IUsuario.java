@@ -1,5 +1,5 @@
 // added by JavaCIP
-public interface IUsuario extends Requerente, RecursoHumano {
+public interface IUsuario extends RecursoHumano, Requerente {
 
     public abstract boolean getEmail();
 

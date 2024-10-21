@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_19 masterJetty;
+    public static UNKNOWN_19 masterJetty = null;
 
-    public static String fail;
+    public static CharSequence fail = null;
 
     JavaCIPUnknownScope() {
         super();

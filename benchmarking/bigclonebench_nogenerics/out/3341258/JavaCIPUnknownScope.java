@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_175 url;
+    public static UNKNOWN_191 url = null;
 
-    public static UNKNOWN_97 dateFormat;
+    public static UNKNOWN_113 dateFormat = null;
 
-    public static boolean FORMAT;
+    public static boolean FORMAT = false;
 
-    public static UNKNOWN_149 logger;
+    public static UNKNOWN_165 logger = null;
 
     JavaCIPUnknownScope() {
         super();

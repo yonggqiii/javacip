@@ -5,7 +5,7 @@ public interface BOTLObjectSourceDiagramNode {
 
     public abstract void setColumn(int arg0);
 
-    public abstract UNKNOWN_99 getDownlinks();
+    public abstract UNKNOWN_146 getDownlinks();
 
     public abstract byte getWeight();
 
@@ -15,7 +15,7 @@ public interface BOTLObjectSourceDiagramNode {
 
     public abstract void setWeight(float arg0);
 
-    public abstract UNKNOWN_86 getSize();
+    public abstract UNKNOWN_120 getSize();
 
     public abstract void setLocation(Point arg0);
 

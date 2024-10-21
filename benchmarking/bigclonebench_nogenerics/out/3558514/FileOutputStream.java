@@ -4,7 +4,7 @@ public class FileOutputStream implements OutputStream {
     public void close() {
     }
 
-    public FileOutputStream(Object arg0) {
+    public FileOutputStream(java.io.Serializable arg0) {
         super();
     }
 

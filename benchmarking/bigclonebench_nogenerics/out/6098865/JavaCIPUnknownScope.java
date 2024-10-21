@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static ScalableRootEditPart _root;
+    public static ScalableRootEditPart _root = null;
 
     public static UNKNOWN_40 getEditDomain() {
         return null;

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean s_contentType;
+    public static boolean s_contentType = false;
 
     public static InputStream getGraphStream(HttpServletRequest arg0) {
         return null;

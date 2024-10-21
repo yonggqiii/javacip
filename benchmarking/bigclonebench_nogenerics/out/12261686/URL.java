@@ -5,11 +5,11 @@ public class URL {
         return null;
     }
 
-    public UNKNOWN_104 getProtocol() {
+    public UNKNOWN_106 getProtocol() {
         return null;
     }
 
-    public UNKNOWN_78 getFile() {
+    public UNKNOWN_80 getFile() {
         return null;
     }
 

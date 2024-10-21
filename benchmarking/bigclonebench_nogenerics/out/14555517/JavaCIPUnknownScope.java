@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_62 anexoService;
+    public static UNKNOWN_62 anexoService = null;
 
-    public static UNKNOWN_28 aes;
+    public static UNKNOWN_28 aes = null;
 
-    public static boolean aeskeySpec;
+    public static boolean aeskeySpec = false;
 
-    public static UNKNOWN_41 config;
+    public static UNKNOWN_41 config = null;
 
     JavaCIPUnknownScope() {
         super();

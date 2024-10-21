@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean destFile;
+    public static boolean destFile = false;
 
-    public static UNKNOWN_47 url;
+    public static UNKNOWN_47 url = null;
 
-    public static int BUFFRE_SIZE;
+    public static int BUFFRE_SIZE = 0;
 
     public static void finished() {
     }

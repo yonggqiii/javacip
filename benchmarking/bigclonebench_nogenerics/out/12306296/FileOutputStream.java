@@ -7,7 +7,7 @@ public class FileOutputStream extends FileInputStream {
     public void flush() {
     }
 
-    public UNKNOWN_1833 getFD() {
+    public UNKNOWN_177 getFD() {
         return null;
     }
 

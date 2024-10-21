@@ -1,9 +1,9 @@
 // added by JavaCIP
 public interface FileData {
 
-    public abstract double getGroup();
+    public abstract byte getGroup();
 
-    public abstract double getId();
+    public abstract byte getId();
 
     public abstract void setPath(double arg0);
 }

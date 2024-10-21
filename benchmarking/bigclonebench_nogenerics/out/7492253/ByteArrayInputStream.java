@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ByteArrayInputStream {
 
-    public ByteArrayInputStream(Object arg0) {
+    public ByteArrayInputStream(Boolean arg0) {
         super();
     }
 

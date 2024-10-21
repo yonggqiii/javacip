@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean DEFAULT_DATASOURCE;
+    public static boolean DEFAULT_DATASOURCE = false;
 
-    public static UNKNOWN_67 log;
+    public static UNKNOWN_67 log = null;
 
-    public static boolean DELETE_FILES_LOGIC;
+    public static boolean DELETE_FILES_LOGIC = false;
 
     public static DataSource getDataSource(boolean arg0) {
         return null;

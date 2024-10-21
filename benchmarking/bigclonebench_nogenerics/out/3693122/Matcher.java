@@ -3,5 +3,5 @@ public interface Matcher {
 
     public abstract boolean find();
 
-    public abstract UNKNOWN_97 group(int arg0);
+    public abstract UNKNOWN_81 group(int arg0);
 }

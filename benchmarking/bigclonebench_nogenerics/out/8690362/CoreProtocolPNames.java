@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class CoreProtocolPNames {
+public interface CoreProtocolPNames {
 
-    public static boolean PROTOCOL_VERSION;
-
-    CoreProtocolPNames() {
-        super();
-    }
+    public static boolean PROTOCOL_VERSION = false;
 }

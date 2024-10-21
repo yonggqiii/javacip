@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static ScrollingGraphicalViewer viewer;
+    public static ScrollingGraphicalViewer viewer = null;
 
     public static void configureEditPartViewer(ScrollingGraphicalViewer arg0) {
     }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Trace {
+public interface Trace {
 
-    public static java.io.PrintWriter out;
-
-    Trace() {
-        super();
-    }
+    public static java.io.PrintWriter out = null;
 }

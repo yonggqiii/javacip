@@ -1,16 +1,9 @@
 // added by JavaCIP
-public class HttpServletResponse {
+public interface HttpServletResponse {
 
-    public static boolean SC_OK;
+    public static boolean SC_OK = false;
 
-    public PrintWriter getWriter() {
-        return null;
-    }
+    public abstract PrintWriter getWriter();
 
-    public void setStatus(boolean arg0) {
-    }
-
-    HttpServletResponse() {
-        super();
-    }
+    public abstract void setStatus(boolean arg0);
 }

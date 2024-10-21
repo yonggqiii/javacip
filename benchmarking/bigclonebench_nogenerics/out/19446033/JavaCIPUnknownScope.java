@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean SC_CREATED;
+    public static boolean SC_CREATED = false;
 
     public static boolean statusCode(HttpResponse arg0) {
         return false;

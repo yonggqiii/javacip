@@ -1,5 +1,5 @@
 // added by JavaCIP
-public class MalformedURLRuntimeException extends PermissionDeniedRuntimeException {
+public class MalformedURLRuntimeException extends EXistRuntimeException {
 
     MalformedURLRuntimeException() {
         super();

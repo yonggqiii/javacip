@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FailedActionReason {
+public interface FailedActionReason {
 
-    public static boolean SYSTEM_ERROR;
-
-    FailedActionReason() {
-        super();
-    }
+    public static boolean SYSTEM_ERROR = false;
 }

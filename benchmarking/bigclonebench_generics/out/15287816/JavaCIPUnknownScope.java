@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_76 url;
+    public static UNKNOWN_128 url = null;
 
-    public static Object shortName;
+    public static java.io.Serializable shortName = null;
 
-    public static Boolean author;
+    public static Boolean author = null;
 
-    public static Boolean description;
+    public static java.io.Serializable description = null;
 
     JavaCIPUnknownScope() {
         super();

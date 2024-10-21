@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean pwdcookie;
+    public static boolean pwdcookie = false;
 
-    public static BufferedReader br;
+    public static BufferedReader br = null;
 
-    public static HttpURLConnection uc;
+    public static HttpURLConnection uc = null;
 
-    public static boolean login;
+    public static boolean login = false;
 
-    public static boolean usercookie;
+    public static boolean usercookie = false;
 
     JavaCIPUnknownScope() {
         super();

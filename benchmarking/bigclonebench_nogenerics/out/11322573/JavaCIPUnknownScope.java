@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double destinationDirectory;
+    public static double destinationDirectory = 0;
 
-    public static Boolean line;
+    public static Boolean line = null;
 
-    public static UNKNOWN_104 java;
+    public static UNKNOWN_108 java = null;
 
-    public static StringTokenizer tokenizer;
+    public static StringTokenizer tokenizer = null;
 
-    public static boolean staticDebugOn;
+    public static boolean staticDebugOn = false;
 
     public static void debug(String arg0) {
     }

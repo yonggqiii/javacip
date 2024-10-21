@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean installDirectory;
+    public static boolean installDirectory = false;
 
-    public static boolean archive_zip;
+    public static boolean archive_zip = false;
 
-    public static boolean archive_gzip;
+    public static boolean archive_gzip = false;
 
     public static boolean copy(MacroManagerProgress arg0, boolean arg1, FileOutputStream arg2, boolean arg3, boolean arg4) {
         return false;

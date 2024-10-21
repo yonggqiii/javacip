@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ClientContext {
+public interface ClientContext {
 
-    public static boolean COOKIE_STORE;
-
-    ClientContext() {
-        super();
-    }
+    public static boolean COOKIE_STORE = false;
 }

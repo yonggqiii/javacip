@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class Replacement {
 
-    public long pos;
+    public int pos;
 
     public Object val;
 
-    public long len;
+    public int len;
 
     Replacement() {
         super();

@@ -1,17 +1,9 @@
 // added by JavaCIP
-public class EXIEvent {
+public interface EXIEvent {
 
-    public static boolean EVENT_CH;
+    public static boolean EVENT_CH = false;
 
-    public boolean getEventVariety() {
-        return false;
-    }
+    public abstract boolean getEventVariety();
 
-    public UNKNOWN_84 getCharacters() {
-        return null;
-    }
-
-    EXIEvent() {
-        super();
-    }
+    public abstract UNKNOWN_86 getCharacters();
 }

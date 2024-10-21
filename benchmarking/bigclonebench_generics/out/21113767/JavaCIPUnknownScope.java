@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_220 headersFile;
+    public static UNKNOWN_192 headersFile = null;
 
-    public static Object file;
+    public static Object file = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class MessageBox {
 
-    public static boolean SGN_SUCCESS;
+    public static boolean SGN_SUCCESS = false;
 
-    public static boolean SGN_WARNING;
+    public static boolean SGN_WARNING = false;
 
-    public static boolean SGN_DANGER;
+    public static boolean SGN_DANGER = false;
 
     public void show(boolean arg0) {
     }

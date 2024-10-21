@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class CurnitFile {
+public interface CurnitFile {
 
-    public static boolean WITHINCURNIT_BASEPATH;
+    public static boolean WITHINCURNIT_BASEPATH = false;
 
-    public static boolean WITHINCURNIT_PROTOCOL;
+    public static boolean WITHINCURNIT_PROTOCOL = false;
 
-    public static boolean PODSREFERENCED_NAME;
-
-    CurnitFile() {
-        super();
-    }
+    public static boolean PODSREFERENCED_NAME = false;
 }

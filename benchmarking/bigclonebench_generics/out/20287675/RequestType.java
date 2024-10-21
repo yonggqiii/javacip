@@ -1,17 +1,13 @@
 // added by JavaCIP
-public class RequestType {
+public interface RequestType {
 
-    public static Object PNG;
+    public static Object PNG = null;
 
-    public static Object SWISSPROT;
+    public static Object SWISSPROT = null;
 
-    public static Object TREE;
+    public static Object TREE = null;
 
-    public static Object FASTA;
+    public static Object FASTA = null;
 
-    public static Object HTML;
-
-    RequestType() {
-        super();
-    }
+    public static Object HTML = null;
 }

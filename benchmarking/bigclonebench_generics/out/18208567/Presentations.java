@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Presentations {
+public interface Presentations {
 
-    public static UNKNOWN_211 INFO;
-
-    Presentations() {
-        super();
-    }
+    public static UNKNOWN_211 INFO = null;
 }

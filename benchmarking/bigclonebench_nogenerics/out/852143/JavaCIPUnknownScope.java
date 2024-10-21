@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_282 jEdit;
+    public static UNKNOWN_138 jEdit = null;
 
     public static void doVersionCheck(View arg0, String arg1, String arg2) {
     }

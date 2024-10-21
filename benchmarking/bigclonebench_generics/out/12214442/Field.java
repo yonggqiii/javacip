@@ -1,24 +1,13 @@
 // added by JavaCIP
-public class Field {
+public interface Field {
 
-    public static boolean IMAGE;
+    public static boolean IMAGE = false;
 
-    public boolean getType() {
-        return false;
-    }
+    public abstract boolean getType();
 
-    public FieldDataImage getDefault() {
-        return null;
-    }
+    public abstract FieldDataImage getDefault();
 
-    public boolean getName() {
-        return false;
-    }
+    public abstract boolean getName();
 
-    public void setID(int arg0) {
-    }
-
-    Field() {
-        super();
-    }
+    public abstract void setID(int arg0);
 }

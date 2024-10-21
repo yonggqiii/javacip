@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_62 logger;
+    public static UNKNOWN_62 logger = null;
 
-    public static boolean timesmpt;
+    public static boolean timesmpt = false;
 
     public static List<Object> getSubFiles(File arg0) {
         return null;

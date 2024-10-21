@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Settings {
+public interface Settings {
 
-    public static boolean protFTP;
+    public static boolean protFTP = false;
 
-    public static boolean protFile;
-
-    Settings() {
-        super();
-    }
+    public static boolean protFile = false;
 }

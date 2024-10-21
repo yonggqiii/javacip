@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_259 s_log;
+    public static UNKNOWN_247 s_log = null;
 
-    public static boolean USE_PROCEDURE;
+    public static boolean USE_PROCEDURE = false;
 
-    public static boolean QUERY_TIME_OUT;
+    public static boolean QUERY_TIME_OUT = false;
 
-    public static boolean LOGLEVEL;
+    public static boolean LOGLEVEL = false;
 
-    public static UNKNOWN_207 DB;
+    public static UNKNOWN_195 DB = null;
 
     public static boolean isRuntimeExceptionCentralized(String arg0) {
         return false;

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class MidiSong {
+public interface MidiSong {
 
-    public static double MIDI_FILES_DIR;
-
-    MidiSong() {
-        super();
-    }
+    public static byte MIDI_FILES_DIR = 0;
 }

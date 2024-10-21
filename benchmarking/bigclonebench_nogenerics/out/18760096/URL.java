@@ -5,7 +5,7 @@ public class URL {
         return null;
     }
 
-    public UNKNOWN_94 getUserInfo() {
+    public UNKNOWN_100 getUserInfo() {
         return null;
     }
 

@@ -1149,14 +1149,20 @@ case class Configuration(
 
   def getSubstitutedDeclaration(t: SomeClassOrInterfaceType): Declaration =
     val ud = getUnderlyingDeclaration(t)
+    // check if ud's identifier is the FQN, in which case, change t's identifier
+    val tt = 
+      if ud.identifier != t.identifier && t.isInstanceOf[ClassOrInterfaceType] then
+        val x = t.asInstanceOf[ClassOrInterfaceType]
+        ClassOrInterfaceType(ud.identifier, x.args, x.static)
+      else t
     // case of t being a raw type
-    if t.numArgs < ud.numParams && t.numArgs == 0 then ud.erased
+    if tt.numArgs < ud.numParams && tt.numArgs == 0 then ud.erased
     else
-      if t.numArgs != ud.numParams then
+      if tt.numArgs != ud.numParams then
         throw RuntimeException(
-          s"$t and its underlying declaration have different number of parameters!"
+          s"$tt and its underlying declaration have different number of parameters!"
         )
-      val (_, substitution) = t.captured.expansion
+      val (_, substitution) = tt.captured.expansion
       ud.substitute(substitution)
 
   /** Obtains the declaration of some declared type
@@ -1175,6 +1181,12 @@ case class Configuration(
   private def getReflectionTypeDeclaration(t: ClassOrInterfaceType): Option[FixedDeclaration] =
     val rts         = ReflectionTypeSolver()
     val declAttempt = rts.tryToSolveType(t.identifier)
+    // val declAttempt = 
+    //   val rawIdentifier = rts.tryToSolveType(t.identifier)
+    //   if rawIdentifier.isSolved then 
+    //     rawIdentifier 
+    //   else
+    //     rts.tryToSolveType("java.util." + t.identifier)
     if !declAttempt.isSolved then None
     else
       val rtd        = declAttempt.getCorrespondingDeclaration.asReferenceType

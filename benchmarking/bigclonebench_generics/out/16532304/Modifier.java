@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Modifier {
+public interface Modifier {
 
-    public static byte ABSTRACT;
-
-    Modifier() {
-        super();
-    }
+    public static byte ABSTRACT = 0;
 }

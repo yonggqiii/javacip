@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class FileInputStream {
 
-    public FileInputStream(boolean arg0) {
+    public FileInputStream(char arg0) {
         super();
     }
 

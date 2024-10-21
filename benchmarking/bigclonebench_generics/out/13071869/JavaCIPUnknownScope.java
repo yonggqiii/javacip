@@ -1,33 +1,33 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean uncookie;
+    public static boolean uncookie = false;
 
-    public static boolean loginsuccessful;
+    public static boolean loginsuccessful = false;
 
-    public static boolean latestcookie;
+    public static boolean latestcookie = false;
 
-    public static boolean uploadresponse;
+    public static boolean uploadresponse = false;
 
-    public static boolean imgshckcookie;
+    public static boolean imgshckcookie = false;
 
-    public static boolean myidcookie;
+    public static boolean myidcookie = false;
 
-    public static boolean newcookie;
+    public static boolean newcookie = false;
 
-    public static Comparable<?> username;
+    public static Comparable<?> username = null;
 
-    public static boolean myimagescookie;
+    public static boolean myimagescookie = false;
 
-    public static boolean HOSTNAME;
+    public static boolean HOSTNAME = false;
 
-    public static boolean langcookie;
+    public static boolean langcookie = false;
 
-    public static boolean phpsessioncookie;
+    public static boolean phpsessioncookie = false;
 
-    public static Object password;
+    public static java.io.Serializable password = null;
 
-    public static boolean usercookie;
+    public static boolean usercookie = false;
 
     public static boolean getUsername() {
         return false;

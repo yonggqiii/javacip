@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static ArrayList data;
+    public static ArrayList data = null;
 
-    public static boolean xdatamap;
+    public static boolean xdatamap = false;
 
-    public static boolean ydatamap;
+    public static boolean ydatamap = false;
 
-    public static boolean ampdatamap;
+    public static boolean ampdatamap = false;
 
     public static void dumpxData(String arg0, ArrayList arg1) {
     }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface BeanToDTO {
 
-    public static UNKNOWN_48 getInstance() {
+    public static UNKNOWN_46 getInstance() {
         return null;
     }
 }

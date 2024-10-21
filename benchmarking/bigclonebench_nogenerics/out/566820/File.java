@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public UNKNOWN_16157 getName() {
+    public UNKNOWN_6318 getName() {
         return null;
     }
 

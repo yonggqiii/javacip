@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Level {
+public interface Level {
 
-    public static boolean FINE;
+    public static boolean FINE = false;
 
-    public static boolean SEVERE;
+    public static boolean SEVERE = false;
 
-    public static boolean WARNING;
-
-    Level() {
-        super();
-    }
+    public static boolean WARNING = false;
 }

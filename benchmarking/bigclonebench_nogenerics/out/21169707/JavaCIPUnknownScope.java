@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object mFeed;
+    public static Object mFeed = null;
 
-    public static RSSDB db;
+    public static Object db = null;
 
     JavaCIPUnknownScope() {
         super();

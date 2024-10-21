@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ComConstants {
+public interface ComConstants {
 
-    public static UNKNOWN_149 LogIn;
+    public static UNKNOWN_149 LogIn = null;
 
-    public static UNKNOWN_120 Response;
-
-    ComConstants() {
-        super();
-    }
+    public static UNKNOWN_120 Response = null;
 }

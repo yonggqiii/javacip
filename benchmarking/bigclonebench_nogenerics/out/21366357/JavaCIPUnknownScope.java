@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_55 logger;
+    public static UNKNOWN_55 logger = null;
 
     public static boolean buildUrl(boolean arg0) {
         return false;

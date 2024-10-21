@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ImageStack {
 
-    public byte getSize() {
+    public int getSize() {
         return 0;
     }
 

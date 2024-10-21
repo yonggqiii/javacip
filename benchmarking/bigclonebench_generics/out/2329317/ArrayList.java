@@ -7,11 +7,11 @@ public class ArrayList<A> implements List<A> {
     public void add(String arg0) {
     }
 
-    public ArrayList() {
+    public ArrayList(int arg0) {
         super();
     }
 
-    public ArrayList(int arg0) {
+    public ArrayList() {
         super();
     }
 }

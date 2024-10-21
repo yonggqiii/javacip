@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int BUFFER;
+    public static int BUFFER = 0;
 
-    public static byte encrypLength;
+    public static int encrypLength = 0;
 
-    public static boolean stopZipFile;
+    public static boolean stopZipFile = false;
 
-    public static boolean rootKey;
+    public static boolean rootKey = false;
 
     public static List getSubFiles(File arg0) {
         return null;

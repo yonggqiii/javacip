@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Common {
+public interface Common {
 
-    public static boolean token;
-
-    Common() {
-        super();
-    }
+    public static boolean token = false;
 }

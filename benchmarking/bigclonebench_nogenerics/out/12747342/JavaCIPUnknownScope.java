@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int[] source;
+    public static int[] source = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Locale {
+public interface Locale {
 
-    public static boolean ENGLISH;
-
-    Locale() {
-        super();
-    }
+    public static boolean ENGLISH = false;
 }

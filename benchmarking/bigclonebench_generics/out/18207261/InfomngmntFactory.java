@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class InfomngmntFactory {
+public interface InfomngmntFactory {
 
-    public static UNKNOWN_206 eINSTANCE;
-
-    InfomngmntFactory() {
-        super();
-    }
+    public static UNKNOWN_215 eINSTANCE = null;
 }

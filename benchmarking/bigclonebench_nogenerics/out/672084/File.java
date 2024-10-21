@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public double getName() {
+    public byte getName() {
         return 0;
     }
 

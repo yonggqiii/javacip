@@ -1,21 +1,13 @@
 // added by JavaCIP
-public class RollerRequest {
+public interface RollerRequest {
 
-    public static boolean WEBLOGENTRYID_KEY;
+    public static boolean WEBLOGENTRYID_KEY = false;
 
     public static RollerRequest getRollerRequest(HttpServletRequest arg0) {
         return null;
     }
 
-    public boolean isUserAuthorizedToEdit() {
-        return false;
-    }
+    public abstract boolean isUserAuthorizedToEdit();
 
-    public UNKNOWN_204 getRoller() {
-        return null;
-    }
-
-    RollerRequest() {
-        super();
-    }
+    public abstract UNKNOWN_30302 getRoller();
 }

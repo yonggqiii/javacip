@@ -1,25 +1,19 @@
 // added by JavaCIP
-public class HttpServletResponse {
+public interface HttpServletResponse {
 
-    public static boolean SC_REQUEST_ENTITY_TOO_LARGE;
+    public static boolean SC_REQUEST_ENTITY_TOO_LARGE = false;
 
-    public static boolean SC_BAD_REQUEST;
+    public static boolean SC_BAD_REQUEST = false;
 
-    public static boolean SC_SERVICE_UNAVAILABLE;
+    public static boolean SC_SERVICE_UNAVAILABLE = false;
 
-    public static boolean SC_NOT_FOUND;
+    public static boolean SC_NOT_FOUND = false;
 
-    public static boolean SC_OK;
+    public static boolean SC_OK = false;
 
-    public static boolean SC_INTERNAL_SERVER_ERROR;
+    public static boolean SC_INTERNAL_SERVER_ERROR = false;
 
-    public void sendError(boolean arg0) {
-    }
+    public abstract void sendError(boolean arg0);
 
-    public void setStatus(boolean arg0) {
-    }
-
-    HttpServletResponse() {
-        super();
-    }
+    public abstract void setStatus(boolean arg0);
 }

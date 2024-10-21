@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean fileName;
+    public static boolean fileName = false;
 
-    public static HttpURLConnection conn;
+    public static HttpURLConnection conn = null;
 
-    public static Object toServer;
+    public static OutputStreamWriter toServer = null;
 
-    public static boolean fromServer;
+    public static boolean fromServer = false;
 
     JavaCIPUnknownScope() {
         super();

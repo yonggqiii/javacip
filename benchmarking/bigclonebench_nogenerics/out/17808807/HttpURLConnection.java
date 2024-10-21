@@ -1,37 +1,21 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_OK;
+    public static int HTTP_OK = 0;
 
-    public void setRequestMethod(String arg0) {
-    }
+    public abstract void setRequestMethod(String arg0);
 
-    public void setRequestProperty(String arg0, String arg1) {
-    }
+    public abstract void setRequestProperty(String arg0, String arg1);
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public void setDoOutput(boolean arg0) {
-    }
+    public abstract void setDoOutput(boolean arg0);
 
-    public boolean getInputStream() {
-        return false;
-    }
+    public abstract boolean getInputStream();
 
-    public void setDoInput(boolean arg0) {
-    }
+    public abstract void setDoInput(boolean arg0);
 
-    public boolean getOutputStream() {
-        return false;
-    }
+    public abstract boolean getOutputStream();
 
-    public String getHeaderField(String arg0) {
-        return null;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract String getHeaderField(String arg0);
 }

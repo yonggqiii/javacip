@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class RizzToolConstants {
+public interface RizzToolConstants {
 
-    public static UNKNOWN_56 TOOL_POOL_FOLDER;
+    public static UNKNOWN_56 TOOL_POOL_FOLDER = null;
 
-    public static UNKNOWN_69 DEFAULT_LOGGER;
-
-    RizzToolConstants() {
-        super();
-    }
+    public static UNKNOWN_69 DEFAULT_LOGGER = null;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean USE_NIO;
+    public static boolean USE_NIO = false;
 
     public static boolean copy(File arg0, File arg1, String arg2) {
         return false;

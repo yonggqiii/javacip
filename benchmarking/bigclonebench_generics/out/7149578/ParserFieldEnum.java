@@ -1,33 +1,29 @@
 // added by JavaCIP
-public class ParserFieldEnum {
+public interface ParserFieldEnum {
 
-    public static boolean body;
+    public static boolean body = false;
 
-    public static ParserFieldEnum external_link;
+    public static ParserFieldEnum external_link = null;
 
-    public static boolean meta_robots;
+    public static boolean meta_robots = false;
 
-    public static ParserFieldEnum external_link_nofollow;
+    public static ParserFieldEnum external_link_nofollow = null;
 
-    public static ParserFieldEnum internal_link;
+    public static ParserFieldEnum internal_link = null;
 
-    public static boolean lang_method;
+    public static boolean lang_method = false;
 
-    public static boolean meta_description;
+    public static boolean meta_description = false;
 
-    public static boolean htmlSource;
+    public static boolean htmlSource = false;
 
-    public static boolean meta_keywords;
+    public static boolean meta_keywords = false;
 
-    public static boolean lang;
+    public static boolean lang = false;
 
-    public static ParserFieldEnum internal_link_nofollow;
+    public static ParserFieldEnum internal_link_nofollow = null;
 
-    public static boolean htmlProvider;
+    public static boolean htmlProvider = false;
 
-    public static boolean charset;
-
-    ParserFieldEnum() {
-        super();
-    }
+    public static boolean charset = false;
 }

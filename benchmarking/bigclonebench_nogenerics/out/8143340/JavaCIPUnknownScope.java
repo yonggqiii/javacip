@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean key;
+    public static boolean key = false;
 
-    public static byte[] encodeHex(boolean arg0) {
+    public static StringBuilder encodeHex(boolean arg0) {
         return null;
     }
 

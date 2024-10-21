@@ -1,25 +1,25 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean m_update;
+    public static boolean m_update = false;
 
-    public static float m_itemNameAbbrev;
+    public static Object m_itemNameAbbrev = null;
 
-    public static StringBuffer m_itemNameValue;
+    public static CharSequence m_itemNameValue = null;
 
-    public static UNKNOWN_119 m_components;
+    public static UNKNOWN_106 m_components = null;
 
-    public static int m_id;
+    public static int m_id = 0;
 
-    public static UNKNOWN_155 m_itemCache;
+    public static UNKNOWN_155 m_itemCache = null;
 
-    public static UNKNOWN_181 m_itemTable;
+    public static UNKNOWN_207 m_itemTable = null;
 
-    public static boolean m_indexesChanged;
+    public static boolean m_indexesChanged = false;
 
-    public static boolean m_item;
+    public static boolean m_item = false;
 
-    public static void createComponent(ProgressMonitor arg0, UNKNOWN_119 arg1, String arg2, int arg3, int arg4, PreparedStatement arg5) {
+    public static void createComponent(ProgressMonitor arg0, UNKNOWN_106 arg1, String arg2, int arg3, int arg4, PreparedStatement arg5) {
     }
 
     public static PreparedStatement getInsertPrepStmt(Connection arg0, int arg1) {

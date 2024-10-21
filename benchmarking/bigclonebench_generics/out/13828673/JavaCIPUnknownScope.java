@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_140 logger;
+    public static UNKNOWN_114 logger = null;
 
     public static void addAllFilesInDirectory(File arg0, String arg1, boolean arg2) {
     }

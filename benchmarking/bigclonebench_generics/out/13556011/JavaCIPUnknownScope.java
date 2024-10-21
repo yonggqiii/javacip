@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_50 taxonPattern;
+    public static UNKNOWN_50 taxonPattern = null;
 
     JavaCIPUnknownScope() {
         super();

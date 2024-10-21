@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ReplicationHandler {
+public interface ReplicationHandler {
 
-    public static boolean CMD_BACKUP;
-
-    ReplicationHandler() {
-        super();
-    }
+    public static boolean CMD_BACKUP = false;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_57 cswRemoteRepository;
+    public static UNKNOWN_57 cswRemoteRepository = null;
 
     public static void logExpression(String arg0) {
     }

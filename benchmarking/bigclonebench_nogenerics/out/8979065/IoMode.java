@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class IoMode {
+public interface IoMode {
 
-    public static boolean CLOSE;
+    public static boolean CLOSE = false;
 
-    public static boolean COPY;
-
-    IoMode() {
-        super();
-    }
+    public static boolean COPY = false;
 }

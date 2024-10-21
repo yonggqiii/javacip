@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ConstantKeys {
+public interface ConstantKeys {
 
-    public static boolean project_dir;
-
-    ConstantKeys() {
-        super();
-    }
+    public static boolean project_dir = false;
 }

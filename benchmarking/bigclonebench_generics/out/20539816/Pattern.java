@@ -1,17 +1,11 @@
 // added by JavaCIP
-public class Pattern {
+public interface Pattern {
 
-    public static boolean CANON_EQ;
+    public static boolean CANON_EQ = false;
 
     public static Pattern compile(String arg0, boolean arg1) {
         return null;
     }
 
-    public Matcher matcher(String arg0) {
-        return null;
-    }
-
-    Pattern() {
-        super();
-    }
+    public abstract Matcher matcher(String arg0);
 }

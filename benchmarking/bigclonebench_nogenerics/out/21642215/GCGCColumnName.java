@@ -1,19 +1,15 @@
 // added by JavaCIP
-public class GCGCColumnName {
+public interface GCGCColumnName {
 
-    public static UNKNOWN_154 SYNONYM;
+    public static UNKNOWN_598 SYNONYM = null;
 
-    public static UNKNOWN_102 KEGG;
+    public static UNKNOWN_546 KEGG = null;
 
-    public static UNKNOWN_141 ChEBI;
+    public static UNKNOWN_585 ChEBI = null;
 
-    public static UNKNOWN_128 PUBCHEM;
+    public static UNKNOWN_572 PUBCHEM = null;
 
-    public static UNKNOWN_89 CAS2;
+    public static UNKNOWN_533 CAS2 = null;
 
-    public static UNKNOWN_167 MOLWEIGHT;
-
-    GCGCColumnName() {
-        super();
-    }
+    public static UNKNOWN_611 MOLWEIGHT = null;
 }

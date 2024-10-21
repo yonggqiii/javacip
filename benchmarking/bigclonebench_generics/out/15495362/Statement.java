@@ -1,24 +1,15 @@
 // added by JavaCIP
-public class Statement {
+public interface Statement {
 
-    public static int SUCCESS_NO_INFO;
+    public static int SUCCESS_NO_INFO = 0;
 
-    public static int EXECUTE_FAILED;
+    public static int EXECUTE_FAILED = 0;
 
-    public void executeUpdate(String arg0) {
-    }
+    public abstract void executeUpdate(String arg0);
 
-    public void addBatch(boolean arg0) {
-    }
+    public abstract void addBatch(boolean arg0);
 
-    public int[] executeBatch() {
-        return null;
-    }
+    public abstract int[] executeBatch();
 
-    public void close() {
-    }
-
-    Statement() {
-        super();
-    }
+    public abstract void close();
 }

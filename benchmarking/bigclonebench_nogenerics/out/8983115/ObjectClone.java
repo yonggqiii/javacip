@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface ObjectClone {
 
-    public static ShareFolder clone(UNKNOWN_69054 arg0) {
+    public static ShareFolder clone(UNKNOWN_1224 arg0) {
         return null;
     }
 }

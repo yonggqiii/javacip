@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class Hex {
 
-    public String encode(boolean arg0) {
+    public char[] encode(boolean arg0) {
         return null;
     }
 

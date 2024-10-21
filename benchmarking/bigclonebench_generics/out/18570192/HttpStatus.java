@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class HttpStatus {
+public interface HttpStatus {
 
-    public static boolean SC_OK;
-
-    HttpStatus() {
-        super();
-    }
+    public static boolean SC_OK = false;
 }

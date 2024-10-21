@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Const {
+public interface Const {
 
-    public static byte SITE_TYPE_RES;
+    public static byte SITE_TYPE_RES = 0;
 
-    public static int RES_TYPE_ID;
+    public static int RES_TYPE_ID = 0;
 
-    public static int OPERATE_TYPE_ID;
-
-    Const() {
-        super();
-    }
+    public static int OPERATE_TYPE_ID = 0;
 }

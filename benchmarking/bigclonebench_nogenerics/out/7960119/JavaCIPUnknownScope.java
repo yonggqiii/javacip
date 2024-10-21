@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_83 secureRandom;
+    public static UNKNOWN_81 secureRandom = null;
 
-    public static UNKNOWN_70 random;
+    public static UNKNOWN_68 random = null;
 
-    public static double id;
+    public static float id = 0;
 
-    public static String guid;
+    public static java.io.Serializable guid = null;
 
     JavaCIPUnknownScope() {
         super();

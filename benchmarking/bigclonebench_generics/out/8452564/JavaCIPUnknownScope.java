@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object foodAmount;
+    public static char foodAmount = 0;
 
-    public static int foodType;
+    public static boolean foodType = false;
 
-    public static UNKNOWN_113 toast_handler;
+    public static UNKNOWN_98 toast_handler = null;
 
     public static String convertStreamToString(InputStream arg0) {
         return null;

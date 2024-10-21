@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_21 org;
+    public static UNKNOWN_21 org = null;
 
     public static void assertArrayEquals(String arg0, byte[] arg1, boolean arg2) {
     }

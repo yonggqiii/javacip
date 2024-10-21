@@ -1,22 +1,13 @@
 // added by JavaCIP
-public class ResultSet {
+public interface ResultSet {
 
-    public static boolean TYPE_SCROLL_INSENSITIVE;
+    public static boolean TYPE_SCROLL_INSENSITIVE = false;
 
-    public static boolean CONCUR_UPDATABLE;
+    public static boolean CONCUR_UPDATABLE = false;
 
-    public boolean next() {
-        return false;
-    }
+    public abstract boolean next();
 
-    public long getLong(int arg0) {
-        return 0;
-    }
+    public abstract long getLong(int arg0);
 
-    public void close() {
-    }
-
-    ResultSet() {
-        super();
-    }
+    public abstract void close();
 }

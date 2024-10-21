@@ -5,9 +5,9 @@ public class Attachment {
 
     public long mSize;
 
-    public CharSequence mContentUri;
+    public String mContentUri;
 
-    public static boolean CONTENT_URI;
+    public static boolean CONTENT_URI = false;
 
     Attachment() {
         super();

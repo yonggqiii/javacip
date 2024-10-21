@@ -1,17 +1,9 @@
 // added by JavaCIP
-public class Reaction {
+public interface Reaction {
 
-    public static byte NO_ID_ASSIGNED;
+    public static byte NO_ID_ASSIGNED = 0;
 
-    public Byte getId() {
-        return null;
-    }
+    public abstract Byte getId();
 
-    public UNKNOWN_32 getTextualRepresentation() {
-        return null;
-    }
-
-    Reaction() {
-        super();
-    }
+    public abstract UNKNOWN_32 getTextualRepresentation();
 }

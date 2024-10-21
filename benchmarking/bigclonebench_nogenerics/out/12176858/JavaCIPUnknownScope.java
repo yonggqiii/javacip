@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte numc;
+    public static byte numc = 0;
 
-    public static int[] vclassptr;
+    public static int[] vclassptr = null;
 
-    public static byte[] vclassctr;
+    public static byte[] vclassctr = null;
 
     JavaCIPUnknownScope() {
         super();

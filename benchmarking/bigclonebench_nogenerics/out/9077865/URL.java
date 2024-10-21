@@ -5,7 +5,7 @@ public class URL {
         return null;
     }
 
-    public URL(UNKNOWN_254 arg0) {
+    public URL(UNKNOWN_310 arg0) {
         super();
     }
 

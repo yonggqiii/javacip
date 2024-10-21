@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_100 mURLImageMap;
+    public static UNKNOWN_100 mURLImageMap = null;
 
-    public static UNKNOWN_35 LOG;
+    public static UNKNOWN_35 LOG = null;
 
     public static URL getPluginImageURL(Object arg0, String arg1) {
         return null;

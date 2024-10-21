@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ExecBinding {
+public interface ExecBinding {
 
-    public static boolean EXEC_COMMAND_ARGS;
-
-    ExecBinding() {
-        super();
-    }
+    public static boolean EXEC_COMMAND_ARGS = false;
 }

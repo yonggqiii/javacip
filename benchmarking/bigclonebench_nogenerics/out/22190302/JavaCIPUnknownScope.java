@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_49 id2resource;
+    public static UNKNOWN_49 id2resource = null;
 
-    public static boolean ignoringMIME;
+    public static boolean ignoringMIME = false;
 
     public static String name2uri(String arg0) {
         return null;

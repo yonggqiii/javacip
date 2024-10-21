@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object debug;
+    public static UNKNOWN_226 debug = null;
 
     JavaCIPUnknownScope() {
         super();

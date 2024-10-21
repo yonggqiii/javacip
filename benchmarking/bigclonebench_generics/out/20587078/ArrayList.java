@@ -4,8 +4,8 @@ public class ArrayList<A> implements Iterable<A> {
     public void add(String arg0) {
     }
 
-    public int size() {
-        return 0;
+    public char[] size() {
+        return null;
     }
 
     public java.util.Iterator<A> iterator() {

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Image {
+public interface Image {
 
-    public static boolean SCALE_SMOOTH;
-
-    Image() {
-        super();
-    }
+    public static boolean SCALE_SMOOTH = false;
 }

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_89 log;
+    public static UNKNOWN_89 log = null;
 
-    public static UNKNOWN_102 manager;
+    public static UNKNOWN_102 manager = null;
 
     JavaCIPUnknownScope() {
         super();

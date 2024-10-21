@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_17 LOGGER;
+    public static UNKNOWN_17 LOGGER = null;
 
     public static boolean getEncodeCharset() {
         return false;

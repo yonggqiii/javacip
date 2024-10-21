@@ -5,7 +5,7 @@ public class URL {
         return null;
     }
 
-    public URL(Object arg0) {
+    public URL(int arg0) {
         super();
     }
 

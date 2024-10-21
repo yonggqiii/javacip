@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean ROLE_TYPE_TABLE_KEY;
+    public static boolean ROLE_TYPE_TABLE_KEY = false;
 
-    public static UNKNOWN_149 conn;
+    public static UNKNOWN_175 conn = null;
 
     public static boolean isRoleTypeUsed(int arg0, int arg1) {
         return false;
@@ -23,7 +23,7 @@ public class JavaCIPUnknownScope {
     public static void checkPermission(DTSPermission arg0, String arg1) {
     }
 
-    public static UNKNOWN_162 getDAO() {
+    public static UNKNOWN_188 getDAO() {
         return null;
     }
 

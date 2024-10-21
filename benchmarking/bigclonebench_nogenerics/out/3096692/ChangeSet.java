@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class ChangeSet {
+public interface ChangeSet {
 
-    public static boolean CHANGE_TYPE_DELETE;
+    public static boolean CHANGE_TYPE_DELETE = false;
 
-    public UNKNOWN_49 asSet() {
-        return null;
-    }
-
-    ChangeSet() {
-        super();
-    }
+    public abstract UNKNOWN_26013 asSet();
 }

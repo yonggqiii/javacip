@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class LogEntry {
+public interface LogEntry {
 
-    public static boolean STOPPED;
-
-    LogEntry() {
-        super();
-    }
+    public static boolean STOPPED = false;
 }

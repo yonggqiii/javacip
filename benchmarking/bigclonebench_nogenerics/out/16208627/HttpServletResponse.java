@@ -1,16 +1,9 @@
 // added by JavaCIP
-public class HttpServletResponse {
+public interface HttpServletResponse {
 
-    public static boolean SC_FORBIDDEN;
+    public static boolean SC_FORBIDDEN = false;
 
-    public void setStatus(boolean arg0) {
-    }
+    public abstract void setStatus(boolean arg0);
 
-    public ServletOutputStream getOutputStream() {
-        return null;
-    }
-
-    HttpServletResponse() {
-        super();
-    }
+    public abstract ServletOutputStream getOutputStream();
 }

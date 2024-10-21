@@ -8,7 +8,7 @@ public class FileInputStream implements InputStream {
     public void close() {
     }
 
-    public FileInputStream(UNKNOWN_83 arg0) {
+    public FileInputStream(UNKNOWN_17155 arg0) {
         super();
     }
 

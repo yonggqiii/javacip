@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ActivationFunction {
+public interface ActivationFunction {
 
-    public static boolean FANN_SIGMOID_SYMMETRIC;
-
-    ActivationFunction() {
-        super();
-    }
+    public static boolean FANN_SIGMOID_SYMMETRIC = false;
 }

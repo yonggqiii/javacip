@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class MessageProvider {
+public interface MessageProvider {
 
-    public static Locale DEFAULT_LOCALE;
+    public static Locale DEFAULT_LOCALE = null;
 
-    public static String DEFAULT_BUNDLE_NAME;
-
-    MessageProvider() {
-        super();
-    }
+    public static String DEFAULT_BUNDLE_NAME = null;
 }

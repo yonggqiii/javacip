@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_62 resource;
+    public static UNKNOWN_60 resource = null;
 
-    public static boolean pref;
+    public static boolean pref = false;
 
-    public static UNKNOWN_114 NLS;
+    public static UNKNOWN_112 NLS = null;
 
-    public static byte count;
+    public static byte count = 0;
 
-    public static URL createOpenUrl(UNKNOWN_62 arg0, boolean arg1) {
+    public static URL createOpenUrl(UNKNOWN_60 arg0, boolean arg1) {
         return null;
     }
 

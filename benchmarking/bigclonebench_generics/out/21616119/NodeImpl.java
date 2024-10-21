@@ -1,7 +1,3 @@
 // added by JavaCIP
-public class NodeImpl extends Sequence {
-
-    NodeImpl() {
-        super();
-    }
+public interface NodeImpl extends Sequence {
 }

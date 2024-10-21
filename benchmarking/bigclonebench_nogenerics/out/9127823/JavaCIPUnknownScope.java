@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static String gameVersion;
+    public static String gameVersion = null;
 
-    public static boolean updateURL;
+    public static boolean updateURL = false;
 
-    public static String latestGameVersion;
+    public static java.io.Serializable latestGameVersion = null;
 
-    public static Object latestModifier;
+    public static CharSequence latestModifier = null;
 
-    public static String downloadURL;
+    public static java.io.Serializable downloadURL = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -5,7 +5,7 @@ public interface HttpURLConnection {
 
     public abstract void setRequestProperty(String arg0, String arg1);
 
-    public abstract long getResponseCode();
+    public abstract double getResponseCode();
 
     public abstract void setDoOutput(boolean arg0);
 

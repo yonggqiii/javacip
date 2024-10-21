@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_238 getMidias() {
+    public static UNKNOWN_382 getMidias() {
         return null;
     }
 
@@ -9,7 +9,7 @@ public class JavaCIPUnknownScope {
         return false;
     }
 
-    public static boolean retornaExtensaoMidia(UNKNOWN_126 arg0) {
+    public static boolean retornaExtensaoMidia(UNKNOWN_270 arg0) {
         return false;
     }
 

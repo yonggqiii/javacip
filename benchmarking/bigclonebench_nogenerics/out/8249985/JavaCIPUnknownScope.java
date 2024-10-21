@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static HttpURLConnection con;
+    public static HttpURLConnection con = null;
 
     public static boolean getURL() {
         return false;

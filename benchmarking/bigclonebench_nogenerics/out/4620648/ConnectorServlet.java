@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ConnectorServlet {
+public interface ConnectorServlet {
 
-    public static boolean debug;
-
-    ConnectorServlet() {
-        super();
-    }
+    public static boolean debug = false;
 }

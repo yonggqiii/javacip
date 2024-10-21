@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_49 lst;
+    public static UNKNOWN_49 lst = null;
 
-    public static UNKNOWN_75 selPanel;
+    public static UNKNOWN_75 selPanel = null;
 
     public static void moveViewer(String arg0, int arg1, int arg2) {
     }

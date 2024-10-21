@@ -3,5 +3,5 @@ public interface HttpEntity {
 
     public abstract InputStream getContent();
 
-    public abstract UNKNOWN_90 getContentType();
+    public abstract UNKNOWN_86 getContentType();
 }

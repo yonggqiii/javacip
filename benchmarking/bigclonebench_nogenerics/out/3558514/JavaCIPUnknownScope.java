@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static java.io.Serializable cp;
+    public static java.io.Serializable cp = null;
 
-    public static Object on_disk;
+    public static java.io.Serializable on_disk = null;
 
-    public static UNKNOWN_67 in;
+    public static UNKNOWN_67 in = null;
 
-    public static UNKNOWN_80 utils;
+    public static UNKNOWN_80 utils = null;
 
     public static boolean createTemporaryFile() {
         return false;

@@ -1,19 +1,11 @@
 // added by JavaCIP
-public class FileEntry {
+public interface FileEntry {
 
-    public static boolean iMETHOD_STORED;
+    public static boolean iMETHOD_STORED = false;
 
-    public static boolean iMETHOD_DEFLATED;
+    public static boolean iMETHOD_DEFLATED = false;
 
-    public boolean getName() {
-        return false;
-    }
+    public abstract boolean getName();
 
-    public boolean isDirectory() {
-        return false;
-    }
-
-    FileEntry() {
-        super();
-    }
+    public abstract boolean isDirectory();
 }

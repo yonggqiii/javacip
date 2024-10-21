@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean SRV_URL;
+    public static boolean SRV_URL = false;
 
-    public static UNKNOWN_71 DETAIL;
+    public static UNKNOWN_55 DETAIL = null;
 
     JavaCIPUnknownScope() {
         super();

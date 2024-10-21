@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_123 requestHeaders;
+    public static UNKNOWN_123 requestHeaders = null;
 
-    public static UNKNOWN_110 GZIP_ENCODING;
+    public static UNKNOWN_110 GZIP_ENCODING = null;
 
     public static boolean getParametersString(Map<String, List<String>> arg0) {
         return false;

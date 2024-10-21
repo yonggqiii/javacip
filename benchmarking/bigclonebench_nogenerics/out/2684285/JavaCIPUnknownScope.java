@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean selString;
+    public static boolean selString = false;
 
-    public static boolean urlString;
+    public static boolean urlString = false;
 
-    public static boolean projString;
+    public static boolean projString = false;
 
-    public static Object fileStream;
+    public static Object fileStream = null;
 
-    public static HttpURLConnection connection;
+    public static HttpURLConnection connection = null;
 
     public static InputStream parseMime(Object arg0) {
         return null;

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_100 log;
+    public static UNKNOWN_100 log = null;
 
     public static long maxIdFromTable(String arg0) {
         return 0;

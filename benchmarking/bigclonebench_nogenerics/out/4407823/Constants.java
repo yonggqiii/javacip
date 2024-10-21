@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static UNKNOWN_29 iLog;
-
-    Constants() {
-        super();
-    }
+    public static UNKNOWN_29 iLog = null;
 }

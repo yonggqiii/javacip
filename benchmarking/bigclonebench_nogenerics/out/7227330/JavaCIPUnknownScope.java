@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte size;
+    public static int size = 0;
 
-    public static Datei[] dateien;
+    public static Datei[] dateien = null;
 
     JavaCIPUnknownScope() {
         super();

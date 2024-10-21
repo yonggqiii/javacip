@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_133 fileChooser;
+    public static UNKNOWN_17205 fileChooser = null;
 
-    public static boolean frame;
+    public static boolean frame = false;
 
-    public static boolean testPort;
+    public static boolean testPort = false;
 
-    public static UNKNOWN_172 textArea;
+    public static UNKNOWN_17244 textArea = null;
 
     JavaCIPUnknownScope() {
         super();

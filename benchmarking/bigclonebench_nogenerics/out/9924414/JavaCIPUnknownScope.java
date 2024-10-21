@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static LoggedInputStream iStream;
+    public static LoggedInputStream iStream = null;
 
-    public static UNKNOWN_39 url;
+    public static UNKNOWN_41 url = null;
 
-    public static Throwable exception;
+    public static Throwable exception = null;
 
-    public static boolean contentLength;
+    public static boolean contentLength = false;
 
-    public static boolean tryProxy;
+    public static boolean tryProxy = false;
 
-    public static boolean wa;
+    public static boolean wa = false;
 
-    public static UNKNOWN_78 dialog;
+    public static UNKNOWN_80 dialog = null;
 
     JavaCIPUnknownScope() {
         super();

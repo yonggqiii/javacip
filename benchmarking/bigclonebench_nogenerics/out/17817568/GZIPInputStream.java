@@ -1,14 +1,14 @@
 // added by JavaCIP
-public class GZIPInputStream {
+public class GZIPInputStream extends CipherInputStream {
 
     public void close() {
     }
 
     public GZIPInputStream(CipherInputStream arg0) {
-        super();
+        super((InputStream) null, (Cipher) null);
     }
 
     GZIPInputStream() {
-        super();
+        super((InputStream) null, (Cipher) null);
     }
 }

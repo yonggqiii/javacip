@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean descr;
+    public static boolean descr = false;
 
-    public static UNKNOWN_86 dataSource;
+    public static UNKNOWN_86 dataSource = null;
 
-    public static UNKNOWN_156 col;
+    public static UNKNOWN_156 col = null;
 
-    public static UNKNOWN_216 user;
+    public static UNKNOWN_216 user = null;
 
-    public static UNKNOWN_112 DB;
+    public static UNKNOWN_112 DB = null;
 
-    public static boolean title;
+    public static boolean title = false;
 
     public static void saveDescr(int arg0) {
     }

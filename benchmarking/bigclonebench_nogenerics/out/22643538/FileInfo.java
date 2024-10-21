@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class FileInfo {
 
-    public Character url;
+    public Byte url;
 
     public byte compression;
 
     public double fileName;
 
-    public static byte LZW;
+    public static byte LZW = 0;
 
     public InputStream inputStream;
 
-    public byte directory;
+    public double directory;
 
     FileInfo() {
         super();

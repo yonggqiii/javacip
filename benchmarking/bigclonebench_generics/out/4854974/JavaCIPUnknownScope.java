@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_212 FTP;
+    public static UNKNOWN_199 FTP = null;
 
-    public static boolean STAGINGDIR;
+    public static boolean STAGINGDIR = false;
 
-    public static UNKNOWN_161 log;
+    public static UNKNOWN_161 log = null;
 
-    public static String DEFAULTPASSWORD;
+    public static String DEFAULTPASSWORD = null;
 
-    public static UNKNOWN_249 axt;
+    public static UNKNOWN_249 axt = null;
 
-    public static String DEFAULTUSER;
+    public static String DEFAULTUSER = null;
 
     JavaCIPUnknownScope() {
         super();

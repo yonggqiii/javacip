@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ApiResponse {
+public interface ApiResponse {
 
-    public static boolean RESPONSE_CRITICAL_FAILURE;
-
-    ApiResponse() {
-        super();
-    }
+    public static boolean RESPONSE_CRITICAL_FAILURE = false;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ActionResponse {
 
-    public static boolean GENERAL_ERROR;
+    public static boolean GENERAL_ERROR = false;
 
     public void addResult(String arg0, CurrencyMonitor arg1) {
     }

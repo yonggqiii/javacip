@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SystemUtils {
+public interface SystemUtils {
 
-    public static int LINE_SEPARATOR;
-
-    SystemUtils() {
-        super();
-    }
+    public static StringBuffer LINE_SEPARATOR = null;
 }

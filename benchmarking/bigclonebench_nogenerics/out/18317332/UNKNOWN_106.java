@@ -1,5 +1,9 @@
 // added by JavaCIP
-public interface UNKNOWN_106 {
+public class UNKNOWN_106 {
 
-    public abstract void setVal(boolean arg0, int arg1);
+    public int length;
+
+    UNKNOWN_106() {
+        super();
+    }
 }

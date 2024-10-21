@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean error;
+    public static boolean error = false;
 
-    public static boolean errorcode;
+    public static boolean errorcode = false;
 
-    public static boolean errortext;
+    public static boolean errortext = false;
 
-    public static UNKNOWN_75 challenges;
+    public static UNKNOWN_73 challenges = null;
 
     public static Element readXML(HttpURLConnection arg0) {
         return null;
@@ -25,7 +25,7 @@ public class JavaCIPUnknownScope {
         return 0;
     }
 
-    public static double getPath() {
+    public static byte getPath() {
         return 0;
     }
 

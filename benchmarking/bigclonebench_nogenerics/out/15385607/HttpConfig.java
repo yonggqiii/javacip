@@ -1,7 +1,7 @@
 // added by JavaCIP
-public class HttpConfig {
+public interface HttpConfig {
 
-    public static double BBS_FAV_ADD;
+    public static double BBS_FAV_ADD = 0;
 
     public static double bbsURL() {
         return 0;
@@ -9,9 +9,5 @@ public class HttpConfig {
 
     public static HttpClient newInstance() {
         return null;
-    }
-
-    HttpConfig() {
-        super();
     }
 }

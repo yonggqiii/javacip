@@ -5,7 +5,7 @@ public interface XMLfunctions {
         return null;
     }
 
-    public static String getValue(Element arg0, Object arg1) {
+    public static String getValue(Element arg0, String arg1) {
         return null;
     }
 }

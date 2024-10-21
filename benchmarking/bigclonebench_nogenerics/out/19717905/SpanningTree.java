@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface SpanningTree {
 
-    public abstract char[] toSMILES();
+    public abstract boolean toSMILES();
 }

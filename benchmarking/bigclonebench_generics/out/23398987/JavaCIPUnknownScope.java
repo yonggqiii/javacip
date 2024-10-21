@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_65 LOGGER;
+    public static UNKNOWN_65 LOGGER = null;
 
-    public static boolean DELETE_ALL_ITEMS_STATEMENT;
+    public static boolean DELETE_ALL_ITEMS_STATEMENT = false;
 
-    public static boolean SELECT_NUMBER_ITEMS_STATEMENT;
+    public static boolean SELECT_NUMBER_ITEMS_STATEMENT = false;
 
     public static UNKNOWN_91 getConnection() {
         return null;

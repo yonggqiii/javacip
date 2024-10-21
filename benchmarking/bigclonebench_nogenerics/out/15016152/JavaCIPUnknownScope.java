@@ -1,25 +1,25 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean allLists;
+    public static boolean allLists = false;
 
-    public static boolean indexDir;
+    public static boolean indexDir = false;
 
-    public static IntegerArray concepts;
+    public static IntegerArray concepts = null;
 
-    public static IntegerArray offsets;
+    public static IntegerArray offsets = null;
 
-    public static IntegerArray offsets2;
+    public static IntegerArray offsets2 = null;
 
-    public static BtreeDict tmap;
+    public static Object tmap = null;
 
-    public static boolean base;
+    public static boolean base = false;
 
-    public static Object titles;
+    public static Object titles = null;
 
-    public static boolean positionsFile;
+    public static boolean positionsFile = false;
 
-    public static IntegerArray documents;
+    public static IntegerArray documents = null;
 
     public static void readChildrenData() {
     }

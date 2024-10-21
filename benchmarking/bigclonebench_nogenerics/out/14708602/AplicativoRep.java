@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class AplicativoRep {
+public interface AplicativoRep {
 
-    public static boolean iCodEmp;
-
-    AplicativoRep() {
-        super();
-    }
+    public static boolean iCodEmp = false;
 }

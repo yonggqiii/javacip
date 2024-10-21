@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class File {
 
-    public static String separator;
+    public static String separator = null;
 
-    public UNKNOWN_3786 getParentFile() {
+    public UNKNOWN_62 getParentFile() {
         return null;
     }
 

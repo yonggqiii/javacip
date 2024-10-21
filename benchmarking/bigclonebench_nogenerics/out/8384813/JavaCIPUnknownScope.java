@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_59 request;
+    public static UNKNOWN_59 request = null;
 
-    public static boolean RESPONSE_BODY;
+    public static boolean RESPONSE_BODY = false;
 
-    public static boolean REQUEST_URL;
+    public static boolean REQUEST_URL = false;
 
-    public static UNKNOWN_137 pipeline;
+    public static UNKNOWN_137 pipeline = null;
 
-    public static UNKNOWN_111 rewriter;
+    public static UNKNOWN_111 rewriter = null;
 
-    public static UNKNOWN_85 handler;
+    public static UNKNOWN_85 handler = null;
 
-    public static boolean recorder;
+    public static boolean recorder = false;
 
     public static void verify() {
     }

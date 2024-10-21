@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FlyShareApp {
+public interface FlyShareApp {
 
-    public static boolean BASE_WEBSITE_URL;
-
-    FlyShareApp() {
-        super();
-    }
+    public static boolean BASE_WEBSITE_URL = false;
 }

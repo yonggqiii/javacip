@@ -1,8 +1,8 @@
 // added by JavaCIP
 public class BufferedReader {
 
-    public String readLine() {
-        return null;
+    public long readLine() {
+        return 0;
     }
 
     public BufferedReader(InputStreamReader arg0) {

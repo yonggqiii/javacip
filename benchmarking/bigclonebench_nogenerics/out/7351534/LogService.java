@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class LogService {
+public interface LogService {
 
-    public static boolean ERROR;
+    public static boolean ERROR = false;
 
     public static UNKNOWN_44 instance() {
         return null;
-    }
-
-    LogService() {
-        super();
     }
 }

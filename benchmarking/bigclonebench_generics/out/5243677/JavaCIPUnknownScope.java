@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static ArrayList<String> dataList;
+    public static ArrayList<String> dataList = null;
 
-    public static boolean listUrl;
+    public static boolean listUrl = false;
 
     public static void readData(InputStream arg0) {
     }

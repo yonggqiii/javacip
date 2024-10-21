@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Hashtable result;
+    public static Hashtable result = null;
 
-    public static ByteArrayOutputStream buffer;
+    public static ByteArrayOutputStream buffer = null;
 
-    public static boolean fault;
+    public static boolean fault = false;
 
-    public static Object auth;
+    public static Object auth = null;
 
-    public static UNKNOWN_152 url;
+    public static UNKNOWN_150 url = null;
 
     public static void writeRequest(XmlWriter arg0, String arg1, Vector arg2) {
     }

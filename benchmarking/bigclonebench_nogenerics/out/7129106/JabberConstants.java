@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class JabberConstants {
+public interface JabberConstants {
 
-    public static boolean PROPERTY_JABBER_SERVERLIST;
-
-    JabberConstants() {
-        super();
-    }
+    public static boolean PROPERTY_JABBER_SERVERLIST = false;
 }

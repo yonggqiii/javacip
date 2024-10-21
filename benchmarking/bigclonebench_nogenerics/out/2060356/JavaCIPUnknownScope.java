@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_62 preloaded_plugins;
+    public static UNKNOWN_62 preloaded_plugins = null;
 
     public static File getApplicationFile(String arg0) {
         return null;

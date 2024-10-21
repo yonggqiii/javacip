@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean url;
+    public static boolean url = false;
 
-    public static boolean useProxy;
+    public static boolean useProxy = false;
 
-    public static boolean ip;
+    public static boolean ip = false;
 
-    public static String port;
+    public static String port = null;
 
     JavaCIPUnknownScope() {
         super();

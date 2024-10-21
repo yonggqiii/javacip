@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Project {
+public interface Project {
 
-    public static boolean MSG_VERBOSE;
-
-    Project() {
-        super();
-    }
+    public static boolean MSG_VERBOSE = false;
 }

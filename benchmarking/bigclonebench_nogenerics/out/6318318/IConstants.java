@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class IConstants {
+public interface IConstants {
 
-    public static boolean READER_FILE_SUFFIX;
-
-    IConstants() {
-        super();
-    }
+    public static boolean READER_FILE_SUFFIX = false;
 }

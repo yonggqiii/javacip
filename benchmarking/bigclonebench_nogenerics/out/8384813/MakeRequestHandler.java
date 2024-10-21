@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class MakeRequestHandler {
+public interface MakeRequestHandler {
 
-    public static boolean HEADERS_PARAM;
-
-    MakeRequestHandler() {
-        super();
-    }
+    public static boolean HEADERS_PARAM = false;
 }

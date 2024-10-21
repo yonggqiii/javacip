@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class GraphVizActivator {
+public interface GraphVizActivator {
 
-    public static boolean ID;
-
-    GraphVizActivator() {
-        super();
-    }
+    public static boolean ID = false;
 }

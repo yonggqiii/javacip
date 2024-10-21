@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ProgressDialog {
+public interface ProgressDialog {
 
-    public static boolean COPY;
-
-    ProgressDialog() {
-        super();
-    }
+    public static boolean COPY = false;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ImageIcon {
 
-    public UNKNOWN_64 getImage() {
+    public UNKNOWN_68 getImage() {
         return null;
     }
 

@@ -1,3 +1,3 @@
 // added by JavaCIP
-public interface OutputStream {
+public interface OutputStream extends InputStream {
 }

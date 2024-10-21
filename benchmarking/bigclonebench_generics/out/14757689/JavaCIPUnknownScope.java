@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean URL_BIBTEX;
+    public static boolean URL_BIBTEX = false;
 
     JavaCIPUnknownScope() {
         super();

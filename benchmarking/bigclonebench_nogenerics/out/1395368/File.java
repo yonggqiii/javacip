@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public UNKNOWN_50 getPath() {
+    public UNKNOWN_52 getPath() {
         return null;
     }
 
@@ -9,7 +9,7 @@ public class File {
         return false;
     }
 
-    public UNKNOWN_63 getParentFile() {
+    public UNKNOWN_65 getParentFile() {
         return null;
     }
 

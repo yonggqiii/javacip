@@ -1,29 +1,19 @@
 // added by JavaCIP
-public class DataFileType {
+public interface DataFileType {
 
-    public static UNKNOWN_89 Factory;
+    public static UNKNOWN_89 Factory = null;
 
-    public static UNKNOWN_115 ContentType;
+    public static UNKNOWN_115 ContentType = null;
 
-    public void setMimeType(boolean arg0) {
-    }
+    public abstract void setMimeType(boolean arg0);
 
-    public void setFilename(boolean arg0) {
-    }
+    public abstract void setFilename(boolean arg0);
 
-    public void setStringValue(String arg0) {
-    }
+    public abstract void setStringValue(String arg0);
 
-    public void setSize(boolean arg0) {
-    }
+    public abstract void setSize(boolean arg0);
 
-    public void setContentType(boolean arg0) {
-    }
+    public abstract void setContentType(boolean arg0);
 
-    public void setId(String arg0) {
-    }
-
-    DataFileType() {
-        super();
-    }
+    public abstract void setId(String arg0);
 }

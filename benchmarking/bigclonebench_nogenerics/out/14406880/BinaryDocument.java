@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface BinaryDocument {
 
-    public abstract UNKNOWN_73 getContent();
+    public abstract UNKNOWN_48 getContent();
 }

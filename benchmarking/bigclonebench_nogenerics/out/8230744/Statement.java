@@ -1,19 +1,11 @@
 // added by JavaCIP
-public class Statement {
+public interface Statement {
 
-    public static boolean RETURN_GENERATED_KEYS;
+    public static boolean RETURN_GENERATED_KEYS = false;
 
-    public static boolean NO_GENERATED_KEYS;
+    public static boolean NO_GENERATED_KEYS = false;
 
-    public int executeUpdate(String arg0, boolean arg1) {
-        return 0;
-    }
+    public abstract int executeUpdate(String arg0, boolean arg1);
 
-    public ResultSet getGeneratedKeys() {
-        return null;
-    }
-
-    Statement() {
-        super();
-    }
+    public abstract ResultSet getGeneratedKeys();
 }

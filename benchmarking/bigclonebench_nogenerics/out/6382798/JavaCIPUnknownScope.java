@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean readBufferSize;
+    public static boolean readBufferSize = false;
 
-    public static boolean readTimeout;
+    public static boolean readTimeout = false;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_232 workspaceRoot;
+    public static UNKNOWN_232 workspaceRoot = null;
 
-    public static String PLUGIN_NATURE_ID;
+    public static String PLUGIN_NATURE_ID = null;
 
-    public static UNKNOWN_193 exportableBundles;
+    public static UNKNOWN_193 exportableBundles = null;
 
-    public static UNKNOWN_324 modelManager;
+    public static UNKNOWN_324 modelManager = null;
 
     public static Map<String, byte[]> readArchiveFile(String arg0) {
         return null;

@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class Attachment {
 
-    public Object mMimeType;
+    public java.io.Serializable mMimeType;
 
     public long mMessageKey;
 
-    public String mFileName;
+    public Object mFileName;
 
     public int mSize;
 
     public Object mContentId;
 
-    public java.io.Serializable mContentUri;
+    public CharSequence mContentUri;
 
     public Object mLocation;
 

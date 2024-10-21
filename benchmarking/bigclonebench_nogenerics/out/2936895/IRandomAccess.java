@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface IRandomAccess {
 
-    public abstract double getLength();
+    public abstract char getLength();
 }

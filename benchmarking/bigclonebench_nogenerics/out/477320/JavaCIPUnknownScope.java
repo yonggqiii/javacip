@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double friendsCount;
+    public static int friendsCount = 0;
 
-    public static int[] friendsListOnlineStatus;
+    public static int[] friendsListOnlineStatus = null;
 
-    public static long[] friendsListLongs;
+    public static long[] friendsListLongs = null;
 
     JavaCIPUnknownScope() {
         super();

@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_54 LOGGER;
+    public static UNKNOWN_54 LOGGER = null;
 
-    public static boolean COPY_FILE_INFO;
+    public static boolean COPY_FILE_INFO = false;
 
-    public static boolean SEVERE;
+    public static boolean SEVERE = false;
 
-    public static boolean COPY_FILE_ERROR;
+    public static boolean COPY_FILE_ERROR = false;
 
     public static boolean buildLogString(boolean arg0, Object[] arg1) {
         return false;

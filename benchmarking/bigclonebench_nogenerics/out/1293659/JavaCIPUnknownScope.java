@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_40 fido;
+    public static UNKNOWN_40 fido = null;
 
     JavaCIPUnknownScope() {
         super();

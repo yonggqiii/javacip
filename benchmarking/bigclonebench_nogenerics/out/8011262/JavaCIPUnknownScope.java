@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean actionUrl;
+    public static boolean actionUrl = false;
 
-    public static boolean newName;
+    public static boolean newName = false;
 
-    public static boolean uploadFile;
+    public static boolean uploadFile = false;
 
     public static void showDialog(String arg0) {
     }

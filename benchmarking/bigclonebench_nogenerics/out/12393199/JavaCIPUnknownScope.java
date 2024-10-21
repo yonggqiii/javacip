@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_86 logger;
+    public static UNKNOWN_86 logger = null;
 
-    public static boolean tablename;
+    public static boolean tablename = false;
 
     public static Connection getConnection() {
         return null;

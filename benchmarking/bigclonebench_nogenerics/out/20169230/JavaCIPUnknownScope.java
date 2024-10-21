@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_99 LOGGER;
+    public static UNKNOWN_97 LOGGER = null;
 
-    public static boolean INSERT_IDENTITY_STATEMENT;
+    public static boolean INSERT_IDENTITY_STATEMENT = false;
 
-    public static boolean USER_IDENTITY_VALUE;
+    public static boolean USER_IDENTITY_VALUE = false;
 
-    public static UNKNOWN_112 getConnection() {
+    public static UNKNOWN_110 getConnection() {
         return null;
     }
 

@@ -1,17 +1,11 @@
 // added by JavaCIP
-public class Tag {
+public interface Tag {
 
-    public static Object ORGANISM;
+    public static Object ORGANISM = null;
 
-    public static boolean STREAM;
+    public static boolean STREAM = false;
 
-    public static Object URL;
+    public static Tag URL = null;
 
-    public boolean getString() {
-        return false;
-    }
-
-    Tag() {
-        super();
-    }
+    public abstract boolean getString();
 }

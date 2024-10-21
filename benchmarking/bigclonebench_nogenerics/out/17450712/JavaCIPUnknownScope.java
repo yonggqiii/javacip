@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static java.io.Serializable xmlPath;
+    public static String xmlPath = null;
 
-    public static Object map;
+    public static Object map = null;
 
     public static String makeUrl(String arg0) {
         return null;

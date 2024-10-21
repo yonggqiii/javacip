@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Connection {
+public interface Connection {
 
-    public static boolean TRANSACTION_READ_COMMITTED;
-
-    Connection() {
-        super();
-    }
+    public static boolean TRANSACTION_READ_COMMITTED = false;
 }

@@ -9,11 +9,11 @@ public class ParsedURL {
         return false;
     }
 
-    public ParsedURL(String arg0) {
+    public ParsedURL(String arg0, String arg1) {
         super();
     }
 
-    public ParsedURL(String arg0, String arg1) {
+    public ParsedURL(String arg0) {
         super();
     }
 

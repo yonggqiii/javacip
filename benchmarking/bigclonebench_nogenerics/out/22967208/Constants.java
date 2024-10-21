@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static double DEFAULT_CURR_VALUE;
+    public static byte DEFAULT_CURR_VALUE = 0;
 
-    public static double DEFAULT_STEP_VALUE;
-
-    Constants() {
-        super();
-    }
+    public static double DEFAULT_STEP_VALUE = 0;
 }

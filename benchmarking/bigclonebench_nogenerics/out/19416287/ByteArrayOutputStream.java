@@ -4,7 +4,7 @@ public class ByteArrayOutputStream {
     public void close() {
     }
 
-    public char[] toByteArray() {
+    public StringBuffer toByteArray() {
         return null;
     }
 

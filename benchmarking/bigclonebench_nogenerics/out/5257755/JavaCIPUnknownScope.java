@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static NNTPConnection m_connection;
+    public static NNTPConnection m_connection = null;
 
     JavaCIPUnknownScope() {
         super();

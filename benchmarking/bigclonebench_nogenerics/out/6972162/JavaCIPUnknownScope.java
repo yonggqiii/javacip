@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_38 mDownloadTable;
+    public static UNKNOWN_50 mDownloadTable = null;
 
-    public static UNKNOWN_51 mDownloadMgr;
+    public static UNKNOWN_63 mDownloadMgr = null;
 
-    public static UNKNOWN_77 mDownloadSorter;
+    public static UNKNOWN_89 mDownloadSorter = null;
 
-    public static UNKNOWN_64 mainFrame;
+    public static UNKNOWN_76 mainFrame = null;
 
     JavaCIPUnknownScope() {
         super();

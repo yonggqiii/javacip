@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Format {
+public interface Format {
 
-    public static byte MEMORY_MEG;
+    public static long MEMORY_MEG = 0;
 
     public static boolean formatMemory(long arg0) {
         return false;
-    }
-
-    Format() {
-        super();
     }
 }

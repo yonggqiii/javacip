@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean LOG_TAG;
+    public static boolean LOG_TAG = false;
 
-    public static boolean CACHELOCATION;
+    public static boolean CACHELOCATION = false;
 
     public static String md5(String arg0) {
         return null;

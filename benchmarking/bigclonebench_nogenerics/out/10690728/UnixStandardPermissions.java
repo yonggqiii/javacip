@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class UnixStandardPermissions {
+public interface UnixStandardPermissions {
 
-    public static boolean EXECUTABLE_FILE_MODE;
-
-    UnixStandardPermissions() {
-        super();
-    }
+    public static boolean EXECUTABLE_FILE_MODE = false;
 }

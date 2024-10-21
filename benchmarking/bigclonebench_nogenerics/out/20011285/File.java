@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class File {
 
-    public static byte separator;
+    public static double separator = 0;
 
     public File[] listFiles() {
         return null;
     }
 
-    public UNKNOWN_293 getParentFile() {
+    public UNKNOWN_69 getParentFile() {
         return null;
     }
 

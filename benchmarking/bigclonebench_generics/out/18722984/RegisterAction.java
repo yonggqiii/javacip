@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class RegisterAction {
+public interface RegisterAction {
 
-    public static UNKNOWN_89 preferences;
-
-    RegisterAction() {
-        super();
-    }
+    public static UNKNOWN_91 preferences = null;
 }

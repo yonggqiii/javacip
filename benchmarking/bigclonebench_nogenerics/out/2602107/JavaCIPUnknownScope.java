@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object contentStream;
+    public static Object contentStream = null;
 
     public static boolean getId() {
         return false;

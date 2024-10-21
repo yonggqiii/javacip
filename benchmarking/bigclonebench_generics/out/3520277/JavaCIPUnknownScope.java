@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean updateURL;
+    public static boolean updateURL = false;
 
-    public static boolean threadName;
+    public static boolean threadName = false;
 
-    public static boolean updateDirectory;
+    public static boolean updateDirectory = false;
 
-    public static UNKNOWN_113 listener;
+    public static UNKNOWN_113 listener = null;
 
     public static boolean isInterrupted() {
         return false;

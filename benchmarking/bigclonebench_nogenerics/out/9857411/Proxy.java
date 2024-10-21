@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Proxy {
+public interface Proxy {
 
-    public static UNKNOWN_102 Type;
-
-    Proxy() {
-        super();
-    }
+    public static UNKNOWN_102 Type = null;
 }

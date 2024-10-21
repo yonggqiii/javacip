@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static ArrayList<Dictionary> availables;
+    public static ArrayList<Dictionary> availables = null;
 
-    public static UNKNOWN_301 installed;
+    public static UNKNOWN_12305 installed = null;
 
-    public static UNKNOWN_434 jEdit;
+    public static UNKNOWN_12438 jEdit = null;
 
-    public static boolean OOO_DICTS_PROP;
+    public static boolean OOO_DICTS_PROP = false;
 
     public static void initInstalled() {
     }

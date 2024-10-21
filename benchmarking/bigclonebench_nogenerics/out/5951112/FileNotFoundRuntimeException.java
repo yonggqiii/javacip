@@ -1,11 +1,11 @@
 // added by JavaCIP
-public class FileNotFoundRuntimeException extends NullPointerRuntimeException {
+public class FileNotFoundRuntimeException extends FileAlreadyExistsAsDirectoryRuntimeException {
 
     public FileNotFoundRuntimeException(String arg0) {
-        super();
+        super((File) null);
     }
 
     FileNotFoundRuntimeException() {
-        super();
+        super((File) null);
     }
 }

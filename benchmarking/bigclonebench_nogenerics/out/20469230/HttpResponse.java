@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface HttpResponse {
 
-    public abstract double getStatusLine();
+    public abstract int getStatusLine();
 
     public abstract HttpEntity getEntity();
 }

@@ -7,5 +7,5 @@ public interface DataType {
 
     public abstract boolean isSetOutputStream();
 
-    public abstract char asData();
+    public abstract int asData();
 }

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Http11Header {
+public interface Http11Header {
 
-    public static boolean AUTHORIZATION;
+    public static boolean AUTHORIZATION = false;
 
-    public static boolean WWW_AUTHENTICATE;
-
-    Http11Header() {
-        super();
-    }
+    public static boolean WWW_AUTHENTICATE = false;
 }

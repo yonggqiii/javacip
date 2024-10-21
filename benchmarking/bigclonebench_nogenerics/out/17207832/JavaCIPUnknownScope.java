@@ -1,17 +1,17 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean host;
+    public static boolean host = false;
 
-    public static UNKNOWN_55 mockBackend;
+    public static UNKNOWN_55 mockBackend = null;
 
-    public static UNKNOWN_42 impl;
+    public static UNKNOWN_42 impl = null;
 
-    public static boolean resp;
+    public static boolean resp = false;
 
-    public static boolean ctx;
+    public static boolean ctx = false;
 
-    public static boolean req;
+    public static boolean req = false;
 
     public static UNKNOWN_29 expect(boolean arg0) {
         return null;

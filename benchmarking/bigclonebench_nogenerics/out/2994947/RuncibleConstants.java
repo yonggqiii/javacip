@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class RuncibleConstants {
+public interface RuncibleConstants {
 
-    public static UNKNOWN_105 MAPPING_MANAGER;
-
-    RuncibleConstants() {
-        super();
-    }
+    public static UNKNOWN_105 MAPPING_MANAGER = null;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_43 proxy;
+    public static UNKNOWN_45 proxy = null;
 
     JavaCIPUnknownScope() {
         super();

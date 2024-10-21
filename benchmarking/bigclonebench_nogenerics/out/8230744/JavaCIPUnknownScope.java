@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_116 repository;
+    public static UNKNOWN_116 repository = null;
 
-    public static UNKNOWN_129 dbUtil;
+    public static UNKNOWN_129 dbUtil = null;
 
     public static Connection connect() {
         return null;

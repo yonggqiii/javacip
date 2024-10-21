@@ -1,21 +1,21 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean CARD_US;
+    public static boolean CARD_US = false;
 
-    public static boolean fDir;
+    public static boolean fDir = false;
 
-    public static UNKNOWN_78 cnProd;
+    public static UNKNOWN_78 cnProd = null;
 
-    public static UNKNOWN_91 java;
+    public static UNKNOWN_91 java = null;
 
-    public static String fFileMask;
+    public static String fFileMask = null;
 
-    public static boolean CARD_THEM;
+    public static boolean CARD_THEM = false;
 
-    public static boolean CARD_BA;
+    public static boolean CARD_BA = false;
 
-    public static int US_D;
+    public static int US_D = 0;
 
     public static void FeeZero(double[] arg0) {
     }

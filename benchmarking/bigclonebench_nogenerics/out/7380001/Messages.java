@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface Messages {
 
-    public static char[] getString(String arg0) {
-        return null;
+    public static double getString(String arg0) {
+        return 0;
     }
 }

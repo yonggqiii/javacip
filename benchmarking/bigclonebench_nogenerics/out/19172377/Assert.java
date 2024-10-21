@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Assert {
+public interface Assert {
 
-    public static UNKNOWN_46 Arg;
-
-    Assert() {
-        super();
-    }
+    public static UNKNOWN_46 Arg = null;
 }

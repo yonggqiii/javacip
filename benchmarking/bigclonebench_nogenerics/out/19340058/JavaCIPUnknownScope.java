@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_98 register;
+    public static UNKNOWN_98 register = null;
 
     public static boolean isStockCached(String arg0) {
         return false;

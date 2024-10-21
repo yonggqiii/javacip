@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class OboCategory {
+public interface OboCategory {
 
-    public static String PSI_MI_SLIM;
+    public static String PSI_MI_SLIM = null;
 
-    public static String DRUGABLE;
-
-    OboCategory() {
-        super();
-    }
+    public static String DRUGABLE = null;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TiffConstants {
+public interface TiffConstants {
 
-    public static boolean EXIF_TAG_APERTURE_VALUE;
-
-    TiffConstants() {
-        super();
-    }
+    public static boolean EXIF_TAG_APERTURE_VALUE = false;
 }

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class CheckAvailability {
+public interface CheckAvailability {
 
-    public static boolean FEDORA_ID;
+    public static boolean FEDORA_ID = false;
 
-    public static boolean KRAMERIUS_ID;
-
-    CheckAvailability() {
-        super();
-    }
+    public static boolean KRAMERIUS_ID = false;
 }

@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class LicenceUtils {
+public interface LicenceUtils {
 
-    public static boolean LICENCE_FILE_NAME;
+    public static boolean LICENCE_FILE_NAME = false;
 
     public static Enterprise get(Object arg0) {
         return null;
-    }
-
-    LicenceUtils() {
-        super();
     }
 }

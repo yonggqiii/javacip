@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_123 log;
+    public static UNKNOWN_123 log = null;
 
-    public static UNKNOWN_97 mySecureRand;
+    public static UNKNOWN_97 mySecureRand = null;
 
-    public static UNKNOWN_110 myRand;
+    public static UNKNOWN_110 myRand = null;
 
-    public static char[] s_id;
+    public static long s_id = 0;
 
     JavaCIPUnknownScope() {
         super();

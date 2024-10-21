@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object templateFile;
+    public static Object templateFile = null;
 
-    public static boolean overwrite;
+    public static boolean overwrite = false;
 
-    public static boolean append;
+    public static boolean append = false;
 
-    public static boolean VERBOSE;
+    public static boolean VERBOSE = false;
 
-    public static Object targetFile;
+    public static Object targetFile = null;
 
     public static Project getProject() {
         return null;

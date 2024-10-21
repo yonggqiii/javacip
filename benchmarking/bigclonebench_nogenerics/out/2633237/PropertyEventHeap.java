@@ -1,12 +1,8 @@
 // added by JavaCIP
-public class PropertyEventHeap {
+public interface PropertyEventHeap {
 
-    public static boolean debug;
+    public static boolean debug = false;
 
     public static void log(String arg0) {
-    }
-
-    PropertyEventHeap() {
-        super();
     }
 }

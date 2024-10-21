@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_152 out;
+    public static UNKNOWN_152 out = null;
 
     public static void printNoDatabaseFilesFound(String arg0, String arg1) {
     }

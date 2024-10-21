@@ -5,5 +5,5 @@ public interface Matcher {
 
     public abstract int start();
 
-    public abstract int end();
+    public abstract byte end();
 }

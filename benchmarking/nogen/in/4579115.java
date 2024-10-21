@@ -1,0 +1,16 @@
+
+
+
+class c4579115 {
+
+    public void copy(String original, String copy) throws SQLRuntimeException {
+        try {
+            OutputStream out = openFileOutputStream(copy, false);
+            InputStream in = openFileInputStream(original);
+            IOUtils.copyAndClose(in, out);
+        } catch (IORuntimeException e) {
+            throw Message.convertIORuntimeException(e, "Can not copy " + original + " to " + copy);
+        }
+    }
+
+}

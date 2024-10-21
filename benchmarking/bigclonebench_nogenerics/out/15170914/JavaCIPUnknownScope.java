@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int RESULT_NO_NEW_FILE;
+    public static int RESULT_NO_NEW_FILE = 0;
 
-    public static int RESULT_TRANSFER_ERROR;
+    public static int RESULT_TRANSFER_ERROR = 0;
 
-    public static boolean ratingsUrl;
+    public static boolean ratingsUrl = false;
 
-    public static int RESULT_ERROR;
+    public static int RESULT_ERROR = 0;
 
-    public static int RESULT_CONNECTION_REFUSED;
+    public static int RESULT_CONNECTION_REFUSED = 0;
 
-    public static UNKNOWN_163 log;
+    public static UNKNOWN_150 log = null;
 
-    public static int RESULT_OK;
+    public static int RESULT_OK = 0;
 
     public static boolean getUserName() {
         return false;

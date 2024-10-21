@@ -1,8 +1,8 @@
 // added by JavaCIP
 public class BASE64Encoder {
 
-    public boolean encode(boolean arg0) {
-        return false;
+    public char encode(boolean arg0) {
+        return 'a';
     }
 
     public BASE64Encoder() {

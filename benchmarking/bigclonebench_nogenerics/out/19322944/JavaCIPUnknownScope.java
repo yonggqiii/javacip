@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean baseUrl;
+    public static boolean baseUrl = false;
 
     public static boolean equalTo(int arg0) {
         return false;

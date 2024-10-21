@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_192 projectsTree;
+    public static UNKNOWN_192 projectsTree = null;
 
-    public static UNKNOWN_300 mainWindow;
+    public static UNKNOWN_300 mainWindow = null;
 
     public static void displayErrorMessage(RuntimeException arg0, boolean arg1) {
     }

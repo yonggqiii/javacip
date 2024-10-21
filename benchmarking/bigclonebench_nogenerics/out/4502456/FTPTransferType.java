@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class FTPTransferType {
+public interface FTPTransferType {
 
-    public static boolean BINARY;
-
-    FTPTransferType() {
-        super();
-    }
+    public static boolean BINARY = false;
 }

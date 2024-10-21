@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Dimension DEFAULT_SIZE;
+    public static Dimension DEFAULT_SIZE = null;
 
     public static void repaint() {
     }

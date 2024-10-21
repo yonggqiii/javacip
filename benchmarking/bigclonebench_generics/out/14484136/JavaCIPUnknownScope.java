@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_62 log;
+    public static UNKNOWN_62 log = null;
 
     JavaCIPUnknownScope() {
         super();

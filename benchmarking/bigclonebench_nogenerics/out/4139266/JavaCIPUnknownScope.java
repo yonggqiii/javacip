@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean BACK_SUFFIX;
+    public static boolean BACK_SUFFIX = false;
 
     public static long loadFileSize(String arg0) {
         return 0;

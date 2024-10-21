@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface BindingProvider {
 
-    public abstract UNKNOWN_101 getRequestContext();
+    public abstract UNKNOWN_103 getRequestContext();
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean theProjectsDirectory;
+    public static boolean theProjectsDirectory = false;
 
     JavaCIPUnknownScope() {
         super();

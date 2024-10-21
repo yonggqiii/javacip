@@ -1,16 +1,12 @@
 // added by JavaCIP
-public class FileUtils {
+public interface FileUtils {
 
-    public static int BUF_SIZE;
+    public static int BUF_SIZE = 0;
 
-    public static UNKNOWN_143 getFileUtils() {
+    public static UNKNOWN_239 getFileUtils() {
         return null;
     }
 
     public static void close(BufferedWriter arg0) {
-    }
-
-    FileUtils() {
-        super();
     }
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Encoding {
+public interface Encoding {
 
-    public static boolean base64;
-
-    Encoding() {
-        super();
-    }
+    public static boolean base64 = false;
 }

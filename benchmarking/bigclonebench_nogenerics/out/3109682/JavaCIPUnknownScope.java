@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_36[] mTestData;
+    public static UNKNOWN_36[] mTestData = null;
 
     public static String encodeHex(byte[] arg0) {
         return null;

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class RepeatStatus {
+public interface RepeatStatus {
 
-    public static RepeatStatus FINISHED;
-
-    RepeatStatus() {
-        super();
-    }
+    public static RepeatStatus FINISHED = null;
 }

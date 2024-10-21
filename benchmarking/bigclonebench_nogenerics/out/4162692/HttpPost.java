@@ -8,7 +8,7 @@ public class HttpPost {
         return false;
     }
 
-    public HttpPost(CharSequence arg0) {
+    public HttpPost(Object arg0) {
         super();
     }
 

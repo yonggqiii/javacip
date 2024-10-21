@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class XMLEditorSettings {
+public interface XMLEditorSettings {
 
-    public static boolean USER_MERLOT_DIR;
-
-    XMLEditorSettings() {
-        super();
-    }
+    public static boolean USER_MERLOT_DIR = false;
 }

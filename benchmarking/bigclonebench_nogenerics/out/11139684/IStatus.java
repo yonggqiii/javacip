@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class IStatus {
+public interface IStatus {
 
-    public static boolean WARNING;
-
-    IStatus() {
-        super();
-    }
+    public static boolean WARNING = false;
 }

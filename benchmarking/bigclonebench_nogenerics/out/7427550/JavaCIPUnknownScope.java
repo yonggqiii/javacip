@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean sessionId;
+    public static boolean sessionId = false;
 
-    public static UNKNOWN_49 trainee;
+    public static UNKNOWN_49 trainee = null;
 
     public static Object createIdent(int arg0) {
         return null;

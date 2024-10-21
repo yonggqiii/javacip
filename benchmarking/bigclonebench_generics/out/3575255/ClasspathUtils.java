@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface ClasspathUtils {
 
-    public static UNKNOWN_29698 getClassesDir() {
+    public static UNKNOWN_132 getClassesDir() {
         return null;
     }
 }

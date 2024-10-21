@@ -3,7 +3,7 @@ public interface MapInfo {
 
     public abstract Object getContent();
 
-    public abstract UNKNOWN_388 getInfo();
+    public abstract UNKNOWN_216 getInfo();
 
     public abstract void setContent(String arg0);
 }

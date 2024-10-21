@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_34 idf;
+    public static UNKNOWN_34 idf = null;
 
     public static void println(String arg0) {
     }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class AlignmentType {
+public interface AlignmentType {
 
-    public static AlignmentType compress;
-
-    AlignmentType() {
-        super();
-    }
+    public static AlignmentType compress = null;
 }

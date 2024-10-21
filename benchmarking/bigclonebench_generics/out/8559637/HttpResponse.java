@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface HttpResponse {
 
-    public abstract UNKNOWN_117 getEntity();
+    public abstract UNKNOWN_115 getEntity();
 }

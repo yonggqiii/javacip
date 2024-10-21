@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class MisGrupos {
+public interface MisGrupos {
 
-    public static UNKNOWN_76 seleccion;
-
-    MisGrupos() {
-        super();
-    }
+    public static UNKNOWN_76 seleccion = null;
 }

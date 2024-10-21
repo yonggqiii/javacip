@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ClientCommandConstants {
+public interface ClientCommandConstants {
 
-    public static boolean INTRODUCTION;
+    public static boolean INTRODUCTION = false;
 
-    public static boolean TCP_ONLY;
-
-    ClientCommandConstants() {
-        super();
-    }
+    public static boolean TCP_ONLY = false;
 }

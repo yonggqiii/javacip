@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_30 LOG;
+    public static UNKNOWN_30 LOG = null;
 
-    public static boolean host;
+    public static boolean host = false;
 
-    public static boolean user;
+    public static boolean user = false;
 
-    public static boolean password;
+    public static boolean password = false;
 
     public static void logRuntimeException(RuntimeException arg0) {
     }

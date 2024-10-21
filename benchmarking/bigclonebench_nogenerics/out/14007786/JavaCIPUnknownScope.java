@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object _sourceFile;
+    public static Object _sourceFile = null;
 
-    public static Object _destFile;
+    public static Object _destFile = null;
 
     public static void deleteFile(Object arg0) {
     }

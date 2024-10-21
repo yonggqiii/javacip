@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_93 deviceType;
+    public static UNKNOWN_93 deviceType = null;
 
-    public static UNKNOWN_67 internalId;
+    public static UNKNOWN_67 internalId = null;
 
-    public static UNKNOWN_80 bindAddress;
+    public static UNKNOWN_80 bindAddress = null;
 
-    public static CharSequence uuid;
+    public static String uuid = null;
 
     JavaCIPUnknownScope() {
         super();

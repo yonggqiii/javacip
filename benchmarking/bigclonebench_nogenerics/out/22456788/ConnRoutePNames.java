@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ConnRoutePNames {
+public interface ConnRoutePNames {
 
-    public static boolean DEFAULT_PROXY;
-
-    ConnRoutePNames() {
-        super();
-    }
+    public static boolean DEFAULT_PROXY = false;
 }

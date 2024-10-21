@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static Object m_frame;
+    public static Object m_frame = null;
 
-    public static UNKNOWN_68 m_content;
+    public static UNKNOWN_68 m_content = null;
 
-    public static UNKNOWN_81 m_card;
+    public static UNKNOWN_81 m_card = null;
 
-    public static boolean m_loading;
+    public static boolean m_loading = false;
 
     public static UNKNOWN_128 getDocument() {
         return null;

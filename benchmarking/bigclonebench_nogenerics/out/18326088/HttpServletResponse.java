@@ -3,5 +3,5 @@ public interface HttpServletResponse {
 
     public abstract void setContentType(String arg0);
 
-    public abstract UNKNOWN_111 getWriter();
+    public abstract UNKNOWN_149 getWriter();
 }

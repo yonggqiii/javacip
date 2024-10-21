@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ZipToFile {
+public interface ZipToFile {
 
-    public static byte encrypLength;
+    public static int encrypLength = 0;
 
-    public static boolean rootKey;
-
-    ZipToFile() {
-        super();
-    }
+    public static boolean rootKey = false;
 }

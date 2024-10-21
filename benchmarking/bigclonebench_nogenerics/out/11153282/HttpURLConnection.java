@@ -1,19 +1,11 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static int HTTP_NOT_FOUND;
+    public static int HTTP_NOT_FOUND = 0;
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public int getResponseCode() {
-        return 0;
-    }
+    public abstract int getResponseCode();
 
-    public void disconnect() {
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract void disconnect();
 }

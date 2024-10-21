@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class Player {
 
-    public UNKNOWN_222 getName() {
+    public UNKNOWN_226 getName() {
         return null;
     }
 
-    public UNKNOWN_132 getSession() {
+    public UNKNOWN_136 getSession() {
         return null;
     }
 

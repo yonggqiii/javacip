@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_145 LOGGER;
+    public static UNKNOWN_14253 LOGGER = null;
 
-    public static boolean INSERT_INFO;
+    public static boolean INSERT_INFO = false;
 
-    public static boolean INFO_VALUE;
+    public static boolean INFO_VALUE = false;
 
-    public static boolean INSERT_NODE;
+    public static boolean INSERT_NODE = false;
 
-    public static UNKNOWN_160 getConnection() {
+    public static UNKNOWN_14268 getConnection() {
         return null;
     }
 

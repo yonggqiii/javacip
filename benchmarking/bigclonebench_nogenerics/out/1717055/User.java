@@ -16,10 +16,10 @@ public class User {
     public void setNationality(boolean arg0) {
     }
 
-    public void setFirstName(UNKNOWN_150 arg0) {
+    public void setFirstName(UNKNOWN_34908 arg0) {
     }
 
-    public void setLastName(UNKNOWN_124 arg0) {
+    public void setLastName(UNKNOWN_34882 arg0) {
     }
 
     public void setTitle(boolean arg0) {

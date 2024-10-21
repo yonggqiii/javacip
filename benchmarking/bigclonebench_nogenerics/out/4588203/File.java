@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class File {
+public interface File {
 
-    public static char separatorChar;
-
-    File() {
-        super();
-    }
+    public static char separatorChar = 0;
 }

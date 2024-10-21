@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ConfirmCustomerFeedback {
 
-    public static UNKNOWN_448 Result;
+    public static UNKNOWN_1158 Result = null;
 
     public boolean getResult() {
         return false;

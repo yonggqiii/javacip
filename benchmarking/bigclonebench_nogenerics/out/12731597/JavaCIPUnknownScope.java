@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_97 nps;
+    public static UNKNOWN_93 nps = null;
 
     public static boolean IsSysAdmin() {
         return false;

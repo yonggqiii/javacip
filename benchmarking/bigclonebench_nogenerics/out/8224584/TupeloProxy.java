@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TupeloProxy {
+public interface TupeloProxy {
 
-    public static boolean endpoint;
-
-    TupeloProxy() {
-        super();
-    }
+    public static boolean endpoint = false;
 }

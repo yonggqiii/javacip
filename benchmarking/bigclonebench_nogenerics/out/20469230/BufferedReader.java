@@ -1,8 +1,8 @@
 // added by JavaCIP
 public class BufferedReader {
 
-    public float readLine() {
-        return 0;
+    public Object readLine() {
+        return null;
     }
 
     public void close() {

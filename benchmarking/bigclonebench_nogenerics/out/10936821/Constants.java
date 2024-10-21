@@ -1,19 +1,15 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static boolean ftpDir;
+    public static boolean ftpDir = false;
 
-    public static double tmpFtpFileName;
+    public static byte tmpFtpFileName = 0;
 
-    public static byte tmpDir;
+    public static byte tmpDir = 0;
 
-    public static boolean ftpHost;
+    public static boolean ftpHost = false;
 
-    public static boolean ftpPass;
+    public static boolean ftpPass = false;
 
-    public static boolean ftpUser;
-
-    Constants() {
-        super();
-    }
+    public static boolean ftpUser = false;
 }

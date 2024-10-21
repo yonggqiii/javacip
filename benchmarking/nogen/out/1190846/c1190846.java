@@ -1,0 +1,13 @@
+class c1190846 {
+
+    private HttpURLConnection connect() throws MalformedURLRuntimeException, IORuntimeException {
+        HttpURLConnection connection = null;
+        if (JavaCIPUnknownScope.repositoryLocation == null) {
+            Utils.debug("RemoteRepository", "repository Location unspecified");
+            return null;
+        }
+        URL url = new URL(JavaCIPUnknownScope.repositoryLocation);
+        connection = (HttpURLConnection) url.openConnection();
+        return connection;
+    }
+}

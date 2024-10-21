@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_38 volume;
+    public static UNKNOWN_38 volume = null;
 
     JavaCIPUnknownScope() {
         super();

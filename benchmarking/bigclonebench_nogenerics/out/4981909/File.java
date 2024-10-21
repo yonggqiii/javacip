@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static String separator;
+    public static double separator = 0;
 
     public boolean createNewFile() {
         return false;

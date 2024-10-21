@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JFileChooser {
 
-    public static boolean APPROVE_OPTION;
+    public static boolean APPROVE_OPTION = false;
 
     public boolean showSaveDialog(boolean arg0) {
         return false;

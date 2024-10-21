@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Server {
+public interface Server {
 
-    public static boolean URL;
-
-    Server() {
-        super();
-    }
+    public static boolean URL = false;
 }

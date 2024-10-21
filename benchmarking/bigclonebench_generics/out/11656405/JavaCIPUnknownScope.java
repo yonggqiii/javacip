@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_77 HTTP;
+    public static UNKNOWN_77 HTTP = null;
 
-    public static UNKNOWN_51 client;
+    public static UNKNOWN_51 client = null;
 
     public static String upLoadImg(File arg0, String arg1) {
         return null;

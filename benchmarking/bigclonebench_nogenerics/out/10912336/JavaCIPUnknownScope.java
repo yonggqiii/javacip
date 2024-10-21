@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean datoSeleccionado;
+    public static boolean datoSeleccionado = false;
 
-    public static double cantidadArchivos;
+    public static double cantidadArchivos = 0;
 
-    public static UNKNOWN_111 table;
+    public static UNKNOWN_111 table = null;
 
-    public static int buffer;
+    public static int buffer = 0;
 
-    public static int mesTemporal;
+    public static int mesTemporal = 0;
 
-    public static UNKNOWN_86[] meses;
+    public static UNKNOWN_86[] meses = null;
 
-    public static boolean anoTemporal;
+    public static boolean anoTemporal = false;
 
     public static double obtenerCantidad() {
         return 0;

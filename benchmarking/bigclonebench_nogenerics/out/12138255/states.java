@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class states {
+public interface states {
 
-    public static states IDLE;
+    public static states IDLE = null;
 
-    public static states MSGCTXT;
+    public static states MSGCTXT = null;
 
-    public static states MSGID;
+    public static states MSGID = null;
 
-    public static states MSGSTR;
-
-    states() {
-        super();
-    }
+    public static states MSGSTR = null;
 }

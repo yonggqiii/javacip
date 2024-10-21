@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ZipFile {
 
-    public static boolean OPEN_READ;
+    public static boolean OPEN_READ = false;
 
     public Enumeration<ZipEntry> entries() {
         return null;

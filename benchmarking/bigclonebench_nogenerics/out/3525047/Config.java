@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class Config {
+public interface Config {
 
-    public static boolean CACHE_PATH;
+    public static boolean CACHE_PATH = false;
 
-    public static boolean USE_CACHE;
-
-    Config() {
-        super();
-    }
+    public static boolean USE_CACHE = false;
 }

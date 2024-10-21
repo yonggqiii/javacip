@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class ResponseStatus {
 
-    public static int FAILED;
+    public static int FAILED = 0;
 
     public static int codeForStatus(String arg0) {
         return 0;

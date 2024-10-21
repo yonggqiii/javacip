@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean VERSION_1;
+    public static boolean VERSION_1 = false;
 
-    public static boolean VERSION_2;
+    public static boolean VERSION_2 = false;
 
     public static HttpResponse executePost(String arg0, StringEntity arg1) {
         return null;

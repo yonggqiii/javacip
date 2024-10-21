@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean HOST;
+    public static boolean HOST = false;
 
-    public static boolean FILE;
+    public static boolean FILE = false;
 
     JavaCIPUnknownScope() {
         super();

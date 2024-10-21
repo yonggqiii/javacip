@@ -1,22 +1,13 @@
 // added by JavaCIP
-public class HttpServletResponse {
+public interface HttpServletResponse {
 
-    public static boolean SC_NOT_FOUND;
+    public static boolean SC_NOT_FOUND = false;
 
-    public void setStatus(boolean arg0) {
-    }
+    public abstract void setStatus(boolean arg0);
 
-    public void setContentType(String arg0) {
-    }
+    public abstract void setContentType(String arg0);
 
-    public void setContentLength(int arg0) {
-    }
+    public abstract void setContentLength(int arg0);
 
-    public ServletOutputStream getOutputStream() {
-        return null;
-    }
-
-    HttpServletResponse() {
-        super();
-    }
+    public abstract ServletOutputStream getOutputStream();
 }

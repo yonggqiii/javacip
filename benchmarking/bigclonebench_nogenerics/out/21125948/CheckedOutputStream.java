@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class CheckedOutputStream {
 
-    public UNKNOWN_45 getChecksum() {
+    public UNKNOWN_57 getChecksum() {
         return null;
     }
 

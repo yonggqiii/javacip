@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class LayerConstants {
+public interface LayerConstants {
 
-    public static boolean PRINTABLE_LAYERS;
-
-    LayerConstants() {
-        super();
-    }
+    public static boolean PRINTABLE_LAYERS = false;
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Charsets {
+public interface Charsets {
 
-    public static boolean ISO_8859_1;
-
-    Charsets() {
-        super();
-    }
+    public static boolean ISO_8859_1 = false;
 }

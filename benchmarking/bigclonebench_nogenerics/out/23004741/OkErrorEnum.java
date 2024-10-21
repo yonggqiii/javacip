@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class OkErrorEnum {
+public interface OkErrorEnum {
 
-    public static boolean DATABASE;
-
-    OkErrorEnum() {
-        super();
-    }
+    public static boolean DATABASE = false;
 }

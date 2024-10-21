@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_25 m_key;
+    public static UNKNOWN_29 m_key = null;
 
     public static String createString(boolean arg0) {
         return null;

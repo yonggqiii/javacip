@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface EnterpriseMarketplaceUrl {
 
-    public static byte generateAppListingUrl() {
+    public static double generateAppListingUrl() {
         return 0;
     }
 }

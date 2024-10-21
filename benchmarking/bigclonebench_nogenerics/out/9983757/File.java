@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static double separatorChar;
+    public static byte separatorChar = 0;
 
     public boolean isDirectory() {
         return false;

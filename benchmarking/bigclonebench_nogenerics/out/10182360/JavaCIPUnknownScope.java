@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static FTPClient cl;
+    public static FTPClient cl = null;
 
-    public static UNKNOWN_76 log;
+    public static UNKNOWN_76 log = null;
 
-    public static UNKNOWN_153 ap;
+    public static UNKNOWN_153 ap = null;
 
-    public static void setRangeEnd(int arg0) {
+    public static void setRangeEnd(double arg0) {
     }
 
     public static void setResumable(boolean arg0) {
@@ -23,7 +23,7 @@ public class JavaCIPUnknownScope {
     public static void setLastModified(boolean arg0) {
     }
 
-    public static int getSize() {
+    public static double getSize() {
         return 0;
     }
 

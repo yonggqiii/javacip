@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class DataNode {
+public interface DataNode {
 
-    public static UNKNOWN_51 LOG;
-
-    DataNode() {
-        super();
-    }
+    public static UNKNOWN_51 LOG = null;
 }

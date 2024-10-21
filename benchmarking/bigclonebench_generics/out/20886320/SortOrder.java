@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class SortOrder {
+public interface SortOrder {
 
-    public static SortOrder BySeeders;
-
-    SortOrder() {
-        super();
-    }
+    public static Object BySeeders = null;
 }

@@ -277,6 +277,17 @@ sealed trait Type extends BaseTypeOps:
     case x: InferenceVariable        => false
     case x: Capture                  => (this ⊆ x.lowerBound) || (this ⊆ x.upperBound)
 
+  def containsTypeParameter: Boolean = this match
+    case x: SomeClassOrInterfaceType => x.args.exists(_.containsTypeParameter)
+    case ArrayType(x) => x.containsTypeParameter
+    case x: PrimitiveType => false
+    case Bottom | Wildcard => false
+    case x: ExtendsWildcardType => x.upper.containsTypeParameter
+    case x: SuperWildcardType => x.lower.containsTypeParameter
+    case x: TTypeParameter => true
+    case x: InferenceVariable => true
+    case x: Capture => x.lowerBound.containsTypeParameter || x.upperBound.containsTypeParameter
+
   /** Checks if this type occurs in or is equal to another type
     * @param that
     *   the other type

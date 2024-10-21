@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ProjektUtil {
+public interface ProjektUtil {
 
-    public static UNKNOWN_45 LOG;
-
-    ProjektUtil() {
-        super();
-    }
+    public static UNKNOWN_43 LOG = null;
 }

@@ -1,5 +1,7 @@
 // added by JavaCIP
-public interface Iterator<A> extends ListIterator<A> {
+public interface Iterator<A> {
 
     public abstract boolean hasNext();
+
+    public abstract Link next();
 }

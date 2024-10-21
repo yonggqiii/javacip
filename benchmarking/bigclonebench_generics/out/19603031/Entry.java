@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface Entry<A, B> {
 
-    public abstract String getKey();
+    public abstract char getKey();
 
-    public abstract Object getValue();
+    public abstract int getValue();
 }

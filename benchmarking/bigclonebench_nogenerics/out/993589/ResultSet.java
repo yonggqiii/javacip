@@ -1,12 +1,7 @@
 // added by JavaCIP
-public class ResultSet {
+public interface ResultSet {
 
-    public static boolean TYPE_FORWARD_ONLY;
+    public static boolean TYPE_FORWARD_ONLY = false;
 
-    public void close() {
-    }
-
-    ResultSet() {
-        super();
-    }
+    public abstract void close();
 }

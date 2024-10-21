@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_69 factory;
+    public static UNKNOWN_69 factory = null;
 
-    public static boolean POOL_NAME;
+    public static boolean POOL_NAME = false;
 
     public static void close(DBOperation arg0, PreparedStatement arg1, ResultSet arg2) {
     }

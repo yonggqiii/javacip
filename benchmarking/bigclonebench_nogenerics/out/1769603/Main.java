@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Main {
+public interface Main {
 
-    public static boolean USER_AGENT;
+    public static boolean USER_AGENT = false;
 
-    public static byte CONNECT_TIMEOUT;
+    public static byte CONNECT_TIMEOUT = 0;
 
-    public static byte READ_TIMEOUT;
-
-    Main() {
-        super();
-    }
+    public static int READ_TIMEOUT = 0;
 }

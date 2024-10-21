@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean SVN;
+    public static boolean SVN = false;
 
     public static File[] Target(File arg0, String[] arg1) {
         return null;

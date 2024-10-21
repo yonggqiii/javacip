@@ -1,7 +1,7 @@
 // added by JavaCIP
-public class NullPointerRuntimeException extends RuntimeException {
+public class NullPointerRuntimeException extends FileNotFoundRuntimeException {
 
     public NullPointerRuntimeException() {
-        super();
+        super((java.lang.String) null);
     }
 }

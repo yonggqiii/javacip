@@ -1,23 +1,23 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_88 ftp;
+    public static UNKNOWN_84 ftp = null;
 
-    public static boolean username;
+    public static boolean username = false;
 
-    public static UNKNOWN_101 FTP;
+    public static UNKNOWN_97 FTP = null;
 
-    public static boolean port;
+    public static boolean port = false;
 
-    public static UNKNOWN_135 log;
+    public static UNKNOWN_118 log = null;
 
-    public static boolean hostname;
+    public static boolean hostname = false;
 
-    public static double localDirectory;
+    public static byte localDirectory = 0;
 
-    public static float directory;
+    public static int directory = 0;
 
-    public static boolean password;
+    public static boolean password = false;
 
     JavaCIPUnknownScope() {
         super();

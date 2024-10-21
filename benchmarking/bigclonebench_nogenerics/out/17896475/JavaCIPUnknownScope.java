@@ -1,19 +1,19 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double warDesination;
+    public static byte warDesination = 0;
 
-    public static String ret;
+    public static String ret = null;
 
-    public static java.io.Serializable warname;
+    public static CharSequence warname = null;
 
-    public static boolean containerAddress;
+    public static boolean containerAddress = false;
 
-    public static UNKNOWN_86 mLog;
+    public static UNKNOWN_84 mLog = null;
 
-    public static boolean overwriteWarFile;
+    public static boolean overwriteWarFile = false;
 
-    public static boolean STARTCONTROL;
+    public static boolean STARTCONTROL = false;
 
     public static void check(String arg0, long arg1, boolean arg2) {
     }

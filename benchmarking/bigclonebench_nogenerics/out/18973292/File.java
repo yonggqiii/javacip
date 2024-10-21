@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class File {
 
-    public static String separator;
+    public static String separator = null;
 
     public boolean getAbsolutePath() {
         return false;

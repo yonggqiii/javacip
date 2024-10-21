@@ -1,42 +1,25 @@
 // added by JavaCIP
-public class HttpURLConnection {
+public interface HttpURLConnection {
 
-    public static boolean HTTP_OK;
+    public static boolean HTTP_OK = false;
 
-    public void setRequestMethod(String arg0) {
-    }
+    public abstract void setRequestMethod(String arg0);
 
-    public void disconnect() {
-    }
+    public abstract void disconnect();
 
-    public void connect() {
-    }
+    public abstract void connect();
 
-    public void setRequestProperty(String arg0, String arg1) {
-    }
+    public abstract void setRequestProperty(String arg0, String arg1);
 
-    public void setConnectTimeout(boolean arg0) {
-    }
+    public abstract void setConnectTimeout(boolean arg0);
 
-    public boolean getResponseCode() {
-        return false;
-    }
+    public abstract boolean getResponseCode();
 
-    public void setDoOutput(boolean arg0) {
-    }
+    public abstract void setDoOutput(boolean arg0);
 
-    public UNKNOWN_94 getInputStream() {
-        return null;
-    }
+    public abstract UNKNOWN_94 getInputStream();
 
-    public void setUseCaches(boolean arg0) {
-    }
+    public abstract void setUseCaches(boolean arg0);
 
-    public UNKNOWN_132 getOutputStream() {
-        return null;
-    }
-
-    HttpURLConnection() {
-        super();
-    }
+    public abstract UNKNOWN_132 getOutputStream();
 }

@@ -4,11 +4,11 @@ public class Properties {
     public void load(FileInputStream arg0) {
     }
 
-    public double size() {
+    public byte size() {
         return 0;
     }
 
-    public UNKNOWN_69 keySet() {
+    public UNKNOWN_85 keySet() {
         return null;
     }
 

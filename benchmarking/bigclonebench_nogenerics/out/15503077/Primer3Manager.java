@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Primer3Manager {
+public interface Primer3Manager {
 
-    public static boolean servletName;
-
-    Primer3Manager() {
-        super();
-    }
+    public static boolean servletName = false;
 }

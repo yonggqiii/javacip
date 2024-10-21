@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Types {
+public interface Types {
 
-    public static int INTEGER;
+    public static int INTEGER = 0;
 
-    public static int FLOAT;
+    public static int FLOAT = 0;
 
-    public static int VARCHAR;
-
-    Types() {
-        super();
-    }
+    public static int VARCHAR = 0;
 }

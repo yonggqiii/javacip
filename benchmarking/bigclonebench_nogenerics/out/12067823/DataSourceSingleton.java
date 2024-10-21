@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface DataSourceSingleton {
 
-    public static UNKNOWN_80 getInstance() {
+    public static UNKNOWN_78 getInstance() {
         return null;
     }
 }

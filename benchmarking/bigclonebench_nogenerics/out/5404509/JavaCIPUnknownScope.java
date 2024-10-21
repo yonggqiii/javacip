@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean mServerUrl;
+    public static boolean mServerUrl = false;
 
     public static UNKNOWN_28 getContext() {
         return null;

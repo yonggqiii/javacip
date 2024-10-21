@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class THLEvent {
+public interface THLEvent {
 
-    public static boolean COMPLETED;
+    public static boolean COMPLETED = false;
 
-    public static boolean SKIPPED;
-
-    THLEvent() {
-        super();
-    }
+    public static boolean SKIPPED = false;
 }

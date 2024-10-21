@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Main {
+public interface Main {
 
-    public static UNKNOWN_59 log;
-
-    Main() {
-        super();
-    }
+    public static UNKNOWN_59 log = null;
 }

@@ -1,11 +1,7 @@
 // added by JavaCIP
-public class ApplyChangesServlet {
+public interface ApplyChangesServlet {
 
-    public static boolean PARAMETER_COMMAND;
+    public static boolean PARAMETER_COMMAND = false;
 
-    public static boolean PARAMETER_CAPSULE;
-
-    ApplyChangesServlet() {
-        super();
-    }
+    public static boolean PARAMETER_CAPSULE = false;
 }

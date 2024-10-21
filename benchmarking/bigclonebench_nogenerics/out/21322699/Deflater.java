@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Deflater {
+public interface Deflater {
 
-    public static boolean DEFAULT_COMPRESSION;
-
-    Deflater() {
-        super();
-    }
+    public static boolean DEFAULT_COMPRESSION = false;
 }

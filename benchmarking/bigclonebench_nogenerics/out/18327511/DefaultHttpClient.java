@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class DefaultHttpClient {
 
-    public UNKNOWN_70 getCredentialsProvider() {
+    public UNKNOWN_44 getCredentialsProvider() {
         return null;
     }
 

@@ -5,11 +5,11 @@ public class File {
         return 0;
     }
 
-    public UNKNOWN_65 getParentFile() {
+    public UNKNOWN_94 getParentFile() {
         return null;
     }
 
-    public Object getName() {
+    public Integer getName() {
         return null;
     }
 

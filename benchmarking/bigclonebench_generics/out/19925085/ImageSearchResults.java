@@ -1,7 +1,7 @@
 // added by JavaCIP
 public interface ImageSearchResults {
 
-    public abstract UNKNOWN_2840 getTotalResultsAvailable();
+    public abstract UNKNOWN_216 getTotalResultsAvailable();
 
-    public abstract UNKNOWN_2803[] listResults();
+    public abstract UNKNOWN_179[] listResults();
 }

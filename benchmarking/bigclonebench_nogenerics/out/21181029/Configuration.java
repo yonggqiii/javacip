@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Configuration {
+public interface Configuration {
 
-    public static Object versionString;
-
-    Configuration() {
-        super();
-    }
+    public static Object versionString = null;
 }

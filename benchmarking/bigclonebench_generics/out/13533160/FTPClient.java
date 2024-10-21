@@ -28,8 +28,8 @@ public class FTPClient {
     public void connect(boolean arg0, boolean arg1) {
     }
 
-    public float getReplyString() {
-        return 0;
+    public char getReplyString() {
+        return 'a';
     }
 
     public FTPClient() {

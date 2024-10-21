@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_355 icsm;
+    public static UNKNOWN_1003 icsm = null;
 
-    public static UNKNOWN_269 ic_messages_id_seq;
+    public static UNKNOWN_917 ic_messages_id_seq = null;
 
     public static boolean doAuth(HttpServletRequest arg0, HttpServletResponse arg1) {
         return false;
     }
 
-    public static Connection getJDBCConnection(UNKNOWN_191 arg0, HttpServletRequest arg1, HttpServletResponse arg2, boolean arg3) {
+    public static Connection getJDBCConnection(UNKNOWN_839 arg0, HttpServletRequest arg1, HttpServletResponse arg2, boolean arg3) {
         return null;
     }
 

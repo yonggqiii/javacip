@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class BufferedImage {
 
-    public static boolean TYPE_INT_RGB;
+    public static boolean TYPE_INT_RGB = false;
 
     public Graphics getGraphics() {
         return null;

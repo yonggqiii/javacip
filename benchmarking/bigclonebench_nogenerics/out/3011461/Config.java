@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Config {
+public interface Config {
 
-    public static boolean APP_BASE_URI;
-
-    Config() {
-        super();
-    }
+    public static boolean APP_BASE_URI = false;
 }

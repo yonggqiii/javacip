@@ -1,9 +1,9 @@
 // added by JavaCIP
 public interface UNKNOWN_177 {
 
-    public abstract boolean containsKey(byte arg0);
+    public abstract boolean containsKey(double arg0);
 
-    public abstract UNKNOWN_92 get(byte arg0);
+    public abstract UNKNOWN_92 get(double arg0);
 
-    public abstract void put(byte arg0, PathObject arg1);
+    public abstract void put(double arg0, PathObject arg1);
 }

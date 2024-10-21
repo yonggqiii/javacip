@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface MacroManagerProgress {
 
-    public abstract void setMaximum(float arg0);
+    public abstract void setMaximum(int arg0);
 }

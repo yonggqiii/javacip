@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class EventType {
+public interface EventType {
 
-    public static boolean ACTIVATED;
-
-    EventType() {
-        super();
-    }
+    public static boolean ACTIVATED = false;
 }

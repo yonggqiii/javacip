@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class File {
+public interface File {
 
-    public static boolean separator;
-
-    File() {
-        super();
-    }
+    public static boolean separator = false;
 }

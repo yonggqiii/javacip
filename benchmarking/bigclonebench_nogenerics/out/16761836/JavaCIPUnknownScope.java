@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_800 dbConn;
+    public static UNKNOWN_1650 dbConn = null;
 
-    public static UNKNOWN_787 log;
+    public static UNKNOWN_1637 log = null;
 
     public static Integer getNextPrimaryID() {
         return null;

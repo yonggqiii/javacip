@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Messages {
+public interface Messages {
 
-    public static boolean ProjectGenerator_CreatePluginTaskDescription;
-
-    Messages() {
-        super();
-    }
+    public static boolean ProjectGenerator_CreatePluginTaskDescription = false;
 }

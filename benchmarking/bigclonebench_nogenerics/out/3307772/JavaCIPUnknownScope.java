@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte strServlet;
+    public static byte strServlet = 0;
 
-    public static byte getSessionIDSuffix() {
+    public static double getSessionIDSuffix() {
         return 0;
     }
 

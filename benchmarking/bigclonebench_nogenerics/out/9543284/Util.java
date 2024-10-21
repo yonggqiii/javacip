@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Util {
+public interface Util {
 
-    public static UNKNOWN_44 copyBuffer;
-
-    Util() {
-        super();
-    }
+    public static UNKNOWN_44 copyBuffer = null;
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean fSep;
+    public static boolean fSep = false;
 
     public static TShortObjectHashMap loadMovieDiffStats(String arg0, short arg1, String arg2) {
         return null;

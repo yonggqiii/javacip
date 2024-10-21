@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_26 drivers;
+    public static UNKNOWN_26 drivers = null;
 
     public static void loadDefaultDrivers(boolean arg0) {
     }

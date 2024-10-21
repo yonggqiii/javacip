@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class Logger {
+public interface Logger {
 
-    public static boolean ERROR;
+    public static boolean ERROR = false;
 
     public static UNKNOWN_57 instance() {
         return null;
-    }
-
-    Logger() {
-        super();
     }
 }

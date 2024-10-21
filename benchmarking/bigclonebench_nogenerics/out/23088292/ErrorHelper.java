@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ErrorHelper {
+public interface ErrorHelper {
 
-    public static boolean SYS_UNKOWN;
-
-    ErrorHelper() {
-        super();
-    }
+    public static boolean SYS_UNKOWN = false;
 }

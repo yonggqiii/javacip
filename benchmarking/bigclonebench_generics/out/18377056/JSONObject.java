@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JSONObject {
 
-    public void put(int arg0, boolean arg1) {
+    public void put(char arg0, boolean arg1) {
     }
 
-    public char toJSONString() {
-        return 'a';
+    public boolean toJSONString() {
+        return false;
     }
 
     public JSONObject() {

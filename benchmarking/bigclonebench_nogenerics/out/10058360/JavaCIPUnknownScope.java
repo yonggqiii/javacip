@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static ZMachine8 zm;
+    public static ZMachine8 zm = null;
 
-    public static Object zcodefile;
+    public static int zcodefile = 0;
 
-    public static boolean failed;
+    public static boolean failed = false;
 
-    public static boolean screen;
+    public static boolean screen = false;
 
-    public static boolean status_line;
+    public static boolean status_line = false;
 
     public static byte[] suckstream(InputStream arg0) {
         return null;

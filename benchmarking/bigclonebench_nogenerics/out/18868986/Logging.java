@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Logging {
+public interface Logging {
 
-    public static boolean SHOW_WARNING;
-
-    Logging() {
-        super();
-    }
+    public static boolean SHOW_WARNING = false;
 }

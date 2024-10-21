@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean state;
+    public static boolean state = false;
 
-    public static Object tempLocation;
+    public static Object tempLocation = null;
 
-    public static int BUFFER_SIZE;
+    public static int BUFFER_SIZE = 0;
 
-    public static boolean filename;
+    public static boolean filename = false;
 
-    public static boolean STATE_OK;
+    public static boolean STATE_OK = false;
 
     public static void deleteTemporaryFile() {
     }

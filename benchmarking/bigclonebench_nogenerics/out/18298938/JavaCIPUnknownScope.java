@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static CommonsHttpOAuthConsumer consumer;
+    public static CommonsHttpOAuthConsumer consumer = null;
 
     public static String getAuthentificationURL() {
         return null;

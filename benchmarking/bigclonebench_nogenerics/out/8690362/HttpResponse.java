@@ -3,5 +3,5 @@ public interface HttpResponse {
 
     public abstract HttpEntity getEntity();
 
-    public abstract float getStatusLine();
+    public abstract Object getStatusLine();
 }

@@ -1,16 +1,12 @@
 // added by JavaCIP
-public class HttpUtil {
+public interface HttpUtil {
 
-    public static boolean KAIXIN_WWW_LOGOUT_URL;
+    public static boolean KAIXIN_WWW_LOGOUT_URL = false;
 
     public static HttpClient newInstance() {
         return null;
     }
 
     public static void setHeader(HttpGet arg0) {
-    }
-
-    HttpUtil() {
-        super();
     }
 }

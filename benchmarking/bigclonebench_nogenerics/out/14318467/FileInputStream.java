@@ -5,7 +5,7 @@ public class FileInputStream {
         return 0;
     }
 
-    public long skip(double arg0) {
+    public double skip(double arg0) {
         return 0;
     }
 

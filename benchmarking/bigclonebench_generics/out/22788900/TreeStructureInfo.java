@@ -5,7 +5,7 @@ public interface TreeStructureInfo {
 
     public abstract boolean getInputPath();
 
-    public abstract java.io.Serializable getDescription();
+    public abstract String getDescription();
 
     public abstract boolean getName();
 

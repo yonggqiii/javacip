@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_64 progress;
+    public static UNKNOWN_64 progress = null;
 
     public static void closeQuietly(BufferedWriter arg0) {
     }

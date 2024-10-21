@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class TShortObjectHashMap {
 
-    public Object size() {
+    public char[] size() {
         return null;
     }
 
@@ -12,7 +12,10 @@ public class TShortObjectHashMap {
     public void put(short arg0, TIntArrayList arg1) {
     }
 
-    public TIntByteHashMap get(short arg0) {
+    public void put(short arg0, TIntByteHashMap arg1) {
+    }
+
+    public TIntArrayList get(short arg0) {
         return null;
     }
 

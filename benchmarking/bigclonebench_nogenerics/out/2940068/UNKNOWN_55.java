@@ -9,13 +9,13 @@ public class UNKNOWN_55 {
 
     public boolean hasStable;
 
-    public java.io.Serializable BetaURL;
+    public String BetaURL;
 
     public UNKNOWN_163 stableST;
 
     public boolean hasBeta;
 
-    public String StableURL;
+    public CharSequence StableURL;
 
     public UNKNOWN_148 BetaCHK;
 

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Constants {
+public interface Constants {
 
-    public static CharSequence LF;
-
-    Constants() {
-        super();
-    }
+    public static double LF = 0;
 }

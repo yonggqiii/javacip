@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class PinEmUp {
+public interface PinEmUp {
 
-    public static Object VERSION;
-
-    PinEmUp() {
-        super();
-    }
+    public static Object VERSION = null;
 }

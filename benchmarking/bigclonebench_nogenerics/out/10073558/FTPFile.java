@@ -3,7 +3,7 @@ public interface FTPFile {
 
     public abstract boolean getType();
 
-    public abstract double getName();
+    public abstract byte getName();
 
     public abstract boolean getSize();
 }

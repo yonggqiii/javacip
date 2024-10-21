@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class XStream {
 
-    public static boolean XPATH_ABSOLUTE_REFERENCES;
+    public static boolean XPATH_ABSOLUTE_REFERENCES = false;
 
     public void setMode(boolean arg0) {
     }
@@ -9,7 +9,7 @@ public class XStream {
     public void alias(String arg0, Class<FindItemByIdRequest> arg1) {
     }
 
-    public void alias(java.io.Serializable arg0, java.io.Serializable arg1) {
+    public void alias(String arg0, Object arg1) {
     }
 
     public boolean toXML(FindItemByIdRequest arg0) {

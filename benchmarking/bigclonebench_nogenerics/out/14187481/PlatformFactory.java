@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class PlatformFactory {
+public interface PlatformFactory {
 
-    public static UNKNOWN_90 ONLY;
-
-    PlatformFactory() {
-        super();
-    }
+    public static UNKNOWN_90 ONLY = null;
 }

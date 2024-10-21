@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static StringBuffer m_dbItemName;
+    public static int m_dbItemName = 0;
 
-    public static boolean m_dbItemIdFieldColName;
+    public static String m_dbItemIdFieldColName = null;
 
     public static void deleteComponents(Connection arg0, int arg1) {
     }

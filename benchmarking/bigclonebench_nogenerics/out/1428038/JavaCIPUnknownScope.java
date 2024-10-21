@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte YOUTUBE_URL;
+    public static double YOUTUBE_URL = 0;
 
-    public static double videoId;
+    public static double videoId = 0;
 
     public static void setTitle(String arg0) {
     }

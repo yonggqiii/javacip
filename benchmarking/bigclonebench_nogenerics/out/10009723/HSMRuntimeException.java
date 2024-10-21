@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class HSMRuntimeException extends RuntimeException {
 
-    public HSMRuntimeException(String arg0, IORuntimeException arg1) {
+    public HSMRuntimeException(String arg0, AmazonClientRuntimeException arg1) {
         super();
     }
 

@@ -1,13 +1,9 @@
 // added by JavaCIP
-public class IntChatConstants {
+public interface IntChatConstants {
 
-    public static UNKNOWN_282 MessageTemplates;
+    public static UNKNOWN_930 MessageTemplates = null;
 
-    public static boolean HEADER_FILERECIPIENTS;
+    public static boolean HEADER_FILERECIPIENTS = false;
 
-    public static boolean HEADER_FILELENGTH;
-
-    IntChatConstants() {
-        super();
-    }
+    public static boolean HEADER_FILELENGTH = false;
 }

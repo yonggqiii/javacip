@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean intvasmemberDeatails;
+    public static boolean intvasmemberDeatails = false;
 
-    public static java.io.Serializable rating;
+    public static Object rating = null;
 
     JavaCIPUnknownScope() {
         super();

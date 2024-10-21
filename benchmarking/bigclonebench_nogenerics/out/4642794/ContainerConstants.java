@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class ContainerConstants {
+public interface ContainerConstants {
 
-    public static boolean CTX_TYPE_INDEX;
-
-    ContainerConstants() {
-        super();
-    }
+    public static boolean CTX_TYPE_INDEX = false;
 }

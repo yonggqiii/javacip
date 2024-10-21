@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_76 url;
+    public static UNKNOWN_76 url = null;
 
     public static HttpClient getClient() {
         return null;

@@ -5,7 +5,7 @@ public interface XmlUtils {
         return null;
     }
 
-    public static int toString(Document arg0) {
-        return 0;
+    public static char toString(Document arg0) {
+        return 'a';
     }
 }

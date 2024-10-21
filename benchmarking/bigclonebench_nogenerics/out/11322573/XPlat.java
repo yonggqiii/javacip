@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class XPlat {
+public interface XPlat {
 
-    public static byte fileSep;
-
-    XPlat() {
-        super();
-    }
+    public static byte fileSep = 0;
 }

@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class ImagePlus {
 
-    public static int GRAY16;
+    public static int GRAY16 = 0;
 
-    public static int GRAY32;
+    public static int GRAY32 = 0;
 
     public void show() {
     }

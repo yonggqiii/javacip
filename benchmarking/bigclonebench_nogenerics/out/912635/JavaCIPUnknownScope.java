@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean running_as_applet;
+    public static boolean running_as_applet = false;
 
-    public static UNKNOWN_89 playlist;
+    public static UNKNOWN_43 playlist = null;
 
-    public static Object playlistfile;
+    public static Object playlistfile = null;
 
     public static String getParameter(String arg0) {
         return null;

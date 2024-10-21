@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JFileChooser {
 
-    public static boolean FILES_ONLY;
+    public static boolean FILES_ONLY = false;
 
-    public static int APPROVE_OPTION;
+    public static int APPROVE_OPTION = 0;
 
     public void setFileSelectionMode(boolean arg0) {
     }

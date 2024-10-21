@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static float total;
+    public static java.io.Serializable total = null;
 
-    public static byte size;
+    public static float size = 0;
 
     public static void setStatusText(String arg0) {
     }

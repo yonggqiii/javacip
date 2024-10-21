@@ -1,13 +1,7 @@
 // added by JavaCIP
-public class Message {
+public interface Message {
 
-    public static boolean CONTENT_TYPE;
+    public static boolean CONTENT_TYPE = false;
 
-    public UNKNOWN_55 getDestination() {
-        return null;
-    }
-
-    Message() {
-        super();
-    }
+    public abstract UNKNOWN_55 getDestination();
 }

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TimeUnit {
+public interface TimeUnit {
 
-    public static boolean MILLISECONDS;
-
-    TimeUnit() {
-        super();
-    }
+    public static boolean MILLISECONDS = false;
 }

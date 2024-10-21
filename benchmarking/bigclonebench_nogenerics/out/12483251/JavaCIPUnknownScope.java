@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static int _maxPackageRank;
+    public static int _maxPackageRank = 0;
 
-    public static double xPos;
+    public static double xPos = 0;
 
-    public static byte _vMax;
+    public static byte _vMax = 0;
 
-    public static byte yPos;
+    public static byte yPos = 0;
 
     public static byte getColumns(int arg0) {
         return 0;

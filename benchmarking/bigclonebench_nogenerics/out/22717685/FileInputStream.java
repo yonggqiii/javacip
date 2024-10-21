@@ -8,11 +8,11 @@ public class FileInputStream {
     public void close() {
     }
 
-    public FileInputStream(String arg0) {
+    public FileInputStream(File arg0) {
         super();
     }
 
-    public FileInputStream(File arg0) {
+    public FileInputStream(String arg0) {
         super();
     }
 

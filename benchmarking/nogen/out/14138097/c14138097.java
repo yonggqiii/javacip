@@ -1,0 +1,21 @@
+class c14138097 {
+
+    public static void copy(File src, File dest) throws IORuntimeException {
+        if (dest.exists() && dest.isFile()) {
+            JavaCIPUnknownScope.logger.fine("cp " + src + " " + dest + " -- Destination file " + dest + " already exists. Deleting...");
+            dest.delete();
+        }
+        final File parent = dest.getParentFile();
+        if (!parent.exists()) {
+            JavaCIPUnknownScope.logger.info("Directory to contain destination does not exist. Creating...");
+            parent.mkdirs();
+        }
+        final FileInputStream fis = new FileInputStream(src);
+        final FileOutputStream fos = new FileOutputStream(dest);
+        final byte[] b = new byte[2048];
+        int n;
+        while ((n = fis.read(b)) != -1) fos.write(b, 0, n);
+        fis.close();
+        fos.close();
+    }
+}

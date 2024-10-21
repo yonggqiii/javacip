@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean FORMAT;
+    public static boolean FORMAT = false;
 
-    public static UNKNOWN_178 client;
+    public static UNKNOWN_240 client = null;
 
-    public static boolean INPUT;
+    public static boolean INPUT = false;
 
-    public static UNKNOWN_165 log;
+    public static UNKNOWN_227 log = null;
 
-    public static boolean TYPE;
+    public static boolean TYPE = false;
 
     public static TokenStream nameTokenStream(Reader arg0) {
         return null;

@@ -1,12 +1,12 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static String SELECT_ID_SQL;
+    public static String SELECT_ID_SQL = null;
 
-    public static boolean UPDATE_HANDS_SQL;
+    public static boolean UPDATE_HANDS_SQL = false;
 
-    public static CharSequence appendQuery(CalculateTransferObject arg0) {
-        return null;
+    public static float appendQuery(CalculateTransferObject arg0) {
+        return 0;
     }
 
     public static UNKNOWN_89 getDataSource() {

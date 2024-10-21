@@ -1,15 +1,9 @@
 // added by JavaCIP
-public class Status {
+public interface Status {
 
-    public static Status NONE;
+    public static Status NONE = null;
 
-    public static Status ADD;
+    public static Status ADD = null;
 
-    public boolean isLocal() {
-        return false;
-    }
-
-    Status() {
-        super();
-    }
+    public abstract boolean isLocal();
 }

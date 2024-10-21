@@ -4,7 +4,7 @@ public class Base64Encoder {
     public void translate(byte[] arg0) {
     }
 
-    public StringBuilder getCharArray() {
+    public StringBuffer getCharArray() {
         return null;
     }
 

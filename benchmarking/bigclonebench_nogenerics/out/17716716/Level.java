@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Level {
+public interface Level {
 
-    public static boolean FATAL;
-
-    Level() {
-        super();
-    }
+    public static boolean FATAL = false;
 }

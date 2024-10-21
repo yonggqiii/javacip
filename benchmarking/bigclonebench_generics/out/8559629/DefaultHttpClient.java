@@ -5,11 +5,11 @@ public class DefaultHttpClient implements HttpClient {
         return null;
     }
 
-    public DefaultHttpClient(SingleClientConnManager arg0, HttpParams arg1) {
+    public DefaultHttpClient() {
         super();
     }
 
-    public DefaultHttpClient() {
+    public DefaultHttpClient(SingleClientConnManager arg0, HttpParams arg1) {
         super();
     }
 }

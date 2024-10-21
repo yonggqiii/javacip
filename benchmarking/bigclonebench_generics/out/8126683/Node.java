@@ -1,21 +1,11 @@
 // added by JavaCIP
-public class Node implements ProcessingInstruction {
+public interface Node extends ProcessingInstruction {
 
-    public static boolean PROCESSING_INSTRUCTION_NODE;
+    public static boolean PROCESSING_INSTRUCTION_NODE = false;
 
-    public Node getNextSibling() {
-        return null;
-    }
+    public abstract Node getNextSibling();
 
-    public boolean getNodeType() {
-        return false;
-    }
+    public abstract boolean getNodeType();
 
-    public Object getNodeName() {
-        return null;
-    }
-
-    Node() {
-        super();
-    }
+    public abstract Object getNodeName();
 }

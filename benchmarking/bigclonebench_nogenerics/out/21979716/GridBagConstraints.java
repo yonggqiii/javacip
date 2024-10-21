@@ -3,9 +3,9 @@ public class GridBagConstraints {
 
     public double weightx;
 
-    public static boolean HORIZONTAL;
+    public static boolean HORIZONTAL = false;
 
-    public static boolean REMAINDER;
+    public static boolean REMAINDER = false;
 
     public boolean fill;
 

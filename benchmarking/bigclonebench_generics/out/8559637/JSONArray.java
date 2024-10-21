@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JSONArray {
 
-    public int length() {
+    public byte length() {
         return 0;
     }
 

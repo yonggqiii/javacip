@@ -1,15 +1,11 @@
 // added by JavaCIP
-public class ODFUtil {
+public interface ODFUtil {
 
-    public static boolean MIMETYPE_FILE;
+    public static boolean MIMETYPE_FILE = false;
 
-    public static String MIMETYPE_START;
+    public static String MIMETYPE_START = null;
 
     public static InputStream findDataInputStream(boolean arg0, boolean arg1) {
         return null;
-    }
-
-    ODFUtil() {
-        super();
     }
 }

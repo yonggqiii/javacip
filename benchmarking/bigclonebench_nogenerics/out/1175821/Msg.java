@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Msg {
+public interface Msg {
 
-    public static boolean EXCEPTION_MESSAGE;
-
-    Msg() {
-        super();
-    }
+    public static boolean EXCEPTION_MESSAGE = false;
 }

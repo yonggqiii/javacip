@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static CharSequence lastResult;
+    public static Object lastResult = null;
 
     public static boolean getTimeout() {
         return false;

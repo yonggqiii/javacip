@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_71 log;
+    public static UNKNOWN_71 log = null;
 
-    public static UNKNOWN_50 FTP;
+    public static UNKNOWN_50 FTP = null;
 
     public static boolean getPassword() {
         return false;

@@ -1,16 +1,12 @@
 // added by JavaCIP
-public class MusicBoxView {
+public interface MusicBoxView {
 
-    public static UNKNOWN_103 jButton7;
+    public static UNKNOWN_107 jButton7 = null;
 
-    public static boolean googleImageLocation;
+    public static boolean googleImageLocation = false;
 
-    public static UNKNOWN_90 albumArtLabel;
+    public static UNKNOWN_94 albumArtLabel = null;
 
     public static void showErrorDialog(RuntimeException arg0) {
-    }
-
-    MusicBoxView() {
-        super();
     }
 }

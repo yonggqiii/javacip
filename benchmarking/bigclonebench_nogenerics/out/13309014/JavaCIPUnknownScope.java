@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_29 dtdURL;
+    public static UNKNOWN_29 dtdURL = null;
 
     public static boolean scanForLTBang(PushbackInputStream arg0) {
         return false;

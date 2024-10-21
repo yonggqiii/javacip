@@ -11,5 +11,5 @@ public interface ByteBuffer {
 
     public abstract void get(byte[] arg0);
 
-    public abstract int limit();
+    public abstract Short limit();
 }

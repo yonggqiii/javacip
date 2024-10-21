@@ -4,7 +4,7 @@ public class IntegerArray {
     public void add(int arg0) {
     }
 
-    public byte cardinality() {
+    public double cardinality() {
         return 0;
     }
 

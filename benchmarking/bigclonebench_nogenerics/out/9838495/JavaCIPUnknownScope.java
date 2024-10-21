@@ -1,15 +1,15 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static LoginResults results;
+    public static LoginResults results = null;
 
-    public static boolean error;
+    public static boolean error = false;
 
-    public static boolean errorcode;
+    public static boolean errorcode = false;
 
-    public static boolean agent;
+    public static boolean agent = false;
 
-    public static boolean errortext;
+    public static boolean errortext = false;
 
     public static boolean makeResponse() {
         return false;
@@ -38,7 +38,7 @@ public class JavaCIPUnknownScope {
         return 0;
     }
 
-    public static byte getPath() {
+    public static double getPath() {
         return 0;
     }
 

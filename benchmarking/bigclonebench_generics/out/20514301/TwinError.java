@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class TwinError {
+public interface TwinError {
 
-    public static UNKNOWN_89 UnknownError;
-
-    TwinError() {
-        super();
-    }
+    public static UNKNOWN_89 UnknownError = null;
 }

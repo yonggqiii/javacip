@@ -1,9 +1,9 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean DIGEST;
+    public static boolean DIGEST = false;
 
-    public static UNKNOWN_78 inUse;
+    public static UNKNOWN_78 inUse = null;
 
     public static File newTemporaryFile() {
         return null;

@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class EventConstants {
+public interface EventConstants {
 
-    public static boolean INTERFACE_DOWN_EVENT_UEI;
-
-    EventConstants() {
-        super();
-    }
+    public static boolean INTERFACE_DOWN_EVENT_UEI = false;
 }

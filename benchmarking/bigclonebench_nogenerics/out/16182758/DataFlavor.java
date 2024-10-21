@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class DataFlavor {
+public interface DataFlavor {
 
-    public static boolean stringFlavor;
-
-    DataFlavor() {
-        super();
-    }
+    public static boolean stringFlavor = false;
 }

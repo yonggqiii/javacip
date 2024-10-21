@@ -1,9 +1,9 @@
 // added by JavaCIP
 public interface RolePermission {
 
-    public abstract boolean getRoleid();
+    public abstract int getRoleid();
 
-    public abstract Object getResourceid();
+    public abstract double getResourceid();
 
-    public abstract double getResopid();
+    public abstract long getResopid();
 }

@@ -3,5 +3,5 @@ public interface HttpEntity {
 
     public abstract InputStream getContent();
 
-    public abstract int getContentLength();
+    public abstract byte getContentLength();
 }

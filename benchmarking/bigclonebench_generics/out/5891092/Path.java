@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class Path {
 
-    public UNKNOWN_151 append(boolean arg0) {
+    public UNKNOWN_10972 append(boolean arg0) {
         return null;
     }
 

@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class Date {
 
-    public Date() {
+    public Date(long arg0) {
         super();
     }
 
-    public Date(long arg0) {
+    public Date() {
         super();
     }
 }

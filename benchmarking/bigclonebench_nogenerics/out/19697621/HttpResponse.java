@@ -1,17 +1,9 @@
 // added by JavaCIP
-public class HttpResponse {
+public interface HttpResponse {
 
-    public static boolean SC_OK;
+    public static boolean SC_OK = false;
 
-    public boolean getHttpStatusCode() {
-        return false;
-    }
+    public abstract boolean getHttpStatusCode();
 
-    public String getResponseAsString() {
-        return null;
-    }
-
-    HttpResponse() {
-        super();
-    }
+    public abstract String getResponseAsString();
 }

@@ -7,7 +7,7 @@ public interface Site {
 
     public abstract int getSiteID();
 
-    public abstract boolean getAppserverID();
+    public abstract Object getAppserverID();
 
     public abstract String getPath();
 
@@ -15,9 +15,9 @@ public interface Site {
 
     public abstract String getName();
 
-    public abstract char[] getUseStatus();
+    public abstract double getUseStatus();
 
     public abstract boolean getRemarkNumber();
 
-    public abstract UNKNOWN_137 getIncrementIndex();
+    public abstract UNKNOWN_150 getIncrementIndex();
 }

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static long THREAD_COUNT;
+    public static byte THREAD_COUNT = 0;
 
     public static URL handleRedirectUrl(URL arg0) {
         return null;

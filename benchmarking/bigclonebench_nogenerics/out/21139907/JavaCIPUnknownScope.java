@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte FILE_NAME_PREFIX;
+    public static double FILE_NAME_PREFIX = 0;
 
     JavaCIPUnknownScope() {
         super();

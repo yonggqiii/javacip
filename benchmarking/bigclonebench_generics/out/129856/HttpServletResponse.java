@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class HttpServletResponse {
+public interface HttpServletResponse {
 
-    public static boolean SC_UNAUTHORIZED;
-
-    HttpServletResponse() {
-        super();
-    }
+    public static boolean SC_UNAUTHORIZED = false;
 }

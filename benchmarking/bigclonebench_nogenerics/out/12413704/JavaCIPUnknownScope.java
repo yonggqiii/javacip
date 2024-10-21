@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_67 registeredStreams;
+    public static UNKNOWN_67 registeredStreams = null;
 
     public static String getCharCodingFromType(String arg0) {
         return null;

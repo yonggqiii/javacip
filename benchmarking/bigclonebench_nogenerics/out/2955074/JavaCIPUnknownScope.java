@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_39 WWIO;
+    public static UNKNOWN_39 WWIO = null;
 
     JavaCIPUnknownScope() {
         super();

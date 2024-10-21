@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_159 dependentFiles;
+    public static UNKNOWN_159 dependentFiles = null;
 
     JavaCIPUnknownScope() {
         super();

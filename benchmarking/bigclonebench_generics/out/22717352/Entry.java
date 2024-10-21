@@ -1,5 +1,5 @@
 // added by JavaCIP
 public interface Entry {
 
-    public abstract UNKNOWN_213 getEntry();
+    public abstract UNKNOWN_219 getEntry();
 }

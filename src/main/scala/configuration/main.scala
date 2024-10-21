@@ -54,7 +54,9 @@ private type MutableOmega = MutableSet[Assertion]
 private type MutablePsi   = MutableSet[Type]
 private type MutableTheta = MutableSet[Invocation]
 private type MutableConfiguration =
-  (MutableDelta, MutablePhi, MutableOmega, MutablePsi, MutableTheta, MutableSet[Type])
+  (MutableDelta, MutablePhi, MutableOmega, MutablePsi, MutableTheta, MutableSet[Type],
+    MutableMap[String, String] // Types -> FQN
+    )
 
 def hasGenerics(log: Log, filePath: String): (Log, Boolean) =
   // Use the reflection type solver to solve types in the jdk
@@ -103,7 +105,8 @@ def parseConfiguration(
       MutableSet(),
       MutableSet(),
       MutableSet(),
-      MutableSet()
+      MutableSet(),
+      MutableMap()
     )
 
   parseSource(log.addInfo(s"attempting to parse $filePath..."), filePath)

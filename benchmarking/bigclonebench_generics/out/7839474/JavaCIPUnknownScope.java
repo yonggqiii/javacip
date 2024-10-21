@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double FILE_SEPARATOR;
+    public static double FILE_SEPARATOR = 0;
 
     public static Map<String, DomAttr> createAttributesCopyWithClonedAttribute(BaseFrame arg0, String arg1) {
         return null;

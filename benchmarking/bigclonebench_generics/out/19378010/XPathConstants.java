@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class XPathConstants {
+public interface XPathConstants {
 
-    public static boolean NODESET;
-
-    XPathConstants() {
-        super();
-    }
+    public static boolean NODESET = false;
 }

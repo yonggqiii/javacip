@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class EPlace {
+public interface EPlace {
 
-    public static boolean START;
-
-    EPlace() {
-        super();
-    }
+    public static boolean START = false;
 }

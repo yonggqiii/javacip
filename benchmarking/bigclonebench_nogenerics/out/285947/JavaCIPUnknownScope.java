@@ -1,37 +1,37 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean statustext;
+    public static boolean statustext = false;
 
-    public static boolean halfSize;
+    public static boolean halfSize = false;
 
-    public static boolean whichprefix2;
+    public static boolean whichprefix2 = false;
 
-    public static boolean whichprefix3;
+    public static boolean whichprefix3 = false;
 
-    public static boolean pick;
+    public static boolean pick = false;
 
-    public static boolean prefix2;
+    public static boolean prefix2 = false;
 
-    public static boolean prefix3;
+    public static boolean prefix3 = false;
 
-    public static boolean whichprefix1;
+    public static boolean whichprefix1 = false;
 
-    public static boolean prefix1;
+    public static boolean prefix1 = false;
 
-    public static String tempp;
+    public static String tempp = null;
 
-    public static boolean statussortd;
+    public static boolean statussortd = false;
 
-    public static boolean statussorta;
+    public static boolean statussorta = false;
 
-    public static boolean open_as_stack;
+    public static boolean open_as_stack = false;
 
-    public static UNKNOWN_221 IJ;
+    public static UNKNOWN_223 IJ = null;
 
-    public static boolean only_images;
+    public static boolean only_images = false;
 
-    public static boolean grayscale;
+    public static boolean grayscale = false;
 
     public static String getCase() {
         return null;

@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_84 sqlImpl() {
+    public static UNKNOWN_88 sqlImpl() {
         return null;
     }
 

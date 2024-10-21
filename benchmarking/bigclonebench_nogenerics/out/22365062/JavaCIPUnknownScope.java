@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static UNKNOWN_45 data;
+    public static UNKNOWN_45 data = null;
 
     public static void injectCodeTape(boolean arg0, String arg1, int arg2, int arg3) {
     }

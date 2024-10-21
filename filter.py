@@ -10,10 +10,11 @@ TIMEOUT = 60
 BIGCLONEBENCH_GENERICS = ('bigclonebench_generics/in', 2, 3)
 BIGCLONEBENCH_NOGENERICS = ('bigclonebench_nogenerics/in', 0, 2)
 CUSTOM = ('custom/in', 3, 5)
-
+SPRINGBOOT_WEB = ('springboot/in', 2, 2)
+STATTYPE_SO = ('stattype_so/in', 2, 2)
 
 # choose dataset here
-PATH, MAX_BREADTH, MAX_DEPTH = BIGCLONEBENCH_NOGENERICS
+PATH, MAX_BREADTH, MAX_DEPTH = STATTYPE_SO
 
 
 CUSTOM_DATASET = [['1.java', False, 1, 1, 1000000, True],
@@ -56,7 +57,7 @@ os.chdir('..')
 if not os.path.exists('out'):
     os.mkdir('out')
 
-stats = [['Filename', 'Output Written', 'Time Taken for Disambiguation', 'Compilable']]
+stats = [['Filename', 'Output Written', 'Time Taken for Disambiguation', 'Compilable', 'SLoC']]
 
 def cmd(outdir, infile, heuristic = False, maxBreadth = MAX_BREADTH, maxDepth = MAX_DEPTH, iterations = 2000000, noOverload = False):
     header = ['java', '-jar', '../../target/scala-3.0.2/javacip-0.0.1.jar',
@@ -72,6 +73,9 @@ def cmd(outdir, infile, heuristic = False, maxBreadth = MAX_BREADTH, maxDepth = 
     return header
 
 def execute(filename, outdir, infile, heuristic = False, maxBreadth = MAX_BREADTH, maxDepth = MAX_DEPTH, iterations = 1000000, noOverload = False):
+    # read LoC
+    with open(infile) as f:
+        loc = len(list(filter(bool, f.read().split('\n'))))
     os.mkdir(outdir)
     command = cmd(outdir, infile, heuristic, maxBreadth, maxDepth, iterations , noOverload)
     start_time = time()
@@ -83,14 +87,14 @@ def execute(filename, outdir, infile, heuristic = False, maxBreadth = MAX_BREADT
         p.kill()
         print('Timeout!')
         os.rmdir(outdir)
-        return [filename, False, 'TIMEOUT', False]
+        return [filename, False, 'TIMEOUT', False, loc]
     os.chdir(outdir)
     java_files = os.listdir()
     if not java_files:
         print('Disambiguation failed.')
         os.chdir('../..')
         os.rmdir(outdir)
-        return [filename, False, time_taken, False]
+        return [filename, False, time_taken, False, loc]
     print('output found; attempting to compile...')
     subprocess.run(['javac'] + java_files)
     class_files = [i for i in os.listdir() if i[-6:] == '.class']
@@ -101,11 +105,11 @@ def execute(filename, outdir, infile, heuristic = False, maxBreadth = MAX_BREADT
             os.system(f'rm {" ".join(class_files)}')
         os.chdir('../..')
         os.rmdir(outdir)
-        return [filename, True, time_taken, False]
+        return [filename, True, time_taken, False, loc]
     print('compiled successfully!')
     os.system(f'rm {" ".join(class_files)}')
     os.chdir('../..')    
-    return [filename, True, time_taken, True]
+    return [filename, True, time_taken, True, loc]
 
 if PATH != CUSTOM[0]:
     for file in all_files:

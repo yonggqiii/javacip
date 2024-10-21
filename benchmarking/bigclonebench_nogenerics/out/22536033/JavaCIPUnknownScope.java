@@ -1,13 +1,13 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static byte Index;
+    public static byte Index = 0;
 
-    public static boolean[] Headers;
+    public static boolean[] Headers = null;
 
-    public static boolean HeadlessData;
+    public static boolean HeadlessData = false;
 
-    public static boolean[] Destinations;
+    public static boolean[] Destinations = null;
 
     public static void setDestination(boolean arg0) {
     }

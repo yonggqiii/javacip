@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class HttpMultipartMode {
+public interface HttpMultipartMode {
 
-    public static boolean BROWSER_COMPATIBLE;
-
-    HttpMultipartMode() {
-        super();
-    }
+    public static boolean BROWSER_COMPATIBLE = false;
 }

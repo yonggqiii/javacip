@@ -1,9 +1,5 @@
 // added by JavaCIP
-public class Config {
+public interface Config {
 
-    public static UNKNOWN_98 CONTEXT;
-
-    Config() {
-        super();
-    }
+    public static UNKNOWN_98 CONTEXT = null;
 }

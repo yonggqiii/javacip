@@ -1,11 +1,11 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static double srcURL;
+    public static byte srcURL = 0;
 
-    public static double src;
+    public static double src = 0;
 
-    public static boolean dest;
+    public static boolean dest = false;
 
     JavaCIPUnknownScope() {
         super();

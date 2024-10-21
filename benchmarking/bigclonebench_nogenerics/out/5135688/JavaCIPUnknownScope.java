@@ -1,7 +1,7 @@
 // added by JavaCIP
 public class JavaCIPUnknownScope {
 
-    public static boolean mServer;
+    public static boolean mServer = false;
 
     public static boolean createURLEncodedPropertyString(NodeInfo arg0, int arg1) {
         return false;

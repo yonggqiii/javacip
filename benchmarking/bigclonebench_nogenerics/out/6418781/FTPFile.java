@@ -1,21 +1,11 @@
 // added by JavaCIP
-public class FTPFile {
+public interface FTPFile {
 
-    public static boolean FILE_TYPE;
+    public static boolean FILE_TYPE = false;
 
-    public boolean getType() {
-        return false;
-    }
+    public abstract boolean getType();
 
-    public boolean getName() {
-        return false;
-    }
+    public abstract boolean getName();
 
-    public boolean getSize() {
-        return false;
-    }
-
-    FTPFile() {
-        super();
-    }
+    public abstract boolean getSize();
 }

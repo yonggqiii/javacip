@@ -1,17 +1,13 @@
 // added by JavaCIP
-public class HttpConfig {
+public interface HttpConfig {
 
-    public static double BBS_LOGOUT;
+    public static double BBS_LOGOUT = 0;
 
     public static HttpClient newInstance() {
         return null;
     }
 
-    public static double bbsURL() {
+    public static byte bbsURL() {
         return 0;
-    }
-
-    HttpConfig() {
-        super();
     }
 }
